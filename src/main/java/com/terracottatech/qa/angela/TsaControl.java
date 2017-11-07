@@ -9,6 +9,8 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import com.terracottatech.qa.angela.topology.Topology;
+
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -18,15 +20,18 @@ import java.util.UUID;
 
 public class TsaControl {
 
+  private Topology topology;
 
   private volatile Ignite ignite;
-  private String id;
 
-  public void init(final String id) {
-    if (ignite!=null) {
+  public void init() {
+    if (topology == null) {
+      throw new IllegalArgumentException("YOu need to pass a topology");
+    }
+
+    if (ignite != null) {
       throw new IllegalStateException("You can not init TsaControl twice");
     }
-    this.id = id;
 
     IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -47,11 +52,11 @@ public class TsaControl {
     ignite.compute(location).broadcast((IgniteRunnable)() -> {
 
       IgniteCache<String, String> kitsInstalls = ignite.getOrCreateCache("installs");
-      if (kitsInstalls.containsKey(id)) {
+      if (kitsInstalls.containsKey(topology.getId())) {
         System.out.println("Already exists");
       } else {
         System.out.println("Install kit");
-        kitsInstalls.put(id, "Installed");
+        kitsInstalls.put(topology.getId(), "Installed");
       }
     });
   }
@@ -59,8 +64,14 @@ public class TsaControl {
 
   public void close() {
     IgniteCache<String, String> kitsInstalls = ignite.getOrCreateCache("installs");
-    kitsInstalls.remove(this.id);
+    kitsInstalls.remove(topology.getId());
 
     ignite.close();
   }
+
+  public TsaControl withTopology(Topology topology) {
+    this.topology = topology;
+    return this;
+  }
+
 }
