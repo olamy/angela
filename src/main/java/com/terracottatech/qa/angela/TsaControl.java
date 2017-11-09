@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -9,8 +10,11 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import com.terracottatech.qa.angela.kit.KitManager;
+import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.topology.Topology;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -21,6 +25,8 @@ import java.util.UUID;
 public class TsaControl {
 
   private Topology topology;
+  private ClusterToolConfig clusterToolConfig;
+  private KitManager kitManager = new KitManager();
 
   private volatile Ignite ignite;
 
@@ -56,7 +62,15 @@ public class TsaControl {
         System.out.println("Already exists");
       } else {
         System.out.println("Install kit");
-        kitsInstalls.put(topology.getId(), "Installed");
+        boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
+        File kitDir = kitManager.installKit(topology.getDistributionController(), clusterToolConfig.getLicenseConfig(), offline);
+//        installFiles(kitDir);
+
+        kitsInstalls.put(topology.getId(), "install");
+
+        System.out.println("kitDir = " + kitDir.getAbsolutePath());
+//        new TerracottaInstall(kitDir, clusterConfig, managementConfig, clusterToolConfig, clusterConfig.getVersion(), agent
+//            .getNetworkController())
       }
     });
   }
@@ -71,6 +85,11 @@ public class TsaControl {
 
   public TsaControl withTopology(Topology topology) {
     this.topology = topology;
+    return this;
+  }
+
+  public TsaControl withClusterToolConfig(final ClusterToolConfig clusterToolConfig) {
+    this.clusterToolConfig = clusterToolConfig;
     return this;
   }
 

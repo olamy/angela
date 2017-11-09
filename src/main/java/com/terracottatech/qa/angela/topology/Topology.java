@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.topology;
 
+import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 
@@ -20,22 +21,22 @@ import java.util.Map;
 
 public class Topology {
   private String id;
-  private Version version;
+  private DistributionController distributionController;
   private TcConfig[] tcConfigList = null;
 
-  public Topology(final String id, final Version version, final TcConfig... tcConfigs) {
+  public Topology(final String id, final DistributionController distributionController, final TcConfig... tcConfigs) {
     this.id = id;
-    this.version = version;
+    this.distributionController = distributionController;
     this.tcConfigList = new TcConfig[tcConfigs.length];
     for (int i = 0; i < tcConfigs.length; i++) {
       final TcConfig tcConfig = tcConfigs[i];
-      tcConfig.initTcConfigHolder(version);
+      tcConfig.initTcConfigHolder(distributionController.getVersion());
       this.tcConfigList[i] = tcConfig;
     }
   }
 
-  public Version getVersion() {
-    return this.version;
+  public DistributionController getDistributionController() {
+    return distributionController;
   }
 
   public Map<String, TerracottaServer> getServers() {

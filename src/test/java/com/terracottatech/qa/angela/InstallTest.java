@@ -2,6 +2,9 @@ package com.terracottatech.qa.angela;
 
 import org.junit.Test;
 
+import com.terracottatech.qa.angela.kit.distribution.Distribution;
+import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
+import com.terracottatech.qa.angela.tcconfig.LicenseConfig;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.topology.LicenseType;
 import com.terracottatech.qa.angela.topology.PackageType;
@@ -21,10 +24,17 @@ public class InstallTest {
 
     TcConfig tcConfig = new TcConfig("/terracotta/10/tc-config-a.xml");
 
-    Topology topology = new Topology("1", version("10.1.0-SNAPSHOT", PackageType.KIT, LicenseType.TC_DB), tcConfig);
-    control.withTopology(topology).init();
+
+    Topology topology = new Topology("1", Distribution.distribution(version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), tcConfig);
+
+//    Topology topology = new Topology("1", Distribution.distribution("/my/path", version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), tcConfig);
 
 
+    ClusterToolConfig clusterToolConfig = new ClusterToolConfig("localhost", new LicenseConfig("/terracotta/10/TerracottaDB101_license.xml"));
+
+    control.withTopology(topology)
+        .withClusterToolConfig(clusterToolConfig)
+        .init();
 
     control.close();
   }

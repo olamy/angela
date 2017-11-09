@@ -19,16 +19,11 @@ public class Version implements Comparable<Version>  {
   private int build_major;
   private int build_minor;
   private boolean snapshot;
-  private PackageType packageType;  // kit or installer
-  private LicenseType licenseType; // OS or TC_EHC
 
   public Version() {
   }
 
-  public Version(final String version, final PackageType packageType, final LicenseType licenseType) {
-    this.packageType = packageType;
-    this.licenseType = licenseType;
-
+  public Version(final String version) {
     String versionToSplit = version;
     if (version.endsWith("-SNAPSHOT")) {
       this.snapshot = true;
@@ -57,24 +52,16 @@ public class Version implements Comparable<Version>  {
     }
   }
 
+
   public int getMajor() {
-    if (isTerracotta5Os()) {
-      return 5;
-    }
     return major;
   }
 
   public int getMinor() {
-    if (isTerracotta5Os()) {
-      return 0;
-    }
     return minor;
   }
 
   public int getRevision() {
-    if (isTerracotta5Os()) {
-      return 0;
-    }
     return revision;
   }
 
@@ -90,16 +77,12 @@ public class Version implements Comparable<Version>  {
     return snapshot;
   }
 
-  private boolean isTerracotta5Os() {
-    return (major == 3 && minor < 6 && licenseType == LicenseType.OS);
-  }
-
   @Override
   public String toString() {
-    return getVersion(true, true);
+    return getVersion(true);
   }
 
-  public String getVersion(boolean showSnapshot, boolean showLicense) {
+  public String getVersion(boolean showSnapshot) {
     StringBuilder sb = new StringBuilder();
     if (major != -1) {
       sb.append(getMajor());
@@ -114,9 +97,6 @@ public class Version implements Comparable<Version>  {
             }
           }
         }
-      }
-      if (showLicense) {
-        sb.append("-").append(getLicenseType());
       }
       if (isSnapshot() && showSnapshot) {
         sb.append("-SNAPSHOT");
@@ -141,9 +121,6 @@ public class Version implements Comparable<Version>  {
           }
         }
       }
-      if (showLicense) {
-        sb.append("-").append(getLicenseType());
-      }
       if (isSnapshot() && showSnapshot) {
         sb.append("-SNAPSHOT");
       }
@@ -164,14 +141,6 @@ public class Version implements Comparable<Version>  {
     if (build_major != version.build_major) return false;
     if (build_minor != version.build_minor) return false;
     return snapshot == version.snapshot;
-  }
-
-  public PackageType getPackageType() {
-    return packageType;
-  }
-
-  public LicenseType getLicenseType() {
-    return licenseType;
   }
 
   @Override
@@ -214,8 +183,7 @@ public class Version implements Comparable<Version>  {
     }
   }
 
-  public static Version version(final String version, final PackageType packageType, final LicenseType licenseType) {
-    return new Version(version, packageType, licenseType);
+  public static Version version(final String version) {
+    return new Version(version);
   }
-
 }
