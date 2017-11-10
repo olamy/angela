@@ -36,8 +36,8 @@ public abstract class DistributionController {
     return licenseType;
   }
 
-  abstract void start();
+  public abstract void start();
 
-  abstract void stop();
+  public abstract void stop();
 
 }

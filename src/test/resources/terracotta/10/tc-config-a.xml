@@ -17,7 +17,7 @@
   </plugins>
 
   <servers>
-    <server host="localhost" name="Server1">
+    <server host="MCABROSZNI02.local" name="Server1">
       <logs>logs1</logs>
       <tsa-port>9510</tsa-port>
       <tsa-group-port>9530</tsa-group-port>

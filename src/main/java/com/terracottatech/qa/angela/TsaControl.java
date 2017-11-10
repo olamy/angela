@@ -34,6 +34,8 @@ public class TsaControl {
   private ClusterToolConfig clusterToolConfig;
   private KitManager kitManager = new KitManager();
 
+  public static final long TIMEOUT = 30000;
+
   private volatile Ignite ignite;
 
   public void init() {
@@ -66,31 +68,36 @@ public class TsaControl {
       for (String serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
 
-        ClusterGroup location = ignite.cluster().forAttribute("nodename", terracottaServer.getHostname());
         final int finalTcConfigIndex = tcConfigIndex;
-        ignite.compute(location).broadcast((IgniteRunnable)() -> {
+        executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> {
 
-          IgniteCache<String, TerracottaInstall> kitsInstalls = ignite.getOrCreateCache("installs");
-          if (kitsInstalls.containsKey(topology.getId())) {
-            System.out.println("Already exists");
-          } else {
-            boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
-            logger.info("Installing the kit");
-            File kitDir = kitManager.installKit(topology.getDistributionController(), clusterToolConfig.getLicenseConfig(), offline);
+              IgniteCache<String, TerracottaInstall> kitsInstalls = ignite.getOrCreateCache("installs");
+              if (kitsInstalls.containsKey(topology.getId())) {
+                System.out.println("Already exists");
+              } else {
+                boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
+                logger.info("Installing the kit");
+                File kitDir = kitManager.installKit(topology.getDistributionController(), clusterToolConfig.getLicenseConfig(), offline);
 
-            logger.info("Installing the tc-configs");
-            tcConfig.updateLogsLocation(kitDir, finalTcConfigIndex);
-            tcConfig.writeTcConfigFile(kitDir);
+                logger.info("Installing the tc-configs");
+                tcConfig.updateLogsLocation(kitDir, finalTcConfigIndex);
+                tcConfig.writeTcConfigFile(kitDir);
 
-            kitsInstalls.put(topology.getId(), new TerracottaInstall(kitDir, topology));
+                kitsInstalls.put(topology.getId(), new TerracottaInstall(kitDir, topology));
 
-            System.out.println("kitDir = " + kitDir.getAbsolutePath());
+                System.out.println("kitDir = " + kitDir.getAbsolutePath());
 //        new TerracottaInstall(kitDir, clusterConfig, managementConfig, clusterToolConfig, clusterConfig.getVersion(), agent
 //            .getNetworkController())
-          }
-        });
+              }
+            });
       }
     }
+  }
+
+  private void executeRemotely(final String hostname, final IgniteRunnable runnable) {
+    logger.info("Executing command on {}", hostname);
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
+    ignite.compute(location).broadcast(runnable);
   }
 
   public void close() {
@@ -108,6 +115,31 @@ public class TsaControl {
   public TsaControl withClusterToolConfig(final ClusterToolConfig clusterToolConfig) {
     this.clusterToolConfig = clusterToolConfig;
     return this;
+  }
+
+  public void start(final TerracottaServer terracottaServer) {
+    startServer(terracottaServer);
+  }
+
+  public void startAll() {
+    startAll(TIMEOUT);
+  }
+
+  public void startAll(long timeout) {
+    TcConfig[] tcConfigs = topology.getTcConfigs();
+    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
+      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
+      for (String serverSymbolicName : tcConfig.getServers().keySet()) {
+        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
+        start(terracottaServer);
+      }
+    }
+  }
+
+  private void startServer(final TerracottaServer terracottaServer) {
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> {
+      topology.getDistributionController().start();
+    });
   }
 
 }

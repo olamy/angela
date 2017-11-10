@@ -36,7 +36,7 @@ public class InstallTest {
         .withClusterToolConfig(clusterToolConfig)
         .init();
 
-//    control.startAll();
+    control.startAll();
 
     control.close();
   }
