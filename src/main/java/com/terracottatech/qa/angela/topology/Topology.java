@@ -88,4 +88,13 @@ public class Topology {
   public String getId() {
     return id;
   }
+
+  public Collection<String> getServersHostnames() {
+    List<String> hostnames = new ArrayList<>();
+    Map<String, TerracottaServer> servers = getServers();
+    for (TerracottaServer terracottaServer : servers.values()) {
+      hostnames.add(terracottaServer.getHostname());
+    }
+    return hostnames;
+  }
 }

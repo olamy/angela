@@ -2,16 +2,20 @@ package com.terracottatech.qa.angela;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.terracottatech.qa.angela.kit.KitManager;
+import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
+import com.terracottatech.qa.angela.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
 
 import java.io.File;
@@ -24,6 +28,8 @@ import java.util.UUID;
 
 public class TsaControl {
 
+  private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
+
   private Topology topology;
   private ClusterToolConfig clusterToolConfig;
   private KitManager kitManager = new KitManager();
@@ -32,7 +38,7 @@ public class TsaControl {
 
   public void init() {
     if (topology == null) {
-      throw new IllegalArgumentException("YOu need to pass a topology");
+      throw new IllegalArgumentException("You need to pass a topology");
     }
 
     if (ignite != null) {
@@ -43,7 +49,7 @@ public class TsaControl {
 
     TcpDiscoverySpi spi = new TcpDiscoverySpi();
     TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-    ipFinder.setAddresses(Arrays.asList("tc-perf-001.eur.ad.sag"));
+    ipFinder.setAddresses(topology.getServersHostnames());
     spi.setIpFinder(ipFinder);
 
     cfg.setDiscoverySpi(spi);
@@ -54,27 +60,38 @@ public class TsaControl {
 
     ignite = Ignition.start(cfg);
 
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", "tc-perf-001.eur.ad.sag");
-    ignite.compute(location).broadcast((IgniteRunnable)() -> {
+    TcConfig[] tcConfigs = topology.getTcConfigs();
+    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
+      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
+      for (String serverSymbolicName : tcConfig.getServers().keySet()) {
+        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
 
-      IgniteCache<String, String> kitsInstalls = ignite.getOrCreateCache("installs");
-      if (kitsInstalls.containsKey(topology.getId())) {
-        System.out.println("Already exists");
-      } else {
-        System.out.println("Install kit");
-        boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
-        File kitDir = kitManager.installKit(topology.getDistributionController(), clusterToolConfig.getLicenseConfig(), offline);
-//        installFiles(kitDir);
+        ClusterGroup location = ignite.cluster().forAttribute("nodename", terracottaServer.getHostname());
+        final int finalTcConfigIndex = tcConfigIndex;
+        ignite.compute(location).broadcast((IgniteRunnable)() -> {
 
-        kitsInstalls.put(topology.getId(), "install");
+          IgniteCache<String, TerracottaInstall> kitsInstalls = ignite.getOrCreateCache("installs");
+          if (kitsInstalls.containsKey(topology.getId())) {
+            System.out.println("Already exists");
+          } else {
+            boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
+            logger.info("Installing the kit");
+            File kitDir = kitManager.installKit(topology.getDistributionController(), clusterToolConfig.getLicenseConfig(), offline);
 
-        System.out.println("kitDir = " + kitDir.getAbsolutePath());
+            logger.info("Installing the tc-configs");
+            tcConfig.updateLogsLocation(kitDir, finalTcConfigIndex);
+            tcConfig.writeTcConfigFile(kitDir);
+
+            kitsInstalls.put(topology.getId(), new TerracottaInstall(kitDir, topology));
+
+            System.out.println("kitDir = " + kitDir.getAbsolutePath());
 //        new TerracottaInstall(kitDir, clusterConfig, managementConfig, clusterToolConfig, clusterConfig.getVersion(), agent
 //            .getNetworkController())
+          }
+        });
       }
-    });
+    }
   }
-
 
   public void close() {
     IgniteCache<String, String> kitsInstalls = ignite.getOrCreateCache("installs");
