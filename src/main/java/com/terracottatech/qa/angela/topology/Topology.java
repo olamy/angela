@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.topology;
 
+import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
@@ -23,6 +24,7 @@ public class Topology {
   private String id;
   private DistributionController distributionController;
   private TcConfig[] tcConfigList = null;
+  private Map<String, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
 
   public Topology(final String id, final DistributionController distributionController, final TcConfig... tcConfigs) {
     this.id = id;
@@ -32,6 +34,11 @@ public class Topology {
       final TcConfig tcConfig = tcConfigs[i];
       tcConfig.initTcConfigHolder(distributionController.getVersion());
       this.tcConfigList[i] = tcConfig;
+
+      Map<String, TerracottaServer> servers = tcConfig.getServers();
+      for (TerracottaServer terracottaServer : servers.values()) {
+        terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(this.distributionController));
+      }
     }
   }
 
@@ -96,5 +103,13 @@ public class Topology {
       hostnames.add(terracottaServer.getHostname());
     }
     return hostnames;
+  }
+
+  public TerracottaServerInstance getServerInstance(final TerracottaServer terracottaServer) {
+    return this.terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+  }
+
+  public void startServer() {
+    distributionController.start();
   }
 }

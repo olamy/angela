@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.kit.distribution;
 
+import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.topology.LicenseType;
 import com.terracottatech.qa.angela.topology.PackageType;
 import com.terracottatech.qa.angela.topology.Version;
@@ -15,8 +16,9 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void start() {
+  public TerracottaServerInstance.TerracottaServerState start() {
     System.out.println("start 10.2");
+    return TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
   }
 
   @Override
