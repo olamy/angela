@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.terracottatech.qa.angela.kit.distribution.Distribution;
-import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.LicenseConfig;
 import com.terracottatech.qa.angela.topology.LicenseType;
+import com.terracottatech.qa.angela.topology.PackageType;
 import com.terracottatech.qa.angela.topology.Version;
 
 import java.io.BufferedInputStream;
@@ -41,29 +41,18 @@ public class KitManager implements Serializable {
 
   public static String defaultDir = "/data/tsamanager";
   private CompressionUtils compressionUtils = new CompressionUtils();
+  private Distribution distribution;
 
-  public KitManager() {
+  public KitManager(final Distribution distribution) {
+    this.distribution = distribution;
   }
-/*
-
-  public File downloadKit(final Version version) throws TsaManagerException {
-    verifyLocalInstallation(version);
-    File kitLocation = verifyLocalInstaller(version);
-    if (!kitLocation.isFile()) {
-      URL kitUrl = resolveUrl(version);
-      download(kitUrl, kitLocation);
-    }
-    return kitLocation;
-  }
-*/
 
   /**
    * Verify that we have the up-to-date installer archive
    *
-   * @param distributionController Terracotta controller
    * @return location of the installer archive file
    */
-  private String resolveLocalDir(final DistributionController distributionController) {
+  private String resolveLocalDir() {
     String kitsDir = System.getProperty("kitsDir");
     if (kitsDir == null) {
       kitsDir = defaultDir;
@@ -72,20 +61,22 @@ public class KitManager implements Serializable {
     } else if (kitsDir.startsWith(".")) {
       throw new IllegalArgumentException("Can not use relative path for the kitsDir. Please use a fixed one.");
     }
-    return kitsDir + File.separator + (distributionController.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
-           + distributionController.getVersion(false);
+    return kitsDir + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
+           + distribution.getVersion().getVersion(false);
   }
 
   /**
    * define kratos url for version
    *
-   * @param distributionController
    * @return url of package
    */
-  protected URL resolveUrl(final DistributionController distributionController) {
+  protected URL resolveUrl() {
     try {
-      Version version  = distributionController.getVersion();
-      if (distributionController.getPackageType() == KIT) {
+      Version version = distribution.getVersion();
+      PackageType packageType = distribution.getPackageType();
+      LicenseType licenseType = distribution.getLicenseType();
+
+      if (packageType == KIT) {
         if (version.getMajor() == 4) {
           StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
           if (version.getMinor() <= 2) {
@@ -116,20 +107,20 @@ public class KitManager implements Serializable {
             }
           }
           sb.append("bigmemory-");
-          if (distributionController.getLicenseType() == LicenseType.GO) {
+          if (licenseType == LicenseType.GO) {
             sb.append("go-");
-          } else if (distributionController.getLicenseType() == LicenseType.MAX) {
+          } else if (licenseType == LicenseType.MAX) {
             sb.append("max-");
           }
           sb.append(version.getVersion(true)).append(".tar.gz");
           return new URL(sb.toString());
         } else if (version.getMajor() == 5) {
-          if (distributionController.getLicenseType() == LicenseType.TC_EHC) {
+          if (licenseType == LicenseType.TC_EHC) {
             StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
             sb.append(version.getVersion(false)).append("/");
             sb.append("uberkit-").append(version.getVersion(true)).append("-kit.zip");
             return new URL(sb.toString());
-          } else if (distributionController.getLicenseType() == LicenseType.OS) {
+          } else if (licenseType == LicenseType.OS) {
             String realVersion = version.getRealVersion(true, false);
             StringBuilder sb = new StringBuilder(" https://oss.sonatype.org/service/local/artifact/maven/redirect?")
                 .append("g=org.ehcache&")
@@ -141,27 +132,27 @@ public class KitManager implements Serializable {
             return new URL(sb.toString());
           }
         } else if (version.getMajor() == 10) {
-          if (distributionController.getLicenseType() == LicenseType.TC_EHC) {
+          if (licenseType == LicenseType.TC_EHC) {
             StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
             sb.append(version.getVersion(false)).append("/");
             sb.append("terracotta-ehcache-").append(version.getVersion(true)).append(".tar.gz");
             return new URL(sb.toString());
           }
-          if (distributionController.getLicenseType() == LicenseType.TC_DB) {
+          if (licenseType == LicenseType.TC_DB) {
             StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
             sb.append(version.getVersion(false)).append("/");
             sb.append("terracotta-db-").append(version.getVersion(true)).append(".tar.gz");
             return new URL(sb.toString());
           }
         }
-      } else if (distributionController.getPackageType() == SAG_INSTALLER) {
+      } else if (packageType == SAG_INSTALLER) {
         if (version.getMajor() == 10) {
           if (version.getMinor() == 1) {
-            if (distributionController.getLicenseType() == LicenseType.TC_DB) {
+            if (licenseType == LicenseType.TC_DB) {
               return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller101_LATEST.jar");
             }
           } else if (version.getMinor() == 2) {
-            if (distributionController.getLicenseType() == LicenseType.TC_DB) {
+            if (licenseType == LicenseType.TC_DB) {
               return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller102_LATEST.jar");
             }
 
@@ -204,7 +195,7 @@ public class KitManager implements Serializable {
 
       logger.info("Success -> file downloaded succesfully. returning 'success' code");
     } catch (IOException e) {
-      logger.error("Exception in update process : ", e);
+      throw new RuntimeException("Can not download kit located at " + kitUrl, e);
     }
     logger.info("Failed -> file download failed. returning 'error' code");
   }
@@ -253,19 +244,19 @@ public class KitManager implements Serializable {
    * <p/>
    * TODO  Change the method args
    */
-  public File installKit(final DistributionController distributionController, LicenseConfig licenseConfig, final boolean offline) {
-    File localInstall = resolveLocalInstall(distributionController, offline);
+  public File installKit(LicenseConfig licenseConfig, final boolean offline) {
+    File localInstall = resolveLocalInstall(offline);
     if (localInstall == null) {
       logger.debug("Local install not available");
-      File localInstaller = resolveLocalInstaller(distributionController, offline);
+      File localInstaller = resolveLocalInstaller(offline);
       if (localInstaller == null) {
         logger.debug("Local installer not available");
         if (offline) {
-          throw new IllegalArgumentException("Can not install the kit version " + distributionController.getVersion().toString() + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
+          throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
         }
-        localInstaller = downloadLocalInstaller(distributionController);
+        localInstaller = downloadLocalInstaller();
       }
-      localInstall = createLocalInstallFromInstaller(distributionController, licenseConfig, localInstaller);
+      localInstall = createLocalInstallFromInstaller(licenseConfig, localInstaller);
     }
     return createWorkingCopyFromLocalInstall(localInstall);
   }
@@ -277,19 +268,18 @@ public class KitManager implements Serializable {
    * <p>
    * e.g. : /data/tsamanager/kits/10.1.0/terracotta-db-10.1.0-SNAPSHOT
    *
-   * @param distributionController Terracotta controller
    * @param offline
    * @return location of the install to be used to create the working install
    */
-  protected File resolveLocalInstall(final DistributionController distributionController, final boolean offline) {
+  protected File resolveLocalInstall(final boolean offline) {
     logger.debug("Resolving local install location");
-    File localInstaller = resolveLocalInstaller(distributionController, offline);
+    File localInstaller = resolveLocalInstaller(offline);
     if (localInstaller == null) {
       return null;
     }
     logger.debug("Installer is available. Checking install.");
-    File localInstall = new File(resolveLocalInstallName(distributionController)
-                                 + File.separatorChar + getDirFromArchive(distributionController, localInstaller));
+    File localInstall = new File(resolveLocalInstallName()
+                                 + File.separatorChar + getDirFromArchive(localInstaller));
 
     if (!localInstall.isDirectory()) {
       logger.debug("Install is not available.");
@@ -297,7 +287,7 @@ public class KitManager implements Serializable {
     }
 
     // if we have a snapshot that is older than 24h, we reload it
-    if (!offline && distributionController.getVersion().isSnapshot()
+    if (!offline && distribution.getVersion().isSnapshot()
         && Math.abs(System.currentTimeMillis() - localInstall.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
       try {
         logger.debug("Version is snapshot and older than 24h and mode is online, so we reinstall it.");
@@ -310,19 +300,19 @@ public class KitManager implements Serializable {
     return localInstall;
   }
 
-  private String getDirFromArchive(final DistributionController distributionController, final File localInstaller) {
+  private String getDirFromArchive(final File localInstaller) {
     try {
-      if (distributionController.getPackageType() == KIT) {
-        if (distributionController.getVersion().getMajor() == 4) {
+      if (distribution.getPackageType() == KIT) {
+        if (distribution.getVersion().getMajor() == 4) {
           return compressionUtils.getParentDirFromTarGz(localInstaller);
-        } else if (distributionController.getVersion().getMajor() == 5) {
+        } else if (distribution.getVersion().getMajor() == 5) {
           return compressionUtils.getParentDirFromZip(localInstaller);
-        } else if (distributionController.getVersion().getMajor() == 10) {
+        } else if (distribution.getVersion().getMajor() == 10) {
           return compressionUtils.getParentDirFromTarGz(localInstaller);
         }
-      } else if (distributionController.getPackageType() == SAG_INSTALLER) {
-        if (distributionController.getVersion().getMajor() == 10) {
-          return "Terracotta-" + distributionController.getVersion().toString();
+      } else if (distribution.getPackageType() == SAG_INSTALLER) {
+        if (distribution.getVersion().getMajor() == 10) {
+          return "Terracotta-" + distribution.getVersion().toString();
         }
 
       }
@@ -332,26 +322,25 @@ public class KitManager implements Serializable {
     throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
-  private String resolveLocalInstallName(final DistributionController distributionController) {
-    return resolveLocalDir(distributionController);
+  private String resolveLocalInstallName() {
+    return resolveLocalDir();
   }
 
   /**
    * resolve installer file location
    *
-   * @param distributionController Terracotta controller
    * @param offline
    * @return location of the installer archive file
    */
-  private File resolveLocalInstaller(final DistributionController distributionController, final boolean offline) {
-    File localInstaller = new File(resolveLocalInstallerName(distributionController));
+  private File resolveLocalInstaller(final boolean offline) {
+    File localInstaller = new File(resolveLocalInstallerName());
     if (!localInstaller.isFile()) {
       logger.debug("Kit {} is not an existing file", localInstaller.getAbsolutePath());
       return null;
     }
 
     // if we have a snapshot that is older than 24h, we reload it
-    if (!offline && distributionController.getVersion().isSnapshot()
+    if (!offline && distribution.getVersion().isSnapshot()
         && Math.abs(System.currentTimeMillis() - localInstaller.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
       logger.debug("Our version is a snapshot, is older than 24h and we are not offline so we are deleting it to produce a reload.");
       FileUtils.deleteQuietly(localInstaller);
@@ -360,53 +349,53 @@ public class KitManager implements Serializable {
     return localInstaller;
   }
 
-  String resolveLocalInstallerName(final DistributionController distributionController) {
+  String resolveLocalInstallerName() {
     logger.debug("Resolving the local installer name");
-    StringBuilder sb = new StringBuilder(resolveLocalDir(distributionController));
+    StringBuilder sb = new StringBuilder(resolveLocalDir());
     sb.append(File.separator);
-    Version version = distributionController.getVersion();
-    if (distributionController.getPackageType() == KIT) {
+    Version version = distribution.getVersion();
+    if (distribution.getPackageType() == KIT) {
 
       if (version.getMajor() == 4) {
         sb.append("bigmemory-");
-        if (distributionController.getLicenseType() == LicenseType.GO) {
+        if (distribution.getLicenseType() == LicenseType.GO) {
           sb.append("go-");
-        } else if (distributionController.getLicenseType() == LicenseType.MAX) {
+        } else if (distribution.getLicenseType() == LicenseType.MAX) {
           sb.append("max-");
         }
         sb.append(version.getVersion(true)).append(".tar.gz");
         logger.debug("Kit name: {}", sb.toString());
         return sb.toString();
       } else if (version.getMajor() == 5) {
-        if (distributionController.getLicenseType() == LicenseType.TC_EHC) {
+        if (distribution.getLicenseType() == LicenseType.TC_EHC) {
           sb.append("uberkit-").append(version.getVersion(true)).append("-kit.zip");
-        } else if (distributionController.getLicenseType() == LicenseType.OS) {
+        } else if (distribution.getLicenseType() == LicenseType.OS) {
           sb.append("ehcache-clustered-").append(version.getRealVersion(true, false)).append("-kit.zip");
         }
         logger.debug("Kit name: {}", sb.toString());
         return sb.toString();
       } else if (version.getMajor() == 10) {
-        if (distributionController.getLicenseType() == LicenseType.TC_EHC) {
+        if (distribution.getLicenseType() == LicenseType.TC_EHC) {
           sb.append("terracotta-ehcache-").append(version.getVersion(true)).append(".tar.gz");
           logger.debug("Kit name: {}", sb.toString());
           return sb.toString();
         }
-        if (distributionController.getLicenseType() == LicenseType.TC_DB) {
+        if (distribution.getLicenseType() == LicenseType.TC_DB) {
           sb.append("terracotta-db-").append(version.getVersion(true)).append(".tar.gz");
           logger.debug("Kit name: {}", sb.toString());
           return sb.toString();
         }
       }
-    } else if (distributionController.getPackageType() == SAG_INSTALLER) {
+    } else if (distribution.getPackageType() == SAG_INSTALLER) {
       if (version.getMajor() == 10) {
         if (version.getMinor() == 1) {
-          if (distributionController.getLicenseType() == LicenseType.TC_DB) {
+          if (distribution.getLicenseType() == LicenseType.TC_DB) {
             sb.append("SoftwareAGInstaller101_LATEST.jar");
             logger.debug("Kit name: {}", sb.toString());
             return sb.toString();
           }
         } else if (version.getMinor() == 2) {
-          if (distributionController.getLicenseType() == LicenseType.TC_DB) {
+          if (distribution.getLicenseType() == LicenseType.TC_DB) {
             sb.append("SoftwareAGInstaller102_LATEST.jar");
             logger.debug("Kit name: {}", sb.toString());
             return sb.toString();
@@ -417,22 +406,22 @@ public class KitManager implements Serializable {
     throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
-  private File downloadLocalInstaller(final DistributionController distributionController) {
-    URL installerUrl = resolveUrl(distributionController);
-    File installerLocation = new File(resolveLocalInstallerName(distributionController));
+  private File downloadLocalInstaller() {
+    URL installerUrl = resolveUrl();
+    File installerLocation = new File(resolveLocalInstallerName());
     download(installerUrl, installerLocation);
     return installerLocation;
   }
 
-  private File createLocalInstallFromInstaller(final DistributionController distributionController, LicenseConfig licenseConfig, final File localInstaller) {
-    File dest = new File(resolveLocalInstallName(distributionController));
-    if (distributionController.getPackageType() == KIT) {
-      File localInstall = new File(resolveLocalInstallName(distributionController) + File.separatorChar + getDirFromArchive(distributionController, localInstaller));
+  private File createLocalInstallFromInstaller(LicenseConfig licenseConfig, final File localInstaller) {
+    File dest = new File(resolveLocalInstallName());
+    if (distribution.getPackageType() == KIT) {
+      File localInstall = new File(resolveLocalInstallName() + File.separatorChar + getDirFromArchive(localInstaller));
       compressionUtils.extract(localInstaller, dest);
       return localInstall;
-    } else if (distributionController.getPackageType() == SAG_INSTALLER) {
-      File localInstallDir = new File(resolveLocalInstallName(distributionController) + File.separatorChar + "TDB");
-      compressionUtils.extractSag(distributionController.getVersion(), licenseConfig, localInstaller, dest, localInstallDir);
+    } else if (distribution.getPackageType() == SAG_INSTALLER) {
+      File localInstallDir = new File(resolveLocalInstallName() + File.separatorChar + "TDB");
+      compressionUtils.extractSag(distribution.getVersion(), licenseConfig, localInstaller, dest, localInstallDir);
       return dest;
     }
     throw new RuntimeException("Can not resolve the local kit distribution package");

@@ -28,15 +28,13 @@ public class TcConfig implements Serializable {
   protected TcConfigHolder tcConfigHolder;
   protected String tcConfigName;
 
-  public TcConfig() {
-  }
-
-  public TcConfig(final String tcConfigPath) {
+  public TcConfig(final Version version, final String tcConfigPath) {
     this.tcConfigPath = tcConfigPath;
     this.tcConfigName = new File(tcConfigPath).getName();
+    initTcConfigHolder(version);
   }
 
-  public void initTcConfigHolder(final Version version) {
+  private void initTcConfigHolder(final Version version) {
     try {
       if (version.getMajor() == 4) {
         if (version.getMinor() == 0) {

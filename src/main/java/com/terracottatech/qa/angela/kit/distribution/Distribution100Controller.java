@@ -11,8 +11,9 @@ import com.terracottatech.qa.angela.topology.Version;
 
 public class Distribution100Controller extends DistributionController {
 
-  public Distribution100Controller(final Version version, final PackageType packageType, final LicenseType licenseType) {
-    super(version, packageType, licenseType);
+
+  public Distribution100Controller(final Distribution distribution) {
+    super(distribution);
   }
 
   @Override

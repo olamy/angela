@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
+import com.terracottatech.qa.angela.kit.distribution.Distribution100Controller;
+import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
+import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
@@ -36,8 +39,10 @@ public class TsaControl {
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
 
   private Topology topology;
+  private KitManager kitManager;
+  private DistributionController distributionController;
+
   private ClusterToolConfig clusterToolConfig;
-  private KitManager kitManager = new KitManager();
   Map<String, TerracottaServerInstance.TerracottaServerState> states = new HashMap<>();
 
   public static final long TIMEOUT = 30000;
@@ -83,7 +88,7 @@ public class TsaControl {
           } else {
             boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
             logger.info("Installing the kit");
-            File kitDir = kitManager.installKit(topology.getDistributionController(), clusterToolConfig.getLicenseConfig(), offline);
+            File kitDir = kitManager.installKit(clusterToolConfig.getLicenseConfig(), offline);
 
             logger.info("Installing the tc-configs");
             tcConfig.updateLogsLocation(kitDir, finalTcConfigIndex);
@@ -113,8 +118,11 @@ public class TsaControl {
     ignite.close();
   }
 
+
   public TsaControl withTopology(Topology topology) {
     this.topology = topology;
+    this.distributionController = topology.createDistributionController();
+    this.kitManager = topology.createKitManager();
     return this;
   }
 

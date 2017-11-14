@@ -1,6 +1,10 @@
 package com.terracottatech.qa.angela.topology;
 
+import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
+import com.terracottatech.qa.angela.kit.distribution.Distribution;
+import com.terracottatech.qa.angela.kit.distribution.Distribution100Controller;
+import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
@@ -22,44 +26,45 @@ import java.util.Map;
 
 public class Topology {
   private String id;
-  private DistributionController distributionController;
-  private TcConfig[] tcConfigList = null;
+  private Distribution distribution;
+  private TcConfig[] tcConfigs;
   private Map<String, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
 
-  public Topology(final String id, final DistributionController distributionController, final TcConfig... tcConfigs) {
+  public Topology(final String id, final Distribution distribution, final TcConfig... tcConfigs) {
     this.id = id;
-    this.distributionController = distributionController;
-    this.tcConfigList = new TcConfig[tcConfigs.length];
-    for (int i = 0; i < tcConfigs.length; i++) {
-      final TcConfig tcConfig = tcConfigs[i];
-      tcConfig.initTcConfigHolder(distributionController.getVersion());
-      this.tcConfigList[i] = tcConfig;
-
-      Map<String, TerracottaServer> servers = tcConfig.getServers();
-      for (TerracottaServer terracottaServer : servers.values()) {
-        terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(this.distributionController));
-      }
-    }
+    this.distribution = distribution;
+    this.tcConfigs = tcConfigs;
   }
 
-  public DistributionController getDistributionController() {
-    return distributionController;
+  public DistributionController createDistributionController() {
+    if (distribution.getVersion().getMajor() == 10) {
+      if (distribution.getVersion().getMinor() == 0) {
+        return new Distribution100Controller(distribution);
+      } else if (distribution.getVersion().getMinor() > 0) {
+        return new Distribution102Controller(distribution);
+      }
+    }
+    throw new IllegalArgumentException("Version not supported");
+  }
+
+  public KitManager createKitManager() {
+    return new KitManager(distribution);
   }
 
   public Map<String, TerracottaServer> getServers() {
     Map<String, TerracottaServer> servers = new HashMap<String, TerracottaServer>();
-    for (TcConfig tcConfig : this.tcConfigList) {
+    for (TcConfig tcConfig : this.tcConfigs) {
       servers.putAll(tcConfig.getServers());
     }
     return servers;
   }
 
   public TcConfig get(final int stripeId) {
-    return this.tcConfigList[stripeId];
+    return this.tcConfigs[stripeId];
   }
 
   public TcConfig getTcConfig(final String serverSymbolicName) {
-    for (TcConfig tcConfig : this.tcConfigList) {
+    for (TcConfig tcConfig : this.tcConfigs) {
       if (tcConfig.getServers().keySet().contains(serverSymbolicName)) {
         return tcConfig;
       }
@@ -68,8 +73,8 @@ public class Topology {
   }
 
   public int getTcConfigIndex(final InetAddress inetAddress) throws UnknownHostException {
-    for (int tcConfigIndex = 0; tcConfigIndex < this.tcConfigList.length; tcConfigIndex++) {
-      final TcConfig tcConfig = this.tcConfigList[tcConfigIndex];
+    for (int tcConfigIndex = 0; tcConfigIndex < this.tcConfigs.length; tcConfigIndex++) {
+      final TcConfig tcConfig = this.tcConfigs[tcConfigIndex];
       Collection<TerracottaServer> servers = tcConfig.getServers().values();
       for (TerracottaServer server : servers) {
         if (inetAddress.toString().equalsIgnoreCase(InetAddress.getByName(server.getHostname()).toString())) {
@@ -82,14 +87,14 @@ public class Topology {
 
   public List<String> getLogsLocation() {
     List<String> logsLocation = new ArrayList<String>();
-    for (TcConfig tcConfig : this.tcConfigList) {
+    for (TcConfig tcConfig : this.tcConfigs) {
       logsLocation.addAll(tcConfig.getLogsLocation());
     }
     return logsLocation;
   }
 
   public TcConfig[] getTcConfigs() {
-    return this.tcConfigList;
+    return this.tcConfigs;
   }
 
   public String getId() {
@@ -107,9 +112,5 @@ public class Topology {
 
   public TerracottaServerInstance getServerInstance(final TerracottaServer terracottaServer) {
     return this.terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
-  }
-
-  public void startServer() {
-    distributionController.start();
   }
 }

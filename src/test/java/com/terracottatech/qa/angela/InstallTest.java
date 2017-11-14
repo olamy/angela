@@ -22,7 +22,7 @@ public class InstallTest {
   public void testRemoteInstall() {
     TsaControl control = new TsaControl();
 
-    TcConfig tcConfig = new TcConfig("/terracotta/10/tc-config-a.xml");
+    TcConfig tcConfig = new TcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-a.xml");
 
 
     Topology topology = new Topology("1", Distribution.distribution(version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), tcConfig);

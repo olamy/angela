@@ -11,30 +11,10 @@ import com.terracottatech.qa.angela.topology.Version;
 
 public abstract class DistributionController {
 
-  private final Version version;
-  private final PackageType packageType;
-  private final LicenseType licenseType;
+  private final Distribution distribution;
 
-  public DistributionController(final Version version, final PackageType packageType, final LicenseType licenseType) {
-    this.version = version;
-    this.packageType = packageType;
-    this.licenseType = licenseType;
-  }
-
-  public Version getVersion() {
-    return version;
-  }
-
-  public String getVersion(boolean showSnapshot) {
-    return version.getVersion(showSnapshot);
-  }
-
-  public PackageType getPackageType() {
-    return packageType;
-  }
-
-  public LicenseType getLicenseType() {
-    return licenseType;
+  public DistributionController(final Distribution distribution) {
+    this.distribution = distribution;
   }
 
   public abstract TerracottaServerInstance.TerracottaServerState start();
