@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
 
-import com.terracottatech.qa.angela.Agent;
 import com.terracottatech.qa.angela.JavaLocationResolver;
 import com.terracottatech.qa.angela.OS;
 import com.terracottatech.qa.angela.kit.ServerLogOutputStream;
@@ -38,12 +37,12 @@ public class Distribution102Controller extends DistributionController {
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final OS os = new OS();
 
-  public Distribution102Controller(final Distribution distribution) {
-    super(distribution);
+  public Distribution102Controller(final Distribution distribution, final Topology topology) {
+    super(distribution, topology);
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerState start(final TerracottaServer terracottaServer, final Topology topology,
+  public TerracottaServerInstance.TerracottaServerState start(final TerracottaServer terracottaServer,
                               final File installLocation ) {
     Map<String, String> env = new HashMap<String, String>();
     List<String> j8Homes = javaLocationResolver.resolveJava8Location();

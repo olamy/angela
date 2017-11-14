@@ -30,7 +30,7 @@ public class ServerLogOutputStream extends LogOutputStream {
 
   public TerracottaServerInstance.TerracottaServerState waitForStartedState(final StartedProcess startedProcess) {
     while (stateRef.get() != STARTED_AS_ACTIVE && stateRef.get() != STARTED_AS_PASSIVE) {
-      if (startedProcess.getProcess().isAlive()) {
+      if (!startedProcess.getProcess().isAlive()) {
         throw new RuntimeException("TCServer exited without reaching ACTIVE or PASSIVE state");
       }
       try {

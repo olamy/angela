@@ -5,8 +5,11 @@ import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Files;
+import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 
 import java.io.File;
@@ -27,7 +30,9 @@ import java.util.Properties;
  *
  * @author Aurelien Broszniowski
  */
-public abstract class TcConfigHolder implements Serializable {
+public abstract class TcConfigHolder {
+
+  private final static Logger logger = LoggerFactory.getLogger(TcConfigHolder.class);
 
   String tcConfigContent;        // tc config content
   private String installedTcConfigPath;
@@ -59,6 +64,7 @@ public abstract class TcConfigHolder implements Serializable {
       tempConfigFile.deleteOnExit();
       Files.write(this.tcConfigContent, tempConfigFile, Charset.defaultCharset());
       this.installedTcConfigPath = tempConfigFile.getAbsolutePath();
+      logger.info("Installed Tc Config path: {}", installedTcConfigPath);
     } catch (IOException e) {
       throw new RuntimeException("Cannot write tc-config xml to kitDir location: " + kitDir.getAbsolutePath(), e);
     }
@@ -116,6 +122,7 @@ public abstract class TcConfigHolder implements Serializable {
   }
 
   public String getTcConfigPath() {
+    logger.info("Tc Config installed config path : {}", installedTcConfigPath);
     return this.installedTcConfigPath;
   }
 

@@ -12,16 +12,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
-import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,8 +37,6 @@ public class TsaControl {
 
   private Topology topology;
   private Map<String, TerracottaServerInstance> terracottaServerInstances;
-  private KitManager kitManager;
-  private DistributionController distributionController;
 
   private ClusterToolConfig clusterToolConfig;
   Map<String, TerracottaServerInstance.TerracottaServerState> states = new HashMap<>();
@@ -81,26 +76,10 @@ public class TsaControl {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
 
         final int finalTcConfigIndex = tcConfigIndex;
+        boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
+
         executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> {
-
-          IgniteCache<String, TerracottaInstall> kitsInstalls = ignite.getOrCreateCache("installs");
-          if (kitsInstalls.containsKey(topology.getId())) {
-            System.out.println("Already exists");
-          } else {
-            boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
-            logger.info("Installing the kit");
-            File kitDir = kitManager.installKit(clusterToolConfig.getLicenseConfig(), offline);
-
-            logger.info("Installing the tc-configs");
-            tcConfig.updateLogsLocation(kitDir, finalTcConfigIndex);
-            tcConfig.writeTcConfigFile(kitDir);
-
-            kitsInstalls.put(topology.getId(), new TerracottaInstall(kitDir, topology));
-
-            System.out.println("kitDir = " + kitDir.getAbsolutePath());
-//        new TerracottaInstall(kitDir, clusterConfig, managementConfig, clusterToolConfig, clusterConfig.getVersion(), agent
-//            .getNetworkController())
-          }
+          AgentControl.agentControl.init(topology, offline, clusterToolConfig, finalTcConfigIndex);
         });
       }
     }
@@ -132,8 +111,6 @@ public class TsaControl {
 
   public TsaControl withTopology(Topology topology) {
     this.topology = topology;
-    this.distributionController = topology.createDistributionController();
-    this.kitManager = topology.createKitManager();
     this.terracottaServerInstances = topology.createTerracottaServerInstances();
     return this;
   }
@@ -173,16 +150,11 @@ public class TsaControl {
       return;
     }
 
-    IgniteCache<String, TerracottaInstall> kitsInstalls = ignite.getOrCreateCache("installs");
-    TerracottaInstall terracottaInstall = kitsInstalls.get(topology.getId());
-
     TerracottaServerInstance.TerracottaServerState state = executeRemotely(terracottaServer.getHostname(),
         (IgniteCallable<TerracottaServerInstance.TerracottaServerState>)() ->
-            distributionController.start(terracottaServer, topology, terracottaInstall.getLocation()));
+            AgentControl.agentControl.start(topology.getId(), terracottaServer));
 
     instance.setState(state);
-
-    System.out.println("++++++++++++++++++++++++++++++ state " +state);
 
   }
 

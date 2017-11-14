@@ -40,4 +40,8 @@ public class TerracottaInstall {
   public File getLocation() {
     return location;
   }
+
+  public Topology getTopology() {
+    return topology;
+  }
 }

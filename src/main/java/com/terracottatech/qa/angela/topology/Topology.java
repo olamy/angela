@@ -38,9 +38,9 @@ public class Topology {
   public DistributionController createDistributionController() {
     if (distribution.getVersion().getMajor() == 10) {
       if (distribution.getVersion().getMinor() == 0) {
-        return new Distribution100Controller(distribution);
+        return new Distribution100Controller(distribution, this);
       } else if (distribution.getVersion().getMinor() > 0) {
-        return new Distribution102Controller(distribution);
+        return new Distribution102Controller(distribution, this);
       }
     }
     throw new IllegalArgumentException("Version not supported");

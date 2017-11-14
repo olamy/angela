@@ -13,12 +13,12 @@ import java.io.File;
 public class Distribution100Controller extends DistributionController {
 
 
-  public Distribution100Controller(final Distribution distribution) {
-    super(distribution);
+  public Distribution100Controller(final Distribution distribution, final Topology topology) {
+    super(distribution, topology);
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerState start(final TerracottaServer terracottaServer, final Topology topology, final File installLocation) {
+  public TerracottaServerInstance.TerracottaServerState start(final TerracottaServer terracottaServer, final File installLocation) {
     System.out.println("start 10.0");
     return TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
   }
