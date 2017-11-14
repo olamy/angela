@@ -16,6 +16,8 @@
 package com.terracottatech.qa.angela;
 
 import java.net.InetAddress;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 
 /**
  * @author Ludovic Orban
@@ -34,4 +36,7 @@ public class Agent {
     System.out.println("Registered node '" + hostName + "'");
   }
 
+  public static <T> BlockingQueue<T> getQueue(String queueName) {
+    return node.getQueue(queueName);
+  }
 }

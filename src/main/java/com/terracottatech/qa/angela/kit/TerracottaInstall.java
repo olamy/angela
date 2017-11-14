@@ -36,4 +36,8 @@ public class TerracottaInstall {
     this.topology = topology;
 //    this.networkController = networkController;
   }
+
+  public File getLocation() {
+    return location;
+  }
 }

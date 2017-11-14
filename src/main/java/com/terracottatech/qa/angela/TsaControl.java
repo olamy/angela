@@ -5,6 +5,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -14,8 +15,6 @@ import org.slf4j.LoggerFactory;
 import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
-import com.terracottatech.qa.angela.kit.distribution.Distribution100Controller;
-import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
@@ -23,6 +22,7 @@ import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -39,6 +39,7 @@ public class TsaControl {
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
 
   private Topology topology;
+  private Map<String, TerracottaServerInstance> terracottaServerInstances;
   private KitManager kitManager;
   private DistributionController distributionController;
 
@@ -111,6 +112,16 @@ public class TsaControl {
     ignite.compute(location).broadcast(runnable);
   }
 
+  private <R> R executeRemotely(final String hostname, final IgniteCallable<R> callable) {
+    logger.info("Executing command on {}", hostname);
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
+    Collection<R> results = ignite.compute(location).broadcast(callable);
+    if (results.size() != 1) {
+      throw new IllegalStateException("Multiple response for the Execution on " + hostname);
+    }
+    return results.iterator().next();
+  }
+
   public void close() {
     IgniteCache<String, String> kitsInstalls = ignite.getOrCreateCache("installs");
     kitsInstalls.remove(topology.getId());
@@ -123,6 +134,7 @@ public class TsaControl {
     this.topology = topology;
     this.distributionController = topology.createDistributionController();
     this.kitManager = topology.createKitManager();
+    this.terracottaServerInstances = topology.createTerracottaServerInstances();
     return this;
   }
 
@@ -151,10 +163,9 @@ public class TsaControl {
   }
 
   private void startServer(final TerracottaServer terracottaServer) {
-
-    TerracottaServerInstance instance = topology.getServerInstance(terracottaServer);
+    TerracottaServerInstance instance = terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
     if (instance == null) {
-      throw new IllegalStateException("TsaControl not properly initialized");
+      throw new IllegalStateException("TsaControl missing calls to withTopology() and init().");
     }
 
     TerracottaServerInstance.TerracottaServerState currentState = instance.getState();
@@ -162,8 +173,16 @@ public class TsaControl {
       return;
     }
 
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)instance::start);
+    IgniteCache<String, TerracottaInstall> kitsInstalls = ignite.getOrCreateCache("installs");
+    TerracottaInstall terracottaInstall = kitsInstalls.get(topology.getId());
 
+    TerracottaServerInstance.TerracottaServerState state = executeRemotely(terracottaServer.getHostname(),
+        (IgniteCallable<TerracottaServerInstance.TerracottaServerState>)() ->
+            distributionController.start(terracottaServer, topology, terracottaInstall.getLocation()));
+
+    instance.setState(state);
+
+    System.out.println("++++++++++++++++++++++++++++++ state " +state);
 
   }
 

@@ -446,4 +446,7 @@ public class KitManager implements Serializable {
     return workingInstall;
   }
 
+  public File getInstallLocation() {
+      return null;
+  }
 }

@@ -12,19 +12,18 @@ import com.terracottatech.qa.angela.kit.distribution.DistributionController;
  *
  * @author Aurelien Broszniowski
  */
-public class TerracottaServerInstance extends ProcessListener {
+public class TerracottaServerInstance  {
 
   private static final Logger logger = LoggerFactory.getLogger(TerracottaServerInstance.class);
 
   private TerracottaServerState state = TerracottaServerState.INSTALLED;
-  private DistributionController distributionController;
 
   public TerracottaServerState getState() {
     return state;
   }
 
-  public void start() {
-    this.state = this.distributionController.start();
+  public void setState(final TerracottaServerState state) {
+    this.state = state;
   }
 
   public enum TerracottaServerState {
@@ -34,7 +33,4 @@ public class TerracottaServerInstance extends ProcessListener {
     PAUSED,
   }
 
-  public TerracottaServerInstance(DistributionController distributionController) {
-    this.distributionController = distributionController;
-  }
 }

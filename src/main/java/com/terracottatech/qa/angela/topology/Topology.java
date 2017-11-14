@@ -25,10 +25,9 @@ import java.util.Map;
  */
 
 public class Topology {
-  private String id;
-  private Distribution distribution;
-  private TcConfig[] tcConfigs;
-  private Map<String, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
+  private final String id;
+  private final Distribution distribution;
+  private final TcConfig[] tcConfigs;
 
   public Topology(final String id, final Distribution distribution, final TcConfig... tcConfigs) {
     this.id = id;
@@ -110,7 +109,14 @@ public class Topology {
     return hostnames;
   }
 
-  public TerracottaServerInstance getServerInstance(final TerracottaServer terracottaServer) {
-    return this.terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+  public Map<String, TerracottaServerInstance> createTerracottaServerInstances() {
+    Map<String, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
+    for (TcConfig tcConfig : tcConfigs) {
+      Map<String, TerracottaServer> servers = tcConfig.getServers();
+      for (TerracottaServer terracottaServer : servers.values()) {
+        terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance());
+      }
+    }
+    return terracottaServerInstances;
   }
 }

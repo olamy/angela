@@ -17,8 +17,10 @@ package com.terracottatech.qa.angela;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
 
@@ -55,6 +57,10 @@ public class Node {
     cfg.setPeerClassLoadingEnabled(true);
 
     ignite = Ignition.start(cfg);
+  }
+
+  public <T> IgniteQueue<T> getQueue(String queueName) {
+    return ignite.queue(queueName, 10000, new CollectionConfiguration());
   }
 
   public void shutdown() {
