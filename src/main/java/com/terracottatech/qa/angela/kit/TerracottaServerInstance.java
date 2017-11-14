@@ -31,7 +31,6 @@ public class TerracottaServerInstance extends ProcessListener {
     INSTALLED,
     STARTED_AS_ACTIVE,
     STARTED_AS_PASSIVE,
-    CLEANED,
     PAUSED,
   }
 
