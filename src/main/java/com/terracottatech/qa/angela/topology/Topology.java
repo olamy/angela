@@ -1,9 +1,7 @@
 package com.terracottatech.qa.angela.topology;
 
 import com.terracottatech.qa.angela.kit.KitManager;
-import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.kit.distribution.Distribution;
-import com.terracottatech.qa.angela.kit.distribution.Distribution100Controller;
 import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
@@ -37,9 +35,7 @@ public class Topology {
 
   public DistributionController createDistributionController() {
     if (distribution.getVersion().getMajor() == 10) {
-      if (distribution.getVersion().getMinor() == 0) {
-        return new Distribution100Controller(distribution, this);
-      } else if (distribution.getVersion().getMinor() > 0) {
+      if (distribution.getVersion().getMinor() > 0) {
         return new Distribution102Controller(distribution, this);
       }
     }

@@ -1,13 +1,12 @@
 package com.terracottatech.qa.angela;
 
-import org.apache.ignite.IgniteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
-import com.terracottatech.qa.angela.kit.distribution.Distribution;
+import com.terracottatech.qa.angela.kit.TerracottaServerState;
 import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
@@ -50,13 +49,13 @@ public class AgentControl {
     }
   }
 
-  public TerracottaServerInstance.TerracottaServerState start(final String topologyId, final TerracottaServer terracottaServer) {
-    DistributionController distributionController = kitsInstalls.get(topologyId).getDistributionController();
-    return distributionController.start(terracottaServer, kitsInstalls.get(topologyId).getLocation());
+  public TerracottaServerState start(final String topologyId, final TerracottaServer terracottaServer) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(topologyId).getTerracottaServerInstance(terracottaServer);
+    return serverInstance.start();
   }
 
-  public TerracottaServerInstance.TerracottaServerState stop(final String topologyId, final TerracottaServer terracottaServer) {
-    DistributionController distributionController = kitsInstalls.get(topologyId).getDistributionController();
-    return distributionController.stop(terracottaServer, kitsInstalls.get(topologyId).getLocation());
+  public TerracottaServerState stop(final String topologyId, final TerracottaServer terracottaServer) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(topologyId).getTerracottaServerInstance(terracottaServer);
+    return serverInstance.stop();
   }
 }

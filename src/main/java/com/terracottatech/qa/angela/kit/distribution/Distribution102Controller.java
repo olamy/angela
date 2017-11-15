@@ -12,8 +12,8 @@ import com.terracottatech.qa.angela.JavaLocationResolver;
 import com.terracottatech.qa.angela.OS;
 import com.terracottatech.qa.angela.kit.ServerLogOutputStream;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
+import com.terracottatech.qa.angela.kit.TerracottaServerState;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
 import com.terracottatech.qa.angela.topology.Version;
 
@@ -23,10 +23,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import static com.terracottatech.qa.angela.topology.PackageType.KIT;
@@ -43,17 +41,13 @@ public class Distribution102Controller extends DistributionController {
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final OS os = new OS();
 
-  private ConcurrentHashMap<String, StartedProcess> startedProcesses = new ConcurrentHashMap<>();
-  private ConcurrentHashMap<String, AtomicInteger> pids = new ConcurrentHashMap<>();
-  private ConcurrentHashMap<String, ServerLogOutputStream> logs = new ConcurrentHashMap<>();
 
   public Distribution102Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerState start(final TerracottaServer terracottaServer,
-                                                              final File installLocation) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess start(final String serverSymbolicName, final File installLocation) {
     Map<String, String> env = new HashMap<String, String>();
     List<String> j8Homes = javaLocationResolver.resolveJava8Location();
     if (j8Homes.size() > 0) {
@@ -63,46 +57,49 @@ public class Distribution102Controller extends DistributionController {
 
     AtomicInteger pid = new AtomicInteger(-1);
     ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream(pid);
-    pids.put(terracottaServer.getServerSymbolicName(), pid);
-    logs.put(terracottaServer.getServerSymbolicName(), serverLogOutputStream);
+
     ProcessExecutor executor = new ProcessExecutor()
-        .command(startCommand(terracottaServer, topology, installLocation)).directory(installLocation).environment(env)
+        .command(startCommand(serverSymbolicName, topology, installLocation))
+        .directory(installLocation)
+        .environment(env)
         .redirectOutput(serverLogOutputStream);
     StartedProcess startedProcess;
     try {
       startedProcess = executor.start();
-      startedProcesses.put(terracottaServer.getServerSymbolicName(), startedProcess);
     } catch (IOException e) {
-      throw new RuntimeException("Can not start Terracotta server process " + terracottaServer.getServerSymbolicName(), e);
+      throw new RuntimeException("Can not start Terracotta server process " + serverSymbolicName, e);
     }
 
-    return serverLogOutputStream.waitForStartedState(startedProcess);
+    return new TerracottaServerInstance.TerracottaServerInstanceProcess(startedProcess, pid, serverLogOutputStream,
+        serverLogOutputStream.waitForStartedState(startedProcess));
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerState stop(final TerracottaServer terracottaServer, final File installLocation) {
-    if (startedProcesses.containsKey(terracottaServer.getServerSymbolicName())) {
-      logger.info("Forcefully destroying L2 process for " + terracottaServer.getServerSymbolicName());
+  public TerracottaServerState stop(final String serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
+    StartedProcess startedProcess = terracottaServerInstanceProcess.getStartedProcess();
+    if (startedProcess != null) {
+      logger.info("Forcefully destroying L2 process for " + serverSymbolicName);
       try {
-        startedProcesses.get(terracottaServer.getServerSymbolicName()).getProcess().destroy();
+        startedProcess.getProcess().destroy();
       } catch (Exception e) {
         logger.info("Could not destroy process, trying with system command.", e);
-        systemKill(pids.get(terracottaServer.getServerSymbolicName()).get());
-        pids.get(terracottaServer.getServerSymbolicName()).set(-1);
+        systemKill(terracottaServerInstanceProcess.getPid().get());
+        terracottaServerInstanceProcess.getPid().set(-1);
       }
     }
-    if (pids.get(terracottaServer.getServerSymbolicName()).get() != -1) {
+    if (terracottaServerInstanceProcess.getPid().get() != -1) {
       try {
-        ProcessUtil.destroyForcefullyAndWait(Processes.newPidProcess(pids.get(terracottaServer.getServerSymbolicName()).get()), 30, TimeUnit.SECONDS);
+        ProcessUtil.destroyForcefullyAndWait(Processes.newPidProcess(terracottaServerInstanceProcess.getPid()
+            .get()), 30, TimeUnit.SECONDS);
       } catch (Exception e) {
         logger.info("Could not destroy process, trying with system command.", e);
-        systemKill(pids.get(terracottaServer.getServerSymbolicName()).get());
+        systemKill(terracottaServerInstanceProcess.getPid().get());
       }
-      pids.get(terracottaServer.getServerSymbolicName()).set(-1);
+      terracottaServerInstanceProcess.getPid().set(-1);
     }
 
-    logs.get(terracottaServer.getServerSymbolicName()).stop();
-    return TerracottaServerInstance.TerracottaServerState.STOPPED;
+    terracottaServerInstanceProcess.getLogs().stop();
+    return TerracottaServerState.STOPPED;
   }
 
   private void systemKill(Integer pid) {
@@ -129,25 +126,23 @@ public class Distribution102Controller extends DistributionController {
   /**
    * Construct the Start Command with the Version, Tc Config file and server name
    *
-   * @param terracottaServer
+   * @param serverSymbolicName
    * @param topology
    * @return String[] representing the start command and its parameters
    */
-  private String[] startCommand(final TerracottaServer terracottaServer, final Topology topology, final File installLocation) {
+  private String[] startCommand(final String serverSymbolicName, final Topology topology, final File installLocation) {
     List<String> options = new LinkedList<String>();
     // start command
     options.add(getStartCmd(installLocation));
 
     // add -n if applicable
-    String serverSymbolicName = terracottaServer.getServerSymbolicName();
-    if (!(terracottaServer.getServerSymbolicName().contains(":") || (terracottaServer.getServerSymbolicName()
-        .isEmpty()))) {
+    if (!(serverSymbolicName.contains(":") || (serverSymbolicName.isEmpty()))) {
       options.add("-n");
-      options.add(terracottaServer.getServerSymbolicName());
+      options.add(serverSymbolicName);
     }
 
     // add -f if applicable
-    TcConfig tcConfig = topology.getTcConfig(terracottaServer.getServerSymbolicName());
+    TcConfig tcConfig = topology.getTcConfig(serverSymbolicName);
     if (tcConfig.getPath() != null) {
       //workaround to have unique platform restart directory for active & passives
       //TODO this can  be removed when platform persistent has server name in the path
@@ -155,7 +150,7 @@ public class Distribution102Controller extends DistributionController {
       try {
         modifiedTcConfigPath = tcConfig.getPath()
                                    .substring(0, tcConfig.getPath()
-                                                     .length() - 4) + "-" + terracottaServer.getServerSymbolicName() + ".xml";
+                                                     .length() - 4) + "-" + serverSymbolicName + ".xml";
         String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
             replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName));
         FileUtils.write(new File(modifiedTcConfigPath), modifiedConfig);

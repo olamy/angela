@@ -8,15 +8,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
-import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_PASSIVE;
+import static com.terracottatech.qa.angela.kit.TerracottaServerState.STARTED_AS_ACTIVE;
+import static com.terracottatech.qa.angela.kit.TerracottaServerState.STARTED_AS_PASSIVE;
 
 /**
  * @author Aurelien Broszniowski
  */
 
 public class ServerLogOutputStream extends LogOutputStream {
-  private AtomicReference<TerracottaServerInstance.TerracottaServerState> stateRef = new AtomicReference<>();
+  private AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>();
   private AtomicInteger pid;
 
   public ServerLogOutputStream(final AtomicInteger pid) {
@@ -39,7 +39,7 @@ public class ServerLogOutputStream extends LogOutputStream {
     }
   }
 
-  public TerracottaServerInstance.TerracottaServerState waitForStartedState(final StartedProcess startedProcess) {
+  public TerracottaServerState waitForStartedState(final StartedProcess startedProcess) {
     while (stateRef.get() != STARTED_AS_ACTIVE && stateRef.get() != STARTED_AS_PASSIVE) {
       if (!startedProcess.getProcess().isAlive()) {
         throw new RuntimeException("TCServer exited without reaching ACTIVE or PASSIVE state");
