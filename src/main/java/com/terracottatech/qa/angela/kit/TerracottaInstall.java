@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.kit;
 
+import com.terracottatech.qa.angela.tcconfig.ServerSymbolicName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ public class TerracottaInstall {
 
   private final Topology topology;
   //  private final NetworkController networkController;
-  private final Map<String, TerracottaServerInstance> terracottaServerInstances;
+  private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances;
 
 
   public TerracottaInstall(final File location, final Topology topology) {
@@ -31,11 +32,11 @@ public class TerracottaInstall {
 //    this.networkController = networkController;
   }
 
-  private static Map<String, TerracottaServerInstance> createTerracottaServerInstancesMap(
+  private static Map<ServerSymbolicName, TerracottaServerInstance> createTerracottaServerInstancesMap(
       final TcConfig[] tcConfigs, final DistributionController distributionController, final File location) {
-    Map<String, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
+    Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
     for (TcConfig tcConfig : tcConfigs) {
-      Map<String, TerracottaServer> servers = tcConfig.getServers();
+      Map<ServerSymbolicName, TerracottaServer> servers = tcConfig.getServers();
       for (TerracottaServer terracottaServer : servers.values()) {
         terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), distributionController, location));
       }

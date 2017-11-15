@@ -62,7 +62,7 @@ public class TcConfig implements Serializable {
     return tcConfigHolder.getServers().get(hostname + ":" + port);
   }
 
-  public Map<String, TerracottaServer> getServers() {
+  public Map<ServerSymbolicName, TerracottaServer> getServers() {
     return tcConfigHolder.getServers();
   }
 

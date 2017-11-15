@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.kit.distribution;
 
+import com.terracottatech.qa.angela.tcconfig.ServerSymbolicName;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +48,8 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess start(final String serverSymbolicName, final File installLocation) {
-    Map<String, String> env = new HashMap<String, String>();
+  public TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, final File installLocation) {
+    Map<String, String> env = new HashMap<>();
     List<String> j8Homes = javaLocationResolver.resolveJava8Location();
     if (j8Homes.size() > 0) {
       env.put("JAVA_HOME", j8Homes.get(0));
@@ -75,7 +76,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerState stop(final String serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
+  public TerracottaServerState stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
     StartedProcess startedProcess = terracottaServerInstanceProcess.getStartedProcess();
     if (startedProcess != null) {
       logger.info("Forcefully destroying L2 process for " + serverSymbolicName);
@@ -130,15 +131,15 @@ public class Distribution102Controller extends DistributionController {
    * @param topology
    * @return String[] representing the start command and its parameters
    */
-  private String[] startCommand(final String serverSymbolicName, final Topology topology, final File installLocation) {
+  private String[] startCommand(final ServerSymbolicName serverSymbolicName, final Topology topology, final File installLocation) {
     List<String> options = new LinkedList<String>();
     // start command
     options.add(getStartCmd(installLocation));
 
     // add -n if applicable
-    if (!(serverSymbolicName.contains(":") || (serverSymbolicName.isEmpty()))) {
+    if (!(serverSymbolicName.getSymbolicName().contains(":") || (serverSymbolicName.getSymbolicName().isEmpty()))) {
       options.add("-n");
-      options.add(serverSymbolicName);
+      options.add(serverSymbolicName.getSymbolicName());
     }
 
     // add -f if applicable

@@ -11,15 +11,12 @@ import java.net.UnknownHostException;
  */
 public class TerracottaServer implements Serializable {
 
-  private String serverSymbolicName;
+  private ServerSymbolicName serverSymbolicName;
   private String hostname;
   private Ports ports;
 
-  public TerracottaServer() {
-  }
-
-  public TerracottaServer(String serverSymbolicName, String hostname, int tsaPort, int tsaGroupPort, int managementPort, int jmxPort) {
-    this.serverSymbolicName = serverSymbolicName;
+  public TerracottaServer(String symbolicName, String hostname, int tsaPort, int tsaGroupPort, int managementPort, int jmxPort) {
+    this.serverSymbolicName = new ServerSymbolicName(symbolicName);
     this.hostname = hostname;
     this.ports = new Ports(tsaPort, tsaGroupPort, managementPort, jmxPort);
   }
@@ -37,8 +34,8 @@ public class TerracottaServer implements Serializable {
     return ports;
   }
 
-  public String getServerSymbolicName() {
-    return serverSymbolicName != null ? serverSymbolicName : "" + hostname + ":" + ports.getTsaPort();
+  public ServerSymbolicName getServerSymbolicName() {
+    return serverSymbolicName;
   }
 
   public void setPorts(final Ports ports) {

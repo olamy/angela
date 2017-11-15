@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.tcconfig.holders;
 
+import com.google.common.io.Files;
+import com.terracottatech.qa.angela.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -8,14 +11,9 @@ import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.Files;
-import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
-import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -72,8 +70,8 @@ public abstract class TcConfigHolder {
 
   protected abstract List<Node> getServersList(final Document tcConfigXml);
 
-  public Map<String, TerracottaServer> getServers() {
-    Map<String, TerracottaServer> servers = new LinkedHashMap<String, TerracottaServer>();
+  public Map<ServerSymbolicName, TerracottaServer> getServers() {
+    Map<ServerSymbolicName, TerracottaServer> servers = new LinkedHashMap<>();
 
     // read servers list from XML
     SAXReader reader = new SAXReader();
@@ -106,10 +104,10 @@ public abstract class TcConfigHolder {
         Node managementPortNode = server.selectSingleNode("*[name()='management-port']");
         int managementPort = managementPortNode == null ? 9540 : Integer.parseInt(managementPortNode.getText());
 
-        String serverSymbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getText();
+        String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getText();
 
-        TerracottaServer terracottaServer = new TerracottaServer(serverSymbolicName, hostname, tsaPort, tsaGroupPort, managementPort, jmxPort);
-        servers.put(serverSymbolicName, terracottaServer);
+        TerracottaServer terracottaServer = new TerracottaServer(symbolicName, hostname, tsaPort, tsaGroupPort, managementPort, jmxPort);
+        servers.put(terracottaServer.getServerSymbolicName(), terracottaServer);
       }
     } catch (DocumentException e) {
       e.printStackTrace();

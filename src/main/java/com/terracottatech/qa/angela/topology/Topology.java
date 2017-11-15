@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.distribution.Distribution;
 import com.terracottatech.qa.angela.kit.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.kit.distribution.DistributionController;
+import com.terracottatech.qa.angela.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 
@@ -46,8 +47,8 @@ public class Topology {
     return new KitManager(distribution);
   }
 
-  public Map<String, TerracottaServer> getServers() {
-    Map<String, TerracottaServer> servers = new HashMap<String, TerracottaServer>();
+  public Map<ServerSymbolicName, TerracottaServer> getServers() {
+    Map<ServerSymbolicName, TerracottaServer> servers = new HashMap<>();
     for (TcConfig tcConfig : this.tcConfigs) {
       servers.putAll(tcConfig.getServers());
     }
@@ -58,7 +59,7 @@ public class Topology {
     return this.tcConfigs[stripeId];
   }
 
-  public TcConfig getTcConfig(final String serverSymbolicName) {
+  public TcConfig getTcConfig(final ServerSymbolicName serverSymbolicName) {
     for (TcConfig tcConfig : this.tcConfigs) {
       if (tcConfig.getServers().keySet().contains(serverSymbolicName)) {
         return tcConfig;
@@ -98,7 +99,7 @@ public class Topology {
 
   public Collection<String> getServersHostnames() {
     List<String> hostnames = new ArrayList<>();
-    Map<String, TerracottaServer> servers = getServers();
+    Map<ServerSymbolicName, TerracottaServer> servers = getServers();
     for (TerracottaServer terracottaServer : servers.values()) {
       hostnames.add(terracottaServer.getHostname());
     }

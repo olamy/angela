@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.tcconfig.ServerSymbolicName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -36,7 +37,7 @@ public class TsaControl {
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
 
   private Topology topology;
-  private Map<String, TerracottaServerState> terracottaServerStates;
+  private Map<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
 
   private ClusterToolConfig clusterToolConfig;
 
@@ -71,7 +72,7 @@ public class TsaControl {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
       final TcConfig tcConfig = tcConfigs[tcConfigIndex];
-      for (String serverSymbolicName : tcConfig.getServers().keySet()) {
+      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
 
         final int finalTcConfigIndex = tcConfigIndex;
@@ -122,8 +123,7 @@ public class TsaControl {
   private void createTerracottaServerStatesMap(final TcConfig[] tcConfigs) {
     terracottaServerStates = new HashMap<>();
     for (TcConfig tcConfig : tcConfigs) {
-      Map<String, TerracottaServer> servers = tcConfig.getServers();
-      for (TerracottaServer terracottaServer : servers.values()) {
+      for (TerracottaServer terracottaServer : tcConfig.getServers().values()) {
         terracottaServerStates.put(terracottaServer.getServerSymbolicName(), TerracottaServerState.STOPPED);
       }
     }
@@ -138,7 +138,7 @@ public class TsaControl {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
       final TcConfig tcConfig = tcConfigs[tcConfigIndex];
-      for (String serverSymbolicName : tcConfig.getServers().keySet()) {
+      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         start(terracottaServer);
       }
@@ -170,7 +170,7 @@ public class TsaControl {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
       final TcConfig tcConfig = tcConfigs[tcConfigIndex];
-      for (String serverSymbolicName : tcConfig.getServers().keySet()) {
+      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         stop(terracottaServer);
       }
