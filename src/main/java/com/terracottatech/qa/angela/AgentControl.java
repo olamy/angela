@@ -7,7 +7,6 @@ import com.terracottatech.qa.angela.kit.KitManager;
 import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.kit.TerracottaServerState;
-import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
@@ -22,12 +21,9 @@ import java.util.Map;
 
 public class AgentControl {
 
-  Map<String, TerracottaInstall> kitsInstalls = new HashMap<>();
+  private final Map<String, TerracottaInstall> kitsInstalls = new HashMap<>();
 
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
-
-  public static final AgentControl agentControl = new AgentControl();
-
 
   public void init(Topology topology, boolean offline, ClusterToolConfig clusterToolConfig, int tcConfigIndex) {
     if (kitsInstalls.containsKey(topology.getId())) {

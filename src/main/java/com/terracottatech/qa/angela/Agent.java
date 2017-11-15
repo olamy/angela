@@ -26,6 +26,8 @@ public class Agent {
 
   private static volatile Node node;
 
+  public static final AgentControl CONTROL = new AgentControl();
+
   public static void main(String[] args) throws Exception {
     String hostName = InetAddress.getLocalHost().getHostName();
     node = new Node(hostName);

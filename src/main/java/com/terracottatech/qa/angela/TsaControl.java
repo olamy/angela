@@ -79,7 +79,7 @@ public class TsaControl {
         boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
         executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
-            AgentControl.agentControl.init(topology, offline, clusterToolConfig, finalTcConfigIndex));
+            Agent.CONTROL.init(topology, offline, clusterToolConfig, finalTcConfigIndex));
       }
     }
   }
@@ -161,7 +161,7 @@ public class TsaControl {
 
     TerracottaServerState state = executeRemotely(terracottaServer.getHostname(), TIMEOUT,
         (IgniteCallable<TerracottaServerState>)() ->
-            AgentControl.agentControl.start(topology.getId(), terracottaServer));
+            Agent.CONTROL.start(topology.getId(), terracottaServer));
 
     terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
   }
@@ -193,7 +193,7 @@ public class TsaControl {
 
     TerracottaServerState state = executeRemotely(terracottaServer.getHostname(), TIMEOUT,
         (IgniteCallable<TerracottaServerState>)() ->
-            AgentControl.agentControl.stop(topology.getId(), terracottaServer));
+            Agent.CONTROL.stop(topology.getId(), terracottaServer));
 
     terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
   }
