@@ -181,14 +181,15 @@ public class KitManager implements Serializable {
 
       InputStream is = new BufferedInputStream(kitUrl.openStream());
 
-      byte[] buffer = new byte[8192];
+      byte[] buffer = new byte[65535];
       long len1 = 0;
       while ((count = is.read(buffer)) != -1) {
         len1 += count;
 
-        System.out.print(" progress = " + (100 * len1 / contentlength));
+        System.out.print("\r progress = " + (100 * len1 / contentlength) + "%");
         fos.write(buffer, 0, count);
       }
+      System.out.println("");
       fos.flush();
       fos.close();
       is.close();

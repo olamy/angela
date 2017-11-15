@@ -108,15 +108,4 @@ public class Topology {
     }
     return hostnames;
   }
-
-  public Map<String, TerracottaServerInstance> createTerracottaServerInstances() {
-    Map<String, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
-    for (TcConfig tcConfig : tcConfigs) {
-      Map<String, TerracottaServer> servers = tcConfig.getServers();
-      for (TerracottaServer terracottaServer : servers.values()) {
-        terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance());
-      }
-    }
-    return terracottaServerInstances;
-  }
 }

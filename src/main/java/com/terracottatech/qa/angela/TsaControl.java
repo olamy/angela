@@ -23,9 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_PASSIVE;
+import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STOPPED;
 
 /**
  * @author Aurelien Broszniowski
@@ -36,12 +36,9 @@ public class TsaControl {
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
 
   private Topology topology;
-  private Map<String, TerracottaServerInstance> terracottaServerInstances;
-
-//  -> ca devrait etre tc state et instance est ds tc install
+  private Map<String, TerracottaServerInstance.TerracottaServerState> terracottaServerStates;
 
   private ClusterToolConfig clusterToolConfig;
-  Map<String, TerracottaServerInstance.TerracottaServerState> states = new HashMap<>();
 
   public static final long TIMEOUT = 60000;
 
@@ -80,11 +77,16 @@ public class TsaControl {
         final int finalTcConfigIndex = tcConfigIndex;
         boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
-        executeRemotely(terracottaServer.getHostname(), TIMEOUT, (IgniteRunnable)() -> {
-          AgentControl.agentControl.init(topology, offline, clusterToolConfig, finalTcConfigIndex);
-        });
+        executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
+            AgentControl.agentControl.init(topology, offline, clusterToolConfig, finalTcConfigIndex));
       }
     }
+  }
+
+  private void executeRemotely(final String hostname,  final IgniteRunnable runnable) {
+    logger.info("Executing command on {}", hostname);
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
+    ignite.compute(location).broadcast(runnable);
   }
 
   private void executeRemotely(final String hostname, final long timeout, final IgniteRunnable runnable) {
@@ -113,8 +115,18 @@ public class TsaControl {
 
   public TsaControl withTopology(Topology topology) {
     this.topology = topology;
-    this.terracottaServerInstances = topology.createTerracottaServerInstances();
+    createTerracottaServerStatesMap(this.topology.getTcConfigs());
     return this;
+  }
+
+  private void createTerracottaServerStatesMap(final TcConfig[] tcConfigs) {
+    terracottaServerStates = new HashMap<>();
+    for (TcConfig tcConfig : tcConfigs) {
+      Map<String, TerracottaServer> servers = tcConfig.getServers();
+      for (TerracottaServer terracottaServer : servers.values()) {
+        terracottaServerStates.put(terracottaServer.getServerSymbolicName(), TerracottaServerInstance.TerracottaServerState.STOPPED);
+      }
+    }
   }
 
   public TsaControl withClusterToolConfig(final ClusterToolConfig clusterToolConfig) {
@@ -138,13 +150,12 @@ public class TsaControl {
   }
 
   private void startServer(final TerracottaServer terracottaServer) {
-    TerracottaServerInstance instance = terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
-    if (instance == null) {
+    TerracottaServerInstance.TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
+    if (terracottaServerState == null) {
       throw new IllegalStateException("TsaControl missing calls to withTopology() and init().");
     }
 
-    TerracottaServerInstance.TerracottaServerState currentState = instance.getState();
-    if (currentState == STARTED_AS_ACTIVE || currentState == STARTED_AS_PASSIVE) {
+    if (terracottaServerState == STARTED_AS_ACTIVE || terracottaServerState == STARTED_AS_PASSIVE) {
       return;
     }
 
@@ -152,7 +163,7 @@ public class TsaControl {
         (IgniteCallable<TerracottaServerInstance.TerracottaServerState>)() ->
             AgentControl.agentControl.start(topology.getId(), terracottaServer));
 
-    instance.setState(state);
+    terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
   }
 
   public void stopAll() {
@@ -171,13 +182,12 @@ public class TsaControl {
   }
 
   private void stopServer(final TerracottaServer terracottaServer) {
-    TerracottaServerInstance instance = terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
-    if (instance == null) {
+    TerracottaServerInstance.TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
+    if (terracottaServerState == null) {
       throw new IllegalStateException("TsaControl missing calls to withTopology() and init().");
     }
 
-    TerracottaServerInstance.TerracottaServerState currentState = instance.getState();
-    if (currentState == STOPPED) {
+    if (terracottaServerState == STOPPED) {
       return;
     }
 
@@ -185,7 +195,7 @@ public class TsaControl {
         (IgniteCallable<TerracottaServerInstance.TerracottaServerState>)() ->
             AgentControl.agentControl.stop(topology.getId(), terracottaServer));
 
-    instance.setState(state);
+    terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
   }
 }
 
