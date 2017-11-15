@@ -15,30 +15,53 @@
  */
 package com.terracottatech.qa.angela;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 import java.net.InetAddress;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
+import java.util.Collections;
 
 /**
  * @author Ludovic Orban
  */
 public class Agent {
 
-  private static volatile Node node;
-
   public static final AgentControl CONTROL = new AgentControl();
 
   public static void main(String[] args) throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    node = new Node(hostName);
+    String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
+    final Node node = new Node(nodeName);
     node.init();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
-    System.out.println("Registered node '" + hostName + "'");
+    System.out.println("Registered node '" + nodeName + "'");
   }
 
-  public static <T> BlockingQueue<T> getQueue(String queueName) {
-    return node.getQueue(queueName);
+  static class Node {
+
+    private final String nodeName;
+    private volatile Ignite ignite;
+
+    public Node(String nodeName) {
+      this.nodeName = nodeName;
+    }
+
+    public void init() {
+      IgniteConfiguration cfg = new IgniteConfiguration();
+
+      cfg.setUserAttributes(Collections.singletonMap("nodename", nodeName));
+      cfg.setIgniteInstanceName(nodeName);
+      cfg.setPeerClassLoadingEnabled(true);
+
+      ignite = Ignition.start(cfg);
+    }
+
+    public void shutdown() {
+      ignite.close();
+      ignite = null;
+    }
+
   }
 }
