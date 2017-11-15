@@ -1,16 +1,13 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
 import com.terracottatech.qa.angela.agent.kit.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.LicenseConfig;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -24,6 +21,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
@@ -166,8 +164,6 @@ public class KitManager implements Serializable {
   }
 
   private void download(final URL kitUrl, final File kitLocation) {
-    int count = 0;
-
     try {
       URLConnection urlConnection = kitUrl.openConnection();
       urlConnection.connect();
@@ -175,14 +171,15 @@ public class KitManager implements Serializable {
       int contentlength = urlConnection.getContentLength();
       System.out.println("Length to download = " + contentlength);
 
-      Files.createParentDirs(kitLocation);
+      createParentDirs(kitLocation);
 
       OutputStream fos = new FileOutputStream(kitLocation);
 
       InputStream is = new BufferedInputStream(kitUrl.openStream());
 
-      byte[] buffer = new byte[65535];
+      byte[] buffer = new byte[8192];
       long len1 = 0;
+      int count;
       while ((count = is.read(buffer)) != -1) {
         len1 += count;
 
@@ -206,7 +203,7 @@ public class KitManager implements Serializable {
     InputStream inputStream = null;
     FileOutputStream outputStream = null;
     try {
-      Files.createParentDirs(kitLocation);
+      createParentDirs(kitLocation);
 
       URLConnection connection = kitUrl.openConnection();
       inputStream = connection.getInputStream();
@@ -219,7 +216,7 @@ public class KitManager implements Serializable {
       }
 
 
-      ByteStreams.copy(inputStream, outputStream);
+      copy(inputStream, outputStream);
     } catch (IOException e) {
       throw new RuntimeException("Can not download the kit from kratos", e);
     } finally {
@@ -450,4 +447,34 @@ public class KitManager implements Serializable {
   public File getInstallLocation() {
       return null;
   }
+
+
+  private static void createParentDirs(File file) throws IOException {
+    Objects.requireNonNull(file);
+    File parent = file.getCanonicalFile().getParentFile();
+    if (parent != null) {
+      parent.mkdirs();
+      if (!parent.isDirectory()) {
+        throw new IOException("Unable to create parent directories of " + file);
+      }
+    }
+  }
+
+  private static long copy(InputStream from, OutputStream to) throws IOException {
+    Objects.requireNonNull(from);
+    Objects.requireNonNull(to);
+    byte[] buf = new byte[8192];
+    long total = 0L;
+
+    while(true) {
+      int r = from.read(buf);
+      if (r == -1) {
+        return total;
+      }
+
+      to.write(buf, 0, r);
+      total += (long)r;
+    }
+  }
+
 }

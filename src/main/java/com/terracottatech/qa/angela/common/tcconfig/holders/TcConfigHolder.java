@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
-import com.google.common.io.Files;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import org.dom4j.Document;
@@ -12,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -32,7 +32,7 @@ public abstract class TcConfigHolder {
 
   private final static Logger logger = LoggerFactory.getLogger(TcConfigHolder.class);
 
-  private String tcConfigContent;        // tc config content
+  protected String tcConfigContent;        // tc config content
   private String installedTcConfigPath;
   private Properties tcProperties = null;
   private List<String> logsPathList = new ArrayList<String>();
@@ -59,8 +59,9 @@ public abstract class TcConfigHolder {
     File tempConfigFile;
     try {
       tempConfigFile = new File(kitDir.getAbsolutePath() + File.separatorChar + tcConfigFilename);
-      tempConfigFile.deleteOnExit();
-      Files.write(this.tcConfigContent, tempConfigFile, Charset.defaultCharset());
+      try (FileOutputStream fos = new FileOutputStream(tempConfigFile)) {
+        fos.write(this.tcConfigContent.getBytes(Charset.defaultCharset()));
+      }
       this.installedTcConfigPath = tempConfigFile.getAbsolutePath();
       logger.info("Installed Tc Config path: {}", installedTcConfigPath);
     } catch (IOException e) {
