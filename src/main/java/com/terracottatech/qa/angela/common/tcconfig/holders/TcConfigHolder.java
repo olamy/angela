@@ -32,7 +32,7 @@ public abstract class TcConfigHolder {
 
   private final static Logger logger = LoggerFactory.getLogger(TcConfigHolder.class);
 
-  String tcConfigContent;        // tc config content
+  private String tcConfigContent;        // tc config content
   private String installedTcConfigPath;
   private Properties tcProperties = null;
   private List<String> logsPathList = new ArrayList<String>();

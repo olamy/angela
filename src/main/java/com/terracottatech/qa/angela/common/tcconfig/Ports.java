@@ -6,13 +6,10 @@ import java.io.Serializable;
  * @author Tim Eck
  */
 public class Ports implements Serializable {
-  private int tsaPort;
-  private int groupPort;
-  private int managementPort;
-  private int jmxPort;
-
-  public Ports() {
-  }
+  private final int tsaPort;
+  private final int groupPort;
+  private final int managementPort;
+  private final int jmxPort;
 
   public Ports(int tsaPort, int groupPort, int managementPort, int jmxPort) {
     this.tsaPort = tsaPort;

@@ -72,10 +72,6 @@ public class TcConfig implements Serializable {
     return this.tcConfigHolder.getServers().values().toArray(new TerracottaServer[0])[index];
   }
 
-  public synchronized void updatePorts(final String serverSymbolicName, final Ports ports) {
-    tcConfigHolder.getServers().get(serverSymbolicName).setPorts(ports);
-  }
-
 
   public void updateTcProperties(final Properties tcProperties) {
     tcConfigHolder.setTcProperties(tcProperties);

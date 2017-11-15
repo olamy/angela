@@ -13,11 +13,7 @@ import java.io.Serializable;
  */
 public class LicenseConfig implements Serializable {
 
-  private String licenseContent;
-
-  public LicenseConfig() {
-
-  }
+  private final String licenseContent;
 
   public LicenseConfig(String licensePath) {
     try {

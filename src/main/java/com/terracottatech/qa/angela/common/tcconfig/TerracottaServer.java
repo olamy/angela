@@ -11,9 +11,9 @@ import java.net.UnknownHostException;
  */
 public class TerracottaServer implements Serializable {
 
-  private ServerSymbolicName serverSymbolicName;
-  private String hostname;
-  private Ports ports;
+  private final ServerSymbolicName serverSymbolicName;
+  private final String hostname;
+  private final Ports ports;
 
   public TerracottaServer(String symbolicName, String hostname, int tsaPort, int tsaGroupPort, int managementPort, int jmxPort) {
     this.serverSymbolicName = new ServerSymbolicName(symbolicName);
@@ -38,7 +38,4 @@ public class TerracottaServer implements Serializable {
     return serverSymbolicName;
   }
 
-  public void setPorts(final Ports ports) {
-    this.ports = ports;
-  }
 }

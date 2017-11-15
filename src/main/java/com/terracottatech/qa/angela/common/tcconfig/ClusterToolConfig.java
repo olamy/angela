@@ -8,23 +8,14 @@ import java.io.Serializable;
 
 public class ClusterToolConfig implements Serializable {
 
-  private String hostname;
-  private String serverSymbolicName;
-  private LicenseConfig licenseConfig;
-
-  public ClusterToolConfig(final String hostname) {
-    this.hostname = hostname;
-    this.serverSymbolicName = "clustertool:" + hostname;
-  }
+  private final String hostname;
+  private final String serverSymbolicName;
+  private final LicenseConfig licenseConfig;
 
   public ClusterToolConfig(final String hostname, LicenseConfig licenseConfig) {
     this.hostname = hostname;
     this.serverSymbolicName = "clustertool:" + hostname;
     this.licenseConfig = licenseConfig;
-  }
-
-  public static ClusterToolConfig clustertool(final String hostname) {
-    return new ClusterToolConfig(hostname);
   }
 
   public static ClusterToolConfig clustertool(final String hostname, LicenseConfig licenseConfig) {
