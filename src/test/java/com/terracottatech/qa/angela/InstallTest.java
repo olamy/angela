@@ -1,16 +1,17 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.TsaControl;
 import org.junit.Test;
 
-import com.terracottatech.qa.angela.kit.distribution.Distribution;
-import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
-import com.terracottatech.qa.angela.tcconfig.LicenseConfig;
-import com.terracottatech.qa.angela.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.topology.LicenseType;
-import com.terracottatech.qa.angela.topology.PackageType;
-import com.terracottatech.qa.angela.topology.Topology;
+import com.terracottatech.qa.angela.agent.kit.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.ClusterToolConfig;
+import com.terracottatech.qa.angela.common.tcconfig.LicenseConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.topology.LicenseType;
+import com.terracottatech.qa.angela.common.topology.PackageType;
+import com.terracottatech.qa.angela.common.topology.Topology;
 
-import static com.terracottatech.qa.angela.topology.Version.version;
+import static com.terracottatech.qa.angela.common.topology.Version.version;
 
 /**
  * @author Aurelien Broszniowski
