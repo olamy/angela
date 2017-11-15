@@ -1,10 +1,12 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
-import org.dom4j.Document;
-import org.dom4j.Node;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.InputStream;
-import java.util.List;
 
 /**
  * Terracotta config for Terracotta 4.0.x
@@ -15,16 +17,13 @@ import java.util.List;
  */
 public class TcConfig8Holder extends TcConfigHolder {
 
-  public TcConfig8Holder() {
-  }
-
   public TcConfig8Holder(final InputStream tcConfigInputStream) {
     super(tcConfigInputStream);
   }
 
   @Override
-  protected List<Node> getServersList(final Document tcConfigXml) {
-    return tcConfigXml.selectNodes("//*[name()='servers']//*[name()='server']");
+  protected NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException {
+    return (NodeList) xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
   }
 
   @Override

@@ -1,13 +1,19 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
-import org.dom4j.Document;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.StringReader;
-import java.util.List;
+import java.nio.charset.Charset;
 
 /**
  * Terracotta config for Terracotta 5.0
@@ -18,67 +24,64 @@ import java.util.List;
  */
 public class TcConfig10Holder extends TcConfigHolder {
 
-  public TcConfig10Holder() {
-  }
-
   public TcConfig10Holder(final InputStream tcConfigInputStream) {
     super(tcConfigInputStream);
   }
 
   @Override
-  protected List<Node> getServersList(final Document tcConfigXml) {
-    return tcConfigXml.selectNodes("//*[name()='servers']//*[name()='server']");
+  protected NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException {
+    return (NodeList) xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
   }
 
   @Override
   public void updateDataDirectory(final String rootId, final String newlocation) {
-    StringReader stringInputStream = new StringReader(this.tcConfigContent);
     try {
-      SAXReader reader = new SAXReader();
-      try {
-        Document tcConfigXml = reader.read(stringInputStream);
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
 
-        List<Node> serversList = getServersList(tcConfigXml);
-        for (Node server : serversList) {
-          Node datarootNode = server.selectSingleNode("//*[name()='data:directory']");
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+      for (int i=0; i<serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node datarootNode = (Node) xPath.evaluate("//*[name()='data:directory']", server, XPathConstants.NODE);
 
-          if (datarootNode != null) {
-            String id = ((Element)datarootNode).attributeValue("id");
-            if (rootId.equalsIgnoreCase(id)) {
-              datarootNode.setText(newlocation);
-            }
+        if (datarootNode != null) {
+          String id = ((Element) datarootNode).getAttribute("id");
+          if (rootId.equalsIgnoreCase(id)) {
+            datarootNode.setTextContent(newlocation);
           }
         }
-        this.tcConfigContent = tcConfigXml.asXML();
-      } finally {
-        stringInputStream.close();
+
+        this.tcConfigContent = domToString(tcConfigXml);
       }
     } catch (Exception e) {
-      throw new RuntimeException("Cannot read tc-config xml input stream : " + stringInputStream.toString(), e);
+      throw new RuntimeException("Cannot parse tc-config xml", e);
     }
   }
 
   @Override
   public void updateHostname(final String serverName, final String hostname) {
-    StringReader stringInputStream = new StringReader(this.tcConfigContent);
     try {
-      SAXReader reader = new SAXReader();
-      try {
-        Document tcConfigXml = reader.read(stringInputStream);
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
 
-        List<Node> serversList = getServersList(tcConfigXml);
-        for (Node server : serversList) {
-          String name = ((Element)server).attributeValue("name");
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+      for (int i=0; i<serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node datarootNode = (Node) xPath.evaluate("//*[name()='data:directory']", server, XPathConstants.NODE);
+
+        if (datarootNode != null) {
+          String name = ((Element) datarootNode).getAttribute("name");
           if (name.equalsIgnoreCase(serverName)) {
-            ((Element)server).addAttribute("host", hostname);
+            ((Element)server).setAttribute("host", hostname);
           }
         }
-        this.tcConfigContent = tcConfigXml.asXML();
-      } finally {
-        stringInputStream.close();
+
+        this.tcConfigContent = domToString(tcConfigXml);
       }
     } catch (Exception e) {
-      throw new RuntimeException("Cannot read tc-config xml input stream : " + stringInputStream.toString(), e);
+      throw new RuntimeException("Cannot parse tc-config xml", e);
     }
   }
 

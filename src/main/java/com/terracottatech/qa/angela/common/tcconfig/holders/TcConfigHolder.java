@@ -2,19 +2,30 @@ package com.terracottatech.qa.angela.common.tcconfig.holders;
 
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -42,16 +53,12 @@ public abstract class TcConfigHolder {
 
   public TcConfigHolder(final InputStream tcConfigInputStream) {
     try {
-      SAXReader reader = new SAXReader();
-      try {
-        Document tcConfigXml = reader.read(tcConfigInputStream);
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(tcConfigInputStream);
 
-        this.tcConfigContent = tcConfigXml.asXML();
-      } finally {
-        tcConfigInputStream.close();
-      }
+      this.tcConfigContent = domToString(tcConfigXml);
     } catch (Exception e) {
-      throw new RuntimeException("Cannot read tc-config xml input stream : " + tcConfigInputStream.toString(), e);
+      throw new RuntimeException("Cannot parse tc-config xml", e);
     }
   }
 
@@ -69,49 +76,52 @@ public abstract class TcConfigHolder {
     }
   }
 
-  protected abstract List<Node> getServersList(final Document tcConfigXml);
+  protected abstract NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException;
 
   public Map<ServerSymbolicName, TerracottaServer> getServers() {
     Map<ServerSymbolicName, TerracottaServer> servers = new LinkedHashMap<>();
 
     // read servers list from XML
-    SAXReader reader = new SAXReader();
     try {
-      Document tcConfigXml = reader.read(new StringReader(tcConfigContent));
-      List<Node> serversList = getServersList(tcConfigXml);
-      for (Node server : serversList) {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
 
-        Node hostNode = server.selectSingleNode("@host");
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+      for (int i=0; i<serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+
+        Node hostNode = (Node) xPath.evaluate("@host", server, XPathConstants.NODE);
         String hostname =
-            hostNode == null || hostNode.getText().equals("%i") || hostNode.getText()
-                .equals("%h") ? "localhost" : hostNode.getText();
+            hostNode == null || hostNode.getTextContent().equals("%i") || hostNode.getTextContent()
+                .equals("%h") ? "localhost" : hostNode.getTextContent();
 
-        Node nameNode = server.selectSingleNode("@name");
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
 
         //TODO : create client and send command to get free port -> can't connect ? agent exception!
         // add into xml the port!!
         // log it!!!
         // remove below updatePorts method
 
-        Node tsaPortNode = server.selectSingleNode("*[name()='tsa-port']");
-        int tsaPort = tsaPortNode == null ? 9510 : Integer.parseInt(tsaPortNode.getText());
+        Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
+        int tsaPort = tsaPortNode == null ? 9510 : Integer.parseInt(tsaPortNode.getTextContent());
 
-        Node jmxPortNode = server.selectSingleNode("*[name()='jmx-port']");
-        int jmxPort = jmxPortNode == null ? 9520 : Integer.parseInt(jmxPortNode.getText());
+        Node jmxPortNode = (Node) xPath.evaluate("*[name()='jmx-port']", server, XPathConstants.NODE);
+        int jmxPort = jmxPortNode == null ? 9520 : Integer.parseInt(jmxPortNode.getTextContent());
 
-        Node tsaGroupPortNode = server.selectSingleNode("*[name()='tsa-group-port']");
-        int tsaGroupPort = tsaGroupPortNode == null ? 9530 : Integer.parseInt(tsaGroupPortNode.getText());
+        Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
+        int tsaGroupPort = tsaGroupPortNode == null ? 9530 : Integer.parseInt(tsaGroupPortNode.getTextContent());
 
-        Node managementPortNode = server.selectSingleNode("*[name()='management-port']");
-        int managementPort = managementPortNode == null ? 9540 : Integer.parseInt(managementPortNode.getText());
+        Node managementPortNode = (Node) xPath.evaluate("*[name()='management-port']", server, XPathConstants.NODE);
+        int managementPort = managementPortNode == null ? 9540 : Integer.parseInt(managementPortNode.getTextContent());
 
-        String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getText();
+        String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
         TerracottaServer terracottaServer = new TerracottaServer(symbolicName, hostname, tsaPort, tsaGroupPort, managementPort, jmxPort);
         servers.put(terracottaServer.getServerSymbolicName(), terracottaServer);
       }
-    } catch (DocumentException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
     }
     return servers;
   }
@@ -138,30 +148,32 @@ public abstract class TcConfigHolder {
   }
 
   public synchronized void updateLogsLocation(final File kitDir, final int tcConfigIndex) {
-    StringReader stringInputStream = new StringReader(this.tcConfigContent);
     try {
-      SAXReader reader = new SAXReader();
-      try {
-        Document tcConfigXml = reader.read(stringInputStream);
-        List<Node> serversList = getServersList(tcConfigXml);
-        int cnt = 1;
-        for (Node server : serversList) {
-          Node logsNode = server.selectSingleNode("*[name()='logs']");
-          String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "logs-" + tcConfigIndex + "-" + cnt;
-          logsPathList.add(logsPath);
-          if (logsNode != null) {
-            logsNode.setText(logsPath);
-          } else {
-            ((Element)server).addElement("logs").addText(logsPath);
-          }
-          cnt++;
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+      int cnt = 1;
+      for (int i=0; i<serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node logsNode = (Node) xPath.evaluate("*[name()='logs']", server, XPathConstants.NODE);
+
+        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "logs-" + tcConfigIndex + "-" + cnt;
+        logsPathList.add(logsPath);
+        if (logsNode != null) {
+          logsNode.setTextContent(logsPath);
+        } else {
+          Element newElement = tcConfigXml.createElement("logs");
+          newElement.setTextContent(logsPath);
+          server.getParentNode().insertBefore(newElement, server.getNextSibling());
         }
-        this.tcConfigContent = tcConfigXml.asXML();
-      } finally {
-        stringInputStream.close();
+        cnt++;
+
+        this.tcConfigContent = domToString(tcConfigXml);
       }
     } catch (Exception e) {
-      throw new RuntimeException("Cannot read tc-config xml input stream : " + stringInputStream.toString(), e);
+      throw new RuntimeException("Cannot parse tc-config xml", e);
     }
   }
 
@@ -172,4 +184,16 @@ public abstract class TcConfigHolder {
   public abstract void updateDataDirectory(final String rootId, final String newlocation);
 
   public abstract void updateHostname(final String serverName, final String hostname);
+
+  protected static String domToString(Document document) throws TransformerException, IOException {
+    DOMSource domSource = new DOMSource(document);
+    try (StringWriter writer = new StringWriter()) {
+      StreamResult result = new StreamResult(writer);
+      TransformerFactory tf = TransformerFactory.newInstance();
+      Transformer transformer = tf.newTransformer();
+      transformer.transform(domSource, result);
+      return writer.toString();
+    }
+  }
+
 }
