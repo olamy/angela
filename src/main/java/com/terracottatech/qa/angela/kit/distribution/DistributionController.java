@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela.kit.distribution;
 
+import org.zeroturnaround.exec.StartedProcess;
+
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
@@ -23,6 +25,6 @@ public abstract class DistributionController {
   public abstract TerracottaServerInstance.TerracottaServerState start(TerracottaServer terracottaServer,
                                        File installLocation);
 
-  public abstract void stop();
-
+  public abstract TerracottaServerInstance.TerracottaServerState stop(TerracottaServer terracottaServer,
+                                       File installLocation);
 }

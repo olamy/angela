@@ -23,9 +23,9 @@ public class Distribution100Controller extends DistributionController {
     return TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
   }
 
-
   @Override
-  public void stop() {
-    System.out.println("stop 10.0");
+  public TerracottaServerInstance.TerracottaServerState stop(final TerracottaServer terracottaServer, final File installLocation) {
+    return null;
   }
+
 }

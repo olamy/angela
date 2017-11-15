@@ -19,7 +19,7 @@ import static com.terracottatech.qa.angela.topology.Version.version;
 public class InstallTest {
 
   @Test
-  public void testRemoteInstall() {
+  public void testRemoteInstall() throws InterruptedException {
     TsaControl control = new TsaControl();
 
     TcConfig tcConfig = new TcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-a.xml");
@@ -37,6 +37,12 @@ public class InstallTest {
         .init();
 
     control.startAll();
+
+    System.out.println("---> Wait for 5 sec");
+    Thread.sleep(5000);
+    System.out.println("---> Stop");
+
+    control.stopAll();
 
     control.close();
   }

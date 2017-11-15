@@ -51,7 +51,12 @@ public class AgentControl {
   }
 
   public TerracottaServerInstance.TerracottaServerState start(final String topologyId, final TerracottaServer terracottaServer) {
-    DistributionController distributionController = kitsInstalls.get(topologyId).getTopology().createDistributionController();
+    DistributionController distributionController = kitsInstalls.get(topologyId).getDistributionController();
     return distributionController.start(terracottaServer, kitsInstalls.get(topologyId).getLocation());
+  }
+
+  public TerracottaServerInstance.TerracottaServerState stop(final String topologyId, final TerracottaServer terracottaServer) {
+    DistributionController distributionController = kitsInstalls.get(topologyId).getDistributionController();
+    return distributionController.stop(terracottaServer, kitsInstalls.get(topologyId).getLocation());
   }
 }

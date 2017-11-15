@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
 
 import com.terracottatech.qa.angela.JavaLocationResolver;
 import com.terracottatech.qa.angela.OS;
@@ -21,6 +23,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import static com.terracottatech.qa.angela.topology.PackageType.KIT;
@@ -37,13 +43,17 @@ public class Distribution102Controller extends DistributionController {
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final OS os = new OS();
 
+  private ConcurrentHashMap<String, StartedProcess> startedProcesses = new ConcurrentHashMap<>();
+  private ConcurrentHashMap<String, AtomicInteger> pids = new ConcurrentHashMap<>();
+  private ConcurrentHashMap<String, ServerLogOutputStream> logs = new ConcurrentHashMap<>();
+
   public Distribution102Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
   }
 
   @Override
   public TerracottaServerInstance.TerracottaServerState start(final TerracottaServer terracottaServer,
-                              final File installLocation ) {
+                                                              final File installLocation) {
     Map<String, String> env = new HashMap<String, String>();
     List<String> j8Homes = javaLocationResolver.resolveJava8Location();
     if (j8Homes.size() > 0) {
@@ -51,18 +61,69 @@ public class Distribution102Controller extends DistributionController {
     }
     System.out.println("[Server-side] Jenkins build Id = " + System.getProperty("jenkins.build.id"));
 
-    ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream();
+    AtomicInteger pid = new AtomicInteger(-1);
+    ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream(pid);
+    pids.put(terracottaServer.getServerSymbolicName(), pid);
+    logs.put(terracottaServer.getServerSymbolicName(), serverLogOutputStream);
     ProcessExecutor executor = new ProcessExecutor()
         .command(startCommand(terracottaServer, topology, installLocation)).directory(installLocation).environment(env)
         .redirectOutput(serverLogOutputStream);
     StartedProcess startedProcess;
     try {
       startedProcess = executor.start();
+      startedProcesses.put(terracottaServer.getServerSymbolicName(), startedProcess);
     } catch (IOException e) {
       throw new RuntimeException("Can not start Terracotta server process " + terracottaServer.getServerSymbolicName(), e);
     }
 
     return serverLogOutputStream.waitForStartedState(startedProcess);
+  }
+
+  @Override
+  public TerracottaServerInstance.TerracottaServerState stop(final TerracottaServer terracottaServer, final File installLocation) {
+    if (startedProcesses.containsKey(terracottaServer.getServerSymbolicName())) {
+      logger.info("Forcefully destroying L2 process for " + terracottaServer.getServerSymbolicName());
+      try {
+        startedProcesses.get(terracottaServer.getServerSymbolicName()).getProcess().destroy();
+      } catch (Exception e) {
+        logger.info("Could not destroy process, trying with system command.", e);
+        systemKill(pids.get(terracottaServer.getServerSymbolicName()).get());
+        pids.get(terracottaServer.getServerSymbolicName()).set(-1);
+      }
+    }
+    if (pids.get(terracottaServer.getServerSymbolicName()).get() != -1) {
+      try {
+        ProcessUtil.destroyForcefullyAndWait(Processes.newPidProcess(pids.get(terracottaServer.getServerSymbolicName()).get()), 30, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        logger.info("Could not destroy process, trying with system command.", e);
+        systemKill(pids.get(terracottaServer.getServerSymbolicName()).get());
+      }
+      pids.get(terracottaServer.getServerSymbolicName()).set(-1);
+    }
+
+    logs.get(terracottaServer.getServerSymbolicName()).stop();
+    return TerracottaServerInstance.TerracottaServerState.STOPPED;
+  }
+
+  private void systemKill(Integer pid) {
+    ProcessExecutor executor = new ProcessExecutor()
+        .command(getKillCmd(pid));
+
+    try {
+      executor.start().getFuture().get();
+    } catch (Exception e) {
+      throw new RuntimeException("Could not kill Terracotta server instance", e);
+    }
+  }
+
+  private String[] getKillCmd(Integer pid) {
+    if (os.isPosix()) {
+      return new String[] { "kill", "" + pid };
+    }
+    if (os.isWindows()) {
+      return new String[] { "Taskkill", "/PID", "" + pid, "/F" };
+    }
+    throw new RuntimeException("Can not define Kill process Command for Os" + os.getPlatformName());
   }
 
   /**
@@ -130,10 +191,5 @@ public class Distribution102Controller extends DistributionController {
       }
     }
     throw new IllegalStateException("Can not define Terracotta server Start Command for distribution: " + distribution);
-  }
-
-  @Override
-  public void stop() {
-    System.out.println("stop 10.2");
   }
 }

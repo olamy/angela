@@ -12,7 +12,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.tcconfig.ClusterToolConfig;
 import com.terracottatech.qa.angela.tcconfig.TcConfig;
@@ -24,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_PASSIVE;
 
@@ -38,10 +38,12 @@ public class TsaControl {
   private Topology topology;
   private Map<String, TerracottaServerInstance> terracottaServerInstances;
 
+//  -> ca devrait etre tc state et instance est ds tc install
+
   private ClusterToolConfig clusterToolConfig;
   Map<String, TerracottaServerInstance.TerracottaServerState> states = new HashMap<>();
 
-  public static final long TIMEOUT = 30000;
+  public static final long TIMEOUT = 60000;
 
   private volatile Ignite ignite;
 
@@ -78,23 +80,23 @@ public class TsaControl {
         final int finalTcConfigIndex = tcConfigIndex;
         boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
-        executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> {
+        executeRemotely(terracottaServer.getHostname(), TIMEOUT, (IgniteRunnable)() -> {
           AgentControl.agentControl.init(topology, offline, clusterToolConfig, finalTcConfigIndex);
         });
       }
     }
   }
 
-  private void executeRemotely(final String hostname, final IgniteRunnable runnable) {
+  private void executeRemotely(final String hostname, final long timeout, final IgniteRunnable runnable) {
     logger.info("Executing command on {}", hostname);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
-    ignite.compute(location).broadcast(runnable);
+    ignite.compute(location).withTimeout(timeout).broadcast(runnable);
   }
 
-  private <R> R executeRemotely(final String hostname, final IgniteCallable<R> callable) {
+  private <R> R executeRemotely(final String hostname, final long timeout, final IgniteCallable<R> callable) {
     logger.info("Executing command on {}", hostname);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
-    Collection<R> results = ignite.compute(location).broadcast(callable);
+    Collection<R> results = ignite.compute(location).withTimeout(timeout).broadcast(callable);
     if (results.size() != 1) {
       throw new IllegalStateException("Multiple response for the Execution on " + hostname);
     }
@@ -120,15 +122,7 @@ public class TsaControl {
     return this;
   }
 
-  public void start(final TerracottaServer terracottaServer) {
-    startServer(terracottaServer);
-  }
-
   public void startAll() {
-    startAll(TIMEOUT);
-  }
-
-  public void startAll(long timeout) {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
       final TcConfig tcConfig = tcConfigs[tcConfigIndex];
@@ -137,6 +131,10 @@ public class TsaControl {
         start(terracottaServer);
       }
     }
+  }
+
+  public void start(final TerracottaServer terracottaServer) {
+    startServer(terracottaServer);
   }
 
   private void startServer(final TerracottaServer terracottaServer) {
@@ -150,12 +148,44 @@ public class TsaControl {
       return;
     }
 
-    TerracottaServerInstance.TerracottaServerState state = executeRemotely(terracottaServer.getHostname(),
+    TerracottaServerInstance.TerracottaServerState state = executeRemotely(terracottaServer.getHostname(), TIMEOUT,
         (IgniteCallable<TerracottaServerInstance.TerracottaServerState>)() ->
             AgentControl.agentControl.start(topology.getId(), terracottaServer));
 
     instance.setState(state);
-
   }
 
+  public void stopAll() {
+    TcConfig[] tcConfigs = topology.getTcConfigs();
+    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
+      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
+      for (String serverSymbolicName : tcConfig.getServers().keySet()) {
+        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
+        stop(terracottaServer);
+      }
+    }
+  }
+
+  public void stop(final TerracottaServer terracottaServer) {
+    stopServer(terracottaServer);
+  }
+
+  private void stopServer(final TerracottaServer terracottaServer) {
+    TerracottaServerInstance instance = terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+    if (instance == null) {
+      throw new IllegalStateException("TsaControl missing calls to withTopology() and init().");
+    }
+
+    TerracottaServerInstance.TerracottaServerState currentState = instance.getState();
+    if (currentState == STOPPED) {
+      return;
+    }
+
+    TerracottaServerInstance.TerracottaServerState state = executeRemotely(terracottaServer.getHostname(), TIMEOUT,
+        (IgniteCallable<TerracottaServerInstance.TerracottaServerState>)() ->
+            AgentControl.agentControl.stop(topology.getId(), terracottaServer));
+
+    instance.setState(state);
+  }
 }
+

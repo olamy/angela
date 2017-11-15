@@ -3,6 +3,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.zip.commons.FileUtils;
 
+import com.terracottatech.qa.angela.kit.distribution.DistributionController;
 import com.terracottatech.qa.angela.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.topology.Topology;
 
@@ -24,16 +25,16 @@ public class TerracottaInstall {
 
   private static final Logger logger = LoggerFactory.getLogger(TerracottaInstall.class);
 
-  private File location;
-
-  private Topology topology;
+  private final File location;
+  private final Topology topology;
+  private final DistributionController distributionController;
 //  private final NetworkController networkController;
-  private Map<String, TerracottaServerInstance> terracottaInstances = new ConcurrentHashMap<String, TerracottaServerInstance>();
-  private CompressionUtils compressionUtils = new CompressionUtils();
+
 
   public TerracottaInstall(final File location, final Topology topology) {
     this.location = location;
     this.topology = topology;
+    this.distributionController = topology.createDistributionController();
 //    this.networkController = networkController;
   }
 
@@ -41,7 +42,7 @@ public class TerracottaInstall {
     return location;
   }
 
-  public Topology getTopology() {
-    return topology;
+  public DistributionController getDistributionController() {
+    return distributionController;
   }
 }

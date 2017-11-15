@@ -3,7 +3,10 @@ package com.terracottatech.qa.angela.kit;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.TerracottaServerState.STARTED_AS_PASSIVE;
@@ -14,8 +17,10 @@ import static com.terracottatech.qa.angela.kit.TerracottaServerInstance.Terracot
 
 public class ServerLogOutputStream extends LogOutputStream {
   private AtomicReference<TerracottaServerInstance.TerracottaServerState> stateRef = new AtomicReference<>();
+  private AtomicInteger pid;
 
-  public ServerLogOutputStream() {
+  public ServerLogOutputStream(final AtomicInteger pid) {
+    this.pid = pid;
   }
 
   @Override
@@ -25,6 +30,12 @@ public class ServerLogOutputStream extends LogOutputStream {
       stateRef.set(STARTED_AS_ACTIVE);
     } else if (line.contains("Moved to State[ PASSIVE-STANDBY ]")) {
       stateRef.set(STARTED_AS_PASSIVE);
+    } else if (line.contains("PID is")) {
+      Pattern pattern = Pattern.compile("PID is (\\d*)");
+      Matcher matcher = pattern.matcher(line);
+      if (matcher.find()) {
+        this.pid.set(Integer.parseInt(matcher.group(1)));
+      }
     }
   }
 
@@ -40,5 +51,9 @@ public class ServerLogOutputStream extends LogOutputStream {
       }
     }
     return stateRef.get();
+  }
+
+  public void stop() {
+
   }
 }
