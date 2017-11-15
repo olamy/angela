@@ -100,7 +100,7 @@
           <createDependencyReducedPom>false</createDependencyReducedPom>
           <transformers>
             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-              <mainClass>com.terracottatech.qa.angela.Agent</mainClass>
+              <mainClass>com.terracottatech.qa.angela.agent.Agent</mainClass>
             </transformer>
           </transformers>
         </configuration>
