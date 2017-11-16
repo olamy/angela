@@ -105,4 +105,8 @@ public class Topology {
     }
     return hostnames;
   }
+
+  public LicenseType getLicenseType() {
+    return distribution.getLicenseType();
+  }
 }

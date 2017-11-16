@@ -7,9 +7,16 @@ import java.io.Serializable;
  */
 public enum LicenseType implements Serializable {
 
-  OS, TC_EHC, TC_DB,    // for 5.x
-  GO, MAX;    // for 4.x
+  OS(true), TC_EHC(false), TC_DB(false),    // for 5.x
+  GO(false), MAX(false);    // for 4.x
 
-  LicenseType() {
+  private final boolean opensource;
+
+  LicenseType(boolean opensource) {
+    this.opensource = opensource;
+  }
+
+  public boolean isOpenSource() {
+    return opensource;
   }
 }

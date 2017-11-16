@@ -2,12 +2,14 @@ package com.terracottatech.qa.angela.agent.kit;
 
 
 import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.StartedProcess;
 
 import com.terracottatech.qa.angela.agent.kit.distribution.DistributionController;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +40,10 @@ public class TerracottaServerInstance  {
 
   public TerracottaServerState stop() {
     return this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
+  }
+
+  public void configureLicense(final String topologyId, final License license, final TcConfig[] tcConfigs) {
+    this.distributionController.configureLicense(topologyId, location, license, tcConfigs);
   }
 
   public static class TerracottaServerInstanceProcess {

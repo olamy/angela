@@ -1,7 +1,5 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -14,15 +12,19 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.ClusterToolConfig;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
@@ -37,22 +39,30 @@ public class TsaControl {
 
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
 
-  private Topology topology;
-  private Map<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
-
-  private ClusterToolConfig clusterToolConfig;
+  private final Topology topology;
+  private final Map<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
 
   public static final long TIMEOUT = 60000;
 
   private volatile Ignite ignite;
+  private final License license;
 
-  public void init() {
-    if (topology == null) {
-      throw new IllegalArgumentException("You need to pass a topology");
+  public TsaControl(final Topology topology) {
+    this(topology, null);
+  }
+
+  public TsaControl(final Topology topology, final License license) {
+    if (!topology.getLicenseType().isOpenSource() && license == null) {
+      throw new IllegalArgumentException("LicenseType " + topology.getLicenseType() + " requires a license.");
     }
+    this.topology = topology;
+    this.terracottaServerStates = createTerracottaServerStatesMap(this.topology.getTcConfigs());
+    this.license = license;
+  }
 
+  public void install() {
     if (ignite != null) {
-      throw new IllegalStateException("You can not init TsaControl twice");
+      throw new IllegalStateException("You can not install TsaControl twice");
     }
 
     IgniteConfiguration cfg = new IgniteConfiguration();
@@ -79,7 +89,7 @@ public class TsaControl {
         boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
         executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
-            Agent.CONTROL.init(topology, offline, clusterToolConfig, finalTcConfigIndex));
+            Agent.CONTROL.init(topology, offline, license, finalTcConfigIndex));
       }
     }
   }
@@ -114,24 +124,14 @@ public class TsaControl {
   }
 
 
-  public TsaControl withTopology(Topology topology) {
-    this.topology = topology;
-    createTerracottaServerStatesMap(this.topology.getTcConfigs());
-    return this;
-  }
-
-  private void createTerracottaServerStatesMap(final TcConfig[] tcConfigs) {
-    terracottaServerStates = new HashMap<>();
+  private static Map<ServerSymbolicName, TerracottaServerState> createTerracottaServerStatesMap(final TcConfig[] tcConfigs) {
+    Map<ServerSymbolicName, TerracottaServerState> terracottaServerStates = new HashMap<>();
     for (TcConfig tcConfig : tcConfigs) {
       for (TerracottaServer terracottaServer : tcConfig.getServers().values()) {
         terracottaServerStates.put(terracottaServer.getServerSymbolicName(), TerracottaServerState.STOPPED);
       }
     }
-  }
-
-  public TsaControl withClusterToolConfig(final ClusterToolConfig clusterToolConfig) {
-    this.clusterToolConfig = clusterToolConfig;
-    return this;
+    return terracottaServerStates;
   }
 
   public void startAll() {
@@ -152,7 +152,7 @@ public class TsaControl {
   private void startServer(final TerracottaServer terracottaServer) {
     TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
     if (terracottaServerState == null) {
-      throw new IllegalStateException("TsaControl missing calls to withTopology() and init().");
+      throw new IllegalStateException("TsaControl missing calls to withTopology() and install().");
     }
 
     if (terracottaServerState == STARTED_AS_ACTIVE || terracottaServerState == STARTED_AS_PASSIVE) {
@@ -184,7 +184,7 @@ public class TsaControl {
   private void stopServer(final TerracottaServer terracottaServer) {
     TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
     if (terracottaServerState == null) {
-      throw new IllegalStateException("TsaControl missing calls to withTopology() and init().");
+      throw new IllegalStateException("TsaControl missing calls to withTopology() and install().");
     }
 
     if (terracottaServerState == STOPPED) {
@@ -196,6 +196,27 @@ public class TsaControl {
             Agent.CONTROL.stop(topology.getId(), terracottaServer));
 
     terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
+  }
+
+  public void licenseAll() {
+    Set<ServerSymbolicName> notStartedServers = new HashSet<>();
+    for (Map.Entry<ServerSymbolicName, TerracottaServerState> entry : terracottaServerStates.entrySet()) {
+      if ((entry.getValue() != STARTED_AS_ACTIVE) && (entry.getValue() != STARTED_AS_PASSIVE)) {
+        notStartedServers.add(entry.getKey());
+      }
+    }
+    if (!notStartedServers.isEmpty()) {
+      throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
+    }
+
+    TcConfig[] tcConfigs = topology.getTcConfigs();
+    TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
+    executeRemotely(terracottaServer.getHostname(), new IgniteRunnable() {
+      @Override
+      public void run() {
+        Agent.CONTROL.configureLicense(topology.getId(), terracottaServer, license, tcConfigs);
+      }
+    });
   }
 }
 

@@ -1,7 +1,7 @@
 package com.terracottatech.qa.angela.agent.kit;
 
 import com.terracottatech.qa.angela.agent.kit.distribution.Distribution;
-import com.terracottatech.qa.angela.common.tcconfig.LicenseConfig;
+import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
@@ -242,7 +242,7 @@ public class KitManager implements Serializable {
    * <p/>
    * TODO  Change the method args
    */
-  public File installKit(LicenseConfig licenseConfig, final boolean offline) {
+  public File installKit(License license, final boolean offline) {
     File localInstall = resolveLocalInstall(offline);
     if (localInstall == null) {
       logger.debug("Local install not available");
@@ -254,7 +254,7 @@ public class KitManager implements Serializable {
         }
         localInstaller = downloadLocalInstaller();
       }
-      localInstall = createLocalInstallFromInstaller(licenseConfig, localInstaller);
+      localInstall = createLocalInstallFromInstaller(license, localInstaller);
     }
     return createWorkingCopyFromLocalInstall(localInstall);
   }
@@ -411,7 +411,7 @@ public class KitManager implements Serializable {
     return installerLocation;
   }
 
-  private File createLocalInstallFromInstaller(LicenseConfig licenseConfig, final File localInstaller) {
+  private File createLocalInstallFromInstaller(License license, final File localInstaller) {
     File dest = new File(resolveLocalInstallName());
     if (distribution.getPackageType() == KIT) {
       File localInstall = new File(resolveLocalInstallName() + File.separatorChar + getDirFromArchive(localInstaller));
@@ -419,7 +419,7 @@ public class KitManager implements Serializable {
       return localInstall;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
       File localInstallDir = new File(resolveLocalInstallName() + File.separatorChar + "TDB");
-      compressionUtils.extractSag(distribution.getVersion(), licenseConfig, localInstaller, dest, localInstallDir);
+      compressionUtils.extractSag(distribution.getVersion(), license, localInstaller, dest, localInstallDir);
       return dest;
     }
     throw new RuntimeException("Can not resolve the local kit distribution package");

@@ -11,11 +11,11 @@ import java.io.Serializable;
 /**
  * Created by esebasti on 7/21/17.
  */
-public class LicenseConfig implements Serializable {
+public class License implements Serializable {
 
   private final String licenseContent;
 
-  public LicenseConfig(String licensePath) {
+  public License(String licensePath) {
     try {
       InputStream is = getClass().getResourceAsStream(licensePath);
       if (is == null) {

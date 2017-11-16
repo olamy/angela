@@ -1,27 +1,30 @@
 package com.terracottatech.qa.angela.agent.kit.distribution;
 
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
-import com.terracottatech.qa.angela.agent.util.JavaLocationResolver;
-import com.terracottatech.qa.angela.agent.util.OS;
 import com.terracottatech.qa.angela.agent.kit.ServerLogOutputStream;
 import com.terracottatech.qa.angela.agent.kit.TerracottaServerInstance;
+import com.terracottatech.qa.angela.agent.util.JavaLocationResolver;
+import com.terracottatech.qa.angela.agent.util.OS;
+import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -103,6 +106,71 @@ public class Distribution102Controller extends DistributionController {
     return TerracottaServerState.STOPPED;
   }
 
+  @Override
+  public void configureLicense(final String topologyId, final File location, final License license, final TcConfig[] tcConfigs) {
+    Map<String, String> env = new HashMap<String, String>();
+    List<String> j8Homes = javaLocationResolver.resolveJava8Location();
+    if (j8Homes.size() > 0) {
+      env.put("JAVA_HOME", j8Homes.get(0));
+    }
+
+    String[] commands = configureCommand(topologyId, location, license, tcConfigs);
+
+    ProcessExecutor executor = new ProcessExecutor()
+        .command(commands).directory(location).environment(env);
+
+    ProcessResult processResult = null;
+    try {
+      StartedProcess startedProcess = executor.start();
+      processResult = startedProcess.getFuture().get();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    if (processResult.getExitValue() != 0) {
+      throw new ClusterToolException("Error when installing the cluster license", processResult.outputString(), processResult.getExitValue());
+    }
+  }
+
+  private synchronized String[] configureCommand(final String clusterName, final File location, final License licenseConfig, final TcConfig[] tcConfigs) {
+    List<String> command = new ArrayList<>();
+
+    StringBuilder sb = null;
+    if (distribution.getPackageType() == KIT) {
+      sb = new StringBuilder(location.getAbsolutePath() + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
+          .append(os.getShellExtension());
+    } else if (distribution.getPackageType() == SAG_INSTALLER) {
+      sb = new StringBuilder(location.getAbsolutePath() + File.separator + "TDB" + File.separator + "TerracottaDB"
+                             + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
+          .append(os.getShellExtension());
+    }
+    command.add(sb.toString());
+    command.add("configure");
+    command.add("-n");
+    command.add(clusterName);
+
+    if (distribution.getPackageType() == KIT) {
+      File tmpLicenseFile = new File(location + File.separator + "license.xml");
+      licenseConfig.WriteToFile(tmpLicenseFile);
+      command.add("-l");
+      command.add(tmpLicenseFile.getAbsolutePath());
+    } else if (distribution.getPackageType() == SAG_INSTALLER) {
+      //No explicit license for cluster tool on sag install as it uses default license put by sag installer
+      //on cluster-tool/conf folder
+    }
+
+    File tmpConfigDir = new File(location + File.separator + "tc-configs");
+    tmpConfigDir.mkdir();
+
+
+    for (TcConfig tcConfig : tcConfigs) {
+      tcConfig.writeTcConfigFile(tmpConfigDir);
+      command.add(tcConfig.getPath());
+    }
+
+    return command.toArray(new String[command.size()]);
+  }
+
   private void systemKill(Integer pid) {
     ProcessExecutor executor = new ProcessExecutor()
         .command(getKillCmd(pid));
@@ -132,7 +200,7 @@ public class Distribution102Controller extends DistributionController {
    * @return String[] representing the start command and its parameters
    */
   private String[] startCommand(final ServerSymbolicName serverSymbolicName, final Topology topology, final File installLocation) {
-    List<String> options = new LinkedList<String>();
+    List<String> options = new ArrayList<String>();
     // start command
     options.add(getStartCmd(installLocation));
 

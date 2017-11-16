@@ -19,7 +19,7 @@ import org.zeroturnaround.zip.ZipUtil;
 
 
 import com.terracottatech.qa.angela.agent.util.OS;
-import com.terracottatech.qa.angela.common.tcconfig.LicenseConfig;
+import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.io.BufferedInputStream;
@@ -274,13 +274,13 @@ public class CompressionUtils implements Serializable {
     }
   }
 
-  public void extractSag(final Version version, LicenseConfig licenseConfig, final File sagInstaller, final File dest, final File localInstallDir)  {
+  public void extractSag(final Version version, License license, final File sagInstaller, final File dest, final File localInstallDir)  {
     // create console script
     File scriptFile = new File(dest.getPath() + File.separatorChar + "install-script.txt");
     scriptFile.delete();
 
-    File licenseFile = new File(dest.getPath() + File.separatorChar + "license.xml");
-    licenseConfig.WriteToFile(licenseFile);
+    File licenseFile = new File(dest.getPath() + File.separatorChar + "licenseAll.xml");
+    license.WriteToFile(licenseFile);
 
     try {
       PrintWriter writer = new PrintWriter(scriptFile, "UTF-8");
@@ -296,9 +296,9 @@ public class CompressionUtils implements Serializable {
                      "e2ei/11/TDB_.LATEST/TDB/TDBCommon," +
                      "e2ei/11/TDB_.LATEST/TDB/TDBConsole," +
                      "e2ei/11/TDB_.LATEST/TDB/TDBCluster," +
-                     "e2ei/11/TPL_.LATEST/License/license");
+                     "e2ei/11/TPL_.LATEST/License/licenseAll");
       writer.println("InstallDir=" + localInstallDir.getPath());
-      writer.println("TDB.license=__VERSION1__," + licenseFile.getPath());
+      writer.println("TDB.licenseAll=__VERSION1__," + licenseFile.getPath());
       writer.println("ServerURL=http://aquarius_va.ame.ad.sag/cgi-bin/dataserve" + getSandboxName(version) + ".cgi");
       writer.println("sagInstallerLogFile=" + dest + "/installLog.txt");
       writer.close();
