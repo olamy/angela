@@ -26,21 +26,19 @@ public class InstallTest {
     Topology topology = new Topology("1", Distribution.distribution(version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), tcConfig);
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
-    TsaControl control = new TsaControl(topology, license);
+    try (TsaControl control = new TsaControl(topology, license)) {
+      control.installAll();
+      control.startAll();
+      control.licenseAll();
 
-//    Topology topology = new Topology("1", Distribution.distribution("/my/path", version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), tcConfig);
+      System.out.println("---> Wait for 3 sec");
+      Thread.sleep(3000);
+      System.out.println("---> Stop");
 
-    control.install();
-    control.startAll();
-    control.licenseAll();
+//      control.stopAll();
+    }
 
-    System.out.println("---> Wait for 5 sec");
-    Thread.sleep(5000);
-    System.out.println("---> Stop");
 
-    control.stopAll();
-
-    control.close();
   }
 
 }

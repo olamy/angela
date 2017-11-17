@@ -14,6 +14,12 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,11 +33,11 @@ public class AgentControl {
 
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
 
-  public void init(Topology topology, boolean offline, License license, int tcConfigIndex) {
+  public void install(Topology topology, boolean offline, License license, int tcConfigIndex) {
     if (kitsInstalls.containsKey(topology.getId())) {
-      System.out.println("Already exists");
+      logger.info("kit for " + topology + " already installed");
     } else {
-      logger.info("Installing the kit");
+      logger.info("Installing kit for " + topology);
       KitManager kitManager = topology.createKitManager();
       File kitDir = kitManager.installKit(license, offline);
 
@@ -44,6 +50,23 @@ public class AgentControl {
       System.out.println("kitDir = " + kitDir.getAbsolutePath());
 //        new TerracottaInstall(kitDir, clusterConfig, managementConfig, clusterToolConfig, clusterConfig.getVersion(), agent
 //            .getNetworkController())
+    }
+  }
+
+  public void uninstall(Topology topology) {
+    TerracottaInstall terracottaInstall = kitsInstalls.remove(topology.getId());
+    if (terracottaInstall != null) {
+      try {
+        logger.info("Uninstalling kit for " + topology);
+        Files.walk(Paths.get(terracottaInstall.getInstallLocation().getAbsolutePath()), FileVisitOption.FOLLOW_LINKS)
+            .sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .forEach(File::delete);
+      } catch (IOException ioe) {
+        throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation().getAbsolutePath(), ioe);
+      }
+    } else {
+      logger.info("No installed kit for " + topology);
     }
   }
 

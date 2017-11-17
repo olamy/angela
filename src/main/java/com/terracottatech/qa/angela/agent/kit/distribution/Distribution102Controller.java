@@ -119,9 +119,9 @@ public class Distribution102Controller extends DistributionController {
     ProcessExecutor executor = new ProcessExecutor()
         .command(commands).directory(location).environment(env);
 
-    ProcessResult processResult = null;
+    ProcessResult processResult;
     try {
-      StartedProcess startedProcess = executor.start();
+      StartedProcess startedProcess = executor.readOutput(true).start();
       processResult = startedProcess.getFuture().get();
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -219,7 +219,7 @@ public class Distribution102Controller extends DistributionController {
       try {
         modifiedTcConfigPath = tcConfig.getPath()
                                    .substring(0, tcConfig.getPath()
-                                                     .length() - 4) + "-" + serverSymbolicName + ".xml";
+                                                     .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
         String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
             replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName));
         FileUtils.write(new File(modifiedTcConfigPath), modifiedConfig);

@@ -11,6 +11,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -108,5 +109,14 @@ public class Topology {
 
   public LicenseType getLicenseType() {
     return distribution.getLicenseType();
+  }
+
+  @Override
+  public String toString() {
+    return "Topology{" +
+        "id='" + id + '\'' +
+        ", distribution=" + distribution +
+        ", tcConfigs=" + Arrays.toString(tcConfigs) +
+        '}';
   }
 }

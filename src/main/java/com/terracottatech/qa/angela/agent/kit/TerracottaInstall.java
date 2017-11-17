@@ -22,6 +22,7 @@ public class TerracottaInstall {
   private static final Logger logger = LoggerFactory.getLogger(TerracottaInstall.class);
 
   private final Topology topology;
+  private final File installLocation;
   //  private final NetworkController networkController;
   private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances;
 
@@ -29,6 +30,7 @@ public class TerracottaInstall {
   public TerracottaInstall(final File location, final Topology topology) {
     this.topology = topology;
     this.terracottaServerInstances = createTerracottaServerInstancesMap(topology.getTcConfigs(), topology.createDistributionController(), location);
+    this.installLocation = location;
 //    this.networkController = networkController;
   }
 
@@ -46,5 +48,9 @@ public class TerracottaInstall {
 
   public TerracottaServerInstance getTerracottaServerInstance(final TerracottaServer terracottaServer) {
     return terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+  }
+
+  public File getInstallLocation() {
+    return installLocation;
   }
 }
