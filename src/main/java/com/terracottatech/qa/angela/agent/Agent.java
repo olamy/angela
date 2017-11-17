@@ -27,7 +27,7 @@ import java.util.Collections;
  */
 public class Agent {
 
-  public static final AgentControl CONTROL = new AgentControl();
+  public static volatile AgentControl CONTROL;
 
   public static void main(String[] args) throws Exception {
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
@@ -56,11 +56,14 @@ public class Agent {
       cfg.setPeerClassLoadingEnabled(true);
 
       ignite = Ignition.start(cfg);
+
+      CONTROL = new AgentControl(ignite);
     }
 
     public void shutdown() {
       ignite.close();
       ignite = null;
+      CONTROL = null;
     }
 
   }

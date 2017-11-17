@@ -34,7 +34,6 @@ public class InstallTest {
       System.out.println("---> Wait for 3 sec");
       Thread.sleep(3000);
       System.out.println("---> Stop");
-
 //      control.stopAll();
     }
 

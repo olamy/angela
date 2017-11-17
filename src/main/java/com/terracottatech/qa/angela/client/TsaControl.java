@@ -1,6 +1,14 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -11,18 +19,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.topology.Topology;
-
+import javax.cache.Cache;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,7 +39,7 @@ public class TsaControl implements AutoCloseable {
   public static final long TIMEOUT = 60000;
 
   private final Topology topology;
-  private final Map<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
+  private final IgniteCache<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
   private final Ignite ignite;
   private final License license;
   private boolean closed = false;
@@ -54,7 +53,6 @@ public class TsaControl implements AutoCloseable {
       throw new IllegalArgumentException("LicenseType " + topology.getLicenseType() + " requires a license.");
     }
     this.topology = topology;
-    this.terracottaServerStates = new HashMap<>();
     this.license = license;
 
 
@@ -70,6 +68,7 @@ public class TsaControl implements AutoCloseable {
     cfg.setIgniteInstanceName("Client@" + UUID.randomUUID().toString());
 
     ignite = Ignition.start(cfg);
+    this.terracottaServerStates = ignite.getOrCreateCache("agentStates");
   }
 
   public void installAll() {
@@ -114,6 +113,9 @@ public class TsaControl implements AutoCloseable {
 
   private void uninstall(TerracottaServer terracottaServer) {
     TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
+    if (terracottaServerState == null) {
+      return;
+    }
     if (terracottaServerState != TerracottaServerState.STOPPED) {
       throw new IllegalStateException("Cannot uninstall: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
@@ -183,7 +185,7 @@ public class TsaControl implements AutoCloseable {
 
   public void licenseAll() {
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
-    for (Map.Entry<ServerSymbolicName, TerracottaServerState> entry : terracottaServerStates.entrySet()) {
+    for (Cache.Entry<ServerSymbolicName, TerracottaServerState> entry : terracottaServerStates) {
       if ((entry.getValue() != STARTED_AS_ACTIVE) && (entry.getValue() != STARTED_AS_PASSIVE)) {
         notStartedServers.add(entry.getKey());
       }
@@ -206,7 +208,11 @@ public class TsaControl implements AutoCloseable {
     }
     closed = true;
 
-    stopAll();
+    try {
+      stopAll();
+    } catch (IllegalStateException ise) {
+      // ignore, not installed
+    }
     uninstallAll();
     ignite.close();
   }

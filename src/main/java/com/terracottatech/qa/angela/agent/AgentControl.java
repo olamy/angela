@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +32,16 @@ import java.util.Map;
 
 public class AgentControl {
 
-  private final Map<String, TerracottaInstall> kitsInstalls = new HashMap<>();
-
   private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
+
+  private final Map<String, TerracottaInstall> kitsInstalls = new HashMap<>();
+  private final Ignite ignite;
+  private final IgniteCache<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
+
+  AgentControl(Ignite ignite) {
+    this.ignite = ignite;
+    this.terracottaServerStates = ignite.getOrCreateCache("agentStates");
+  }
 
   public void install(Topology topology, boolean offline, License license, int tcConfigIndex) {
     if (kitsInstalls.containsKey(topology.getId())) {
