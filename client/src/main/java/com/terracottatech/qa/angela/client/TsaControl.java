@@ -200,8 +200,8 @@ public class TsaControl implements AutoCloseable {
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () -> Agent.CONTROL.configureLicense(topology.getId(), terracottaServer, license, tcConfigs));
   }
 
-  public ClientControl clientControl() {
-    return new ClientControl(ignite);
+  public ClientControl clientControl(String nodeName) {
+    return new ClientControl(nodeName, ignite);
   }
 
 

@@ -35,9 +35,24 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  */
 public class KitManager implements Serializable {
 
+  public static String DEFAULT_KIT_DIR = "/data/tsamanager";
+  public static final String KITS_DIR;
+  static {
+    String dir = System.getProperty("kitsDir");
+    if (dir == null) {
+      KITS_DIR = DEFAULT_KIT_DIR;
+    } else if (dir.isEmpty()) {
+      KITS_DIR = DEFAULT_KIT_DIR;
+    } else if (dir.startsWith(".")) {
+      throw new IllegalArgumentException("Can not use relative path for the KITS_DIR. Please use a fixed one.");
+    } else {
+      KITS_DIR = dir;
+    }
+  }
+
+
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
-  public static String defaultDir = "/data/tsamanager";
   private CompressionUtils compressionUtils = new CompressionUtils();
   private Distribution distribution;
 
@@ -51,16 +66,8 @@ public class KitManager implements Serializable {
    * @return location of the installer archive file
    */
   private String resolveLocalDir() {
-    String kitsDir = System.getProperty("kitsDir");
-    if (kitsDir == null) {
-      kitsDir = defaultDir;
-    } else if (kitsDir.isEmpty()) {
-      kitsDir = defaultDir;
-    } else if (kitsDir.startsWith(".")) {
-      throw new IllegalArgumentException("Can not use relative path for the kitsDir. Please use a fixed one.");
-    }
-    return kitsDir + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
-           + distribution.getVersion().getVersion(false);
+    return KITS_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
+            + distribution.getVersion().getVersion(false);
   }
 
   /**

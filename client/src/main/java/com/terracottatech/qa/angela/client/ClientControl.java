@@ -15,30 +15,246 @@
  */
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.kit.KitManager;
+import com.terracottatech.qa.angela.common.util.FileMetadata;
+import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.exec.stream.LogOutputStream;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.PidUtil;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.io.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Ludovic Orban
  */
-public class ClientControl {
-  private final Ignite ignite;
+public class ClientControl implements Closeable {
 
-  ClientControl(Ignite ignite) {
+  private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
+
+  private final String nodeName;
+  private final Ignite ignite;
+  private final String subNodeName;
+  private final int subClientPid;
+  private boolean closed = false;
+
+  ClientControl(String nodeName, Ignite ignite) {
+    this.nodeName = nodeName;
     this.ignite = ignite;
+    this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
+    this.subClientPid = spawnSubClient();
   }
 
-  public Future<Void> submit(String nodeName, ClientJob clientJob) {
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+  private int spawnSubClient() {
+    logger.info("Spawning sub-client on " + nodeName);
+    try {
+      final BlockingQueue<Object> queue = ignite.queue("queue-upload-" + subNodeName, 100, new CollectionConfiguration());
+
+      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync(remoteClientDownloadClasspathLambda(subNodeName, queue));
+
+      uploadClasspath(queue);
+
+      remoteDownloadFuture.get();
+
+
+      // demarrer sous-client
+      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> {
+        try {
+          JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
+          List<String> j8Homes = javaLocationResolver.resolveJava8Location();
+          String j8Home = j8Homes.get(0);
+
+          final AtomicBoolean started = new AtomicBoolean(false);
+          logger.info("Spawning sub-agent " + Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName()));
+          ProcessExecutor processExecutor = new ProcessExecutor().command(j8Home + "/bin/java", "-classpath", buildClasspath(subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName())
+                  .redirectOutput(new LogOutputStream() {
+                    @Override
+                    protected void processLine(String s) {
+                      System.out.println(s);
+                      if (s.startsWith("Registered node ")) {
+                        started.set(true);
+                      }
+                    }
+                  }).directory(new File(KitManager.KITS_DIR, subNodeName));
+          StartedProcess startedProcess = processExecutor.start();
+
+          while (!started.get()) {
+            Thread.sleep(1000);
+          }
+
+          return PidUtil.getPid(startedProcess.getProcess());
+        } catch (Exception e) {
+          throw new RuntimeException("Error spawning sub-client " + subNodeName, e);
+        }
+      });
+      int pid = results.iterator().next();
+      logger.info("sub-agent started on PID " + pid);
+
+      return pid;
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot create sub-client on " + nodeName, e);
+    }
+  }
+
+  private static String buildClasspath(String subNodeName) {
+    File subClientDir = new File(KitManager.KITS_DIR, subNodeName);
+    String[] cpentries = subClientDir.list();
+
+    StringBuilder sb = new StringBuilder();
+    for (String cpentry : cpentries) {
+      sb.append(cpentry).append(File.pathSeparator);
+    }
+
+    // if
+    //   file:/Users/lorban/.m2/repository/org/slf4j/slf4j-api/1.7.22/slf4j-api-1.7.22.jar!/org/slf4j/Logger.class
+    // else
+    //   /work/terracotta/irepo/lorban/angela/agent/target/classes/com/terracottatech/qa/angela/agent/Agent.class
+
+    String agentClassPath = Agent.class.getResource('/' + Agent.class.getName().replace('.', '/') + ".class").getPath();
+
+    if (agentClassPath.startsWith("file:")) {
+      sb.append(agentClassPath.substring("file:".length(), agentClassPath.lastIndexOf('!')));
+    } else {
+      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(Agent.class.getName().replace('.', '/'))));
+    }
+
+    return sb.toString();
+  }
+
+  private void uploadClasspath(BlockingQueue<Object> queue) throws InterruptedException, IOException {
+    File javaHome = new File(System.getProperty("java.home"));
+    String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
+    for (String classpathJarName : classpathJarNames) {
+      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile().getPath())) {
+        logger.info("skipping " + classpathJarName);
+        continue; // part of the JVM, skip it
+      }
+
+      uploadFile(queue, new File(classpathJarName), null);
+    }
+    queue.put(Boolean.TRUE); // end of upload marker
+  }
+
+  private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
+    FileMetadata fileMetadata = new FileMetadata(path, file);
+    queue.put(fileMetadata);
+    logger.info("uploading " + fileMetadata);
+
+    if (file.isDirectory()) {
+      File[] files = file.listFiles();
+      for (File _file : files) {
+        String parentPath = path == null ? "" : path + "/";
+        uploadFile(queue, _file, parentPath + file.getName());
+      }
+    } else {
+      byte[] buffer = new byte[64 * 1024];
+      try (FileInputStream fis = new FileInputStream(file)) {
+        while (true) {
+          int read = fis.read(buffer);
+          if (read < 0) {
+            break;
+          }
+          byte[] toSend;
+          if (read != buffer.length) {
+            toSend = new byte[read];
+            System.arraycopy(buffer, 0, toSend, 0, read);
+          } else {
+            toSend = buffer;
+          }
+          queue.put(toSend);
+        }
+      }
+      logger.info("uploaded " + fileMetadata);
+    }
+  }
+
+  private IgniteRunnable remoteClientDownloadClasspathLambda(String subNodeName, BlockingQueue<Object> queue) {
+    return () -> {
+      try {
+        File subClientDir = new File(KitManager.KITS_DIR, subNodeName);
+        if (!subClientDir.mkdirs()) {
+          throw new RuntimeException("Cannot create sub-client directory '" + subClientDir + "' on " + nodeName);
+        }
+
+        while (true) {
+          Object read = queue.take();
+          if (read.equals(Boolean.TRUE)) {
+            logger.info("end of classpath upload");
+            break;
+          }
+
+          FileMetadata fileMetadata = (FileMetadata) read;
+          logger.info("downloading " + fileMetadata);
+          if (!fileMetadata.isDirectory()) {
+            long readFileLength = 0L;
+            File file = new File(subClientDir + "/" + fileMetadata.getPathName());
+            file.getParentFile().mkdirs();
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+              while (true) {
+                byte[] buffer = (byte[]) queue.take();
+                fos.write(buffer);
+                readFileLength += buffer.length;
+                if (readFileLength == fileMetadata.getLength()) {
+                  break;
+                }
+                if (readFileLength > fileMetadata.getLength()) {
+                  throw new RuntimeException("Error creating client classpath on " + nodeName);
+                }
+              }
+            }
+            logger.info("downloaded " + fileMetadata);
+          }
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("Cannot upload sub-client on " + nodeName, e);
+      }
+    };
+  }
+
+  public Future<Void> submit(ClientJob clientJob) {
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
     IgniteFuture<Void> igniteFuture = ignite.compute(location).broadcastAsync((IgniteRunnable) clientJob::run);
     return new ClientJobFuture<>(igniteFuture);
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (closed) {
+      return;
+    }
+    closed = true;
+
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+    ignite.compute(location).broadcast((IgniteRunnable) () -> {
+      try {
+        PidProcess pidProcess = Processes.newPidProcess(subClientPid);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+
+        FileUtils.deleteDirectory(new File(KitManager.KITS_DIR, subNodeName));
+      } catch (Exception e) {
+        throw new RuntimeException("Error cleaning up sub-client", e);
+      }
+    });
   }
 
   static class ClientJobFuture<V> implements Future<V> {
