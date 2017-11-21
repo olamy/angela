@@ -1,10 +1,10 @@
 package com.terracottatech.qa.angela;
 
-import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
-import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.client.ClientControl;
 import com.terracottatech.qa.angela.client.TsaControl;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -37,14 +37,13 @@ public class InstallTest {
       System.out.println("---> Wait for 3 sec");
       Thread.sleep(3000);
 
-      Future<Void> f = control.clientControl("localhost").submit(() -> System.out.println("hello dudes 5"));
-      f.get();
+      try (ClientControl clientControl = control.clientControl("localhost")) {
+        Future<Void> f = clientControl.submit(() -> System.out.println("hello dudes 5"));
+        f.get();
+      }
 
       System.out.println("---> Stop");
       control.stopAll();
     }
-
-
   }
-
 }
