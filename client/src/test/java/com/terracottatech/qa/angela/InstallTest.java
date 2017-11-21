@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.ClientControl;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.junit.Test;
 
@@ -30,21 +31,21 @@ public class InstallTest {
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
     try (TsaControl control = new TsaControl(topology, license)) {
-      control.installAll();
-      control.startAll();
-      control.licenseAll();
+//      control.installAll();
+//      control.startAll();
+//      control.licenseAll();
+//
+//      System.out.println("---> Wait for 3 sec");
+//      Thread.sleep(3000);
 
-      System.out.println("---> Wait for 3 sec");
-      Thread.sleep(3000);
+      try (ClientControl clientControl = control.clientControl("localhost")) {
+        Future<Void> f = clientControl.submit(() -> System.out.println("hello dudes 5"));
+        f.get();
+      }
 
-      Future<Void> f = control.clientControl().submit("localhost", () -> System.out.println("hello dudes 5"));
-      f.get();
-
-      System.out.println("---> Stop");
+//      System.out.println("---> Stop");
 //      control.stopAll();
     }
-
-
   }
 
 }
