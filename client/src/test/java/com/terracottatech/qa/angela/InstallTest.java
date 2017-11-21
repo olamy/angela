@@ -37,7 +37,7 @@ public class InstallTest {
       System.out.println("---> Wait for 3 sec");
       Thread.sleep(3000);
 
-      Future<Void> f = control.clientControl().submit("localhost", () -> System.out.println("hello dudes 5"));
+      Future<Void> f = control.clientControl("localhost").submit(() -> System.out.println("hello dudes 5"));
       f.get();
 
       System.out.println("---> Stop");
