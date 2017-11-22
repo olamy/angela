@@ -46,14 +46,12 @@ public class AgentControl {
       File kitDir = kitManager.installKit(license, offline);
 
       logger.info("Installing the tc-configs");
-      topology.getTcConfigs()[tcConfigIndex].updateLogsLocation(kitDir, tcConfigIndex);
-      topology.getTcConfigs()[tcConfigIndex].writeTcConfigFile(kitDir);
+      for (TcConfig tcConfig : topology.getTcConfigs()) {
+        tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
+        tcConfig.writeTcConfigFile(kitDir);
+      }
 
       kitsInstalls.put(topology.getId(), new TerracottaInstall(kitDir, topology));
-
-      System.out.println("kitDir = " + kitDir.getAbsolutePath());
-//        new TerracottaInstall(kitDir, clusterConfig, managementConfig, clusterToolConfig, clusterConfig.getVersion(), agent
-//            .getNetworkController())
     }
   }
 
