@@ -8,6 +8,11 @@
         <ohr:resource name="primary-server-resource" unit="MB">300</ohr:resource>   <!--1-->
       </ohr:offheap-resources>
     </config>
+    <config>
+      <data:data-directories xmlns:data="http://www.terracottatech.com/config/data-roots">
+        <data:directory name="dataroot">root2</data:directory>
+      </data:data-directories>
+    </config>
   </plugins>
 
   <servers>

@@ -22,42 +22,40 @@ import java.util.Properties;
  */
 public class TcConfig implements Serializable {
 
-  private String tcConfigPath;
-  protected TcConfigHolder tcConfigHolder;
-  protected String tcConfigName;
+  private final String tcConfigPath;
+  private final TcConfigHolder tcConfigHolder;
+  private final String tcConfigName;
 
   public TcConfig(final Version version, final String tcConfigPath) {
     this.tcConfigPath = tcConfigPath;
     this.tcConfigName = new File(tcConfigPath).getName();
-    initTcConfigHolder(version);
+    this.tcConfigHolder = initTcConfigHolder(version);
   }
 
-  private void initTcConfigHolder(final Version version) {
+  private TcConfigHolder initTcConfigHolder(final Version version) {
     try {
       if (version.getMajor() == 4) {
         if (version.getMinor() == 0) {
-          this.tcConfigHolder = new TcConfig8Holder(new FileInputStream(
+          return new TcConfig8Holder(new FileInputStream(
               getClass().getResource(this.tcConfigPath).getPath()));
         } else if (version.getMinor() >= 1) {
-          this.tcConfigHolder = new TcConfig9Holder(new FileInputStream(
+          return new TcConfig9Holder(new FileInputStream(
               getClass().getResource(this.tcConfigPath).getPath()));
+        } else {
+          throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
         }
       } else if (version.getMajor() == 5) {
-        this.tcConfigHolder = new TcConfig10Holder(new FileInputStream(
+        return new TcConfig10Holder(new FileInputStream(
             getClass().getResource(this.tcConfigPath).getPath()));
       } else if (version.getMajor() == 10) {
-        this.tcConfigHolder = new TcConfig10Holder(new FileInputStream(
+        return new TcConfig10Holder(new FileInputStream(
             getClass().getResource(this.tcConfigPath).getPath()));
       } else {
         throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
       }
     } catch (FileNotFoundException e) {
-      throw new RuntimeException("Cannot read tc-config file : " + this.tcConfigPath);
+      throw new RuntimeException("Cannot read tc-config file : " + this.tcConfigPath, e);
     }
-  }
-
-  public TerracottaServer getServer(String hostname, int port) {
-    return tcConfigHolder.getServers().get(hostname + ":" + port);
   }
 
   public Map<ServerSymbolicName, TerracottaServer> getServers() {
@@ -95,9 +93,5 @@ public class TcConfig implements Serializable {
 
   public void updateDataDirectory(final String rootId, final String newlocation) {
     tcConfigHolder.updateDataDirectory(rootId, newlocation);
-  }
-
-  public boolean containsServer(final String serverSymbolicName) {
-    return tcConfigHolder.getServers().containsKey(serverSymbolicName);
   }
 }

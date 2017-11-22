@@ -16,13 +16,11 @@ public class License implements Serializable {
   private final String licenseContent;
 
   public License(String licensePath) {
-    try {
-      InputStream is = getClass().getResourceAsStream(licensePath);
+    try (InputStream is = getClass().getResourceAsStream(licensePath)) {
       if (is == null) {
         throw new IllegalArgumentException("License file is not present");
       }
       licenseContent = IOUtils.toString(is);
-      is.close();
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
@@ -30,10 +28,8 @@ public class License implements Serializable {
 
 
   public void WriteToFile(File file) {
-    try {
-      FileOutputStream fos = new FileOutputStream(file);
+    try (FileOutputStream fos = new FileOutputStream(file)) {
       IOUtils.write(licenseContent, fos);
-      fos.close();
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
