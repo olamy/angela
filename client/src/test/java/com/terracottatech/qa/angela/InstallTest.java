@@ -38,7 +38,7 @@ public class InstallTest {
       Thread.sleep(3000);
 
       try (ClientControl clientControl = control.clientControl("localhost")) {
-        Future<Void> f = clientControl.submit(() -> System.out.println("hello dudes 5"));
+        Future<Void> f = clientControl.submit((context) -> System.out.println("hello dudes 5"));
         f.get();
       }
 
