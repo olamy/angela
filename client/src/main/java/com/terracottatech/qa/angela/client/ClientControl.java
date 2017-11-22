@@ -16,6 +16,7 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.client.Context;
 import com.terracottatech.qa.angela.common.kit.KitManager;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
@@ -49,7 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ClientControl implements Closeable {
 
-  private final static Logger logger = LoggerFactory.getLogger(TsaControl.class);
+  private final static Logger logger = LoggerFactory.getLogger(ClientControl.class);
 
   private final String nodeName;
   private final Ignite ignite;
@@ -65,7 +66,7 @@ public class ClientControl implements Closeable {
   }
 
   private int spawnSubClient() {
-    logger.info("Spawning sub-client on " + nodeName);
+    logger.info("Spawning sub-client '{}' on {}", subNodeName, nodeName);
     try {
       final BlockingQueue<Object> queue = ignite.queue("queue-upload-" + subNodeName, 100, new CollectionConfiguration());
 
@@ -108,7 +109,7 @@ public class ClientControl implements Closeable {
         }
       });
       int pid = results.iterator().next();
-      logger.info("sub-agent started on PID " + pid);
+      logger.info("sub-agent '{}' on {} started with PID {}", subNodeName, nodeName, pid);
 
       return pid;
     } catch (Exception e) {
@@ -146,7 +147,7 @@ public class ClientControl implements Closeable {
     String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
     for (String classpathJarName : classpathJarNames) {
       if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile().getPath())) {
-        logger.info("skipping " + classpathJarName);
+        logger.debug("skipping " + classpathJarName);
         continue; // part of the JVM, skip it
       }
 
@@ -158,7 +159,7 @@ public class ClientControl implements Closeable {
   private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
     FileMetadata fileMetadata = new FileMetadata(path, file);
     queue.put(fileMetadata);
-    logger.info("uploading " + fileMetadata);
+    logger.debug("uploading " + fileMetadata);
 
     if (file.isDirectory()) {
       File[] files = file.listFiles();
@@ -184,7 +185,7 @@ public class ClientControl implements Closeable {
           queue.put(toSend);
         }
       }
-      logger.info("uploaded " + fileMetadata);
+      logger.debug("uploaded " + fileMetadata);
     }
   }
 
@@ -192,6 +193,7 @@ public class ClientControl implements Closeable {
     return () -> {
       try {
         File subClientDir = new File(KitManager.KITS_DIR, subNodeName);
+        logger.info("Downloading sub-agent '{}' into {}", subNodeName, subClientDir);
         if (!subClientDir.mkdirs()) {
           throw new RuntimeException("Cannot create sub-client directory '" + subClientDir + "' on " + nodeName);
         }
@@ -199,12 +201,12 @@ public class ClientControl implements Closeable {
         while (true) {
           Object read = queue.take();
           if (read.equals(Boolean.TRUE)) {
-            logger.info("end of classpath upload");
+            logger.info("Downloaded sub-agent '{}' into {}", subNodeName, subClientDir);
             break;
           }
 
           FileMetadata fileMetadata = (FileMetadata) read;
-          logger.info("downloading " + fileMetadata);
+          logger.debug("downloading " + fileMetadata);
           if (!fileMetadata.isDirectory()) {
             long readFileLength = 0L;
             File file = new File(subClientDir + "/" + fileMetadata.getPathName());
@@ -222,7 +224,7 @@ public class ClientControl implements Closeable {
                 }
               }
             }
-            logger.info("downloaded " + fileMetadata);
+            logger.debug("downloaded " + fileMetadata);
           }
         }
       } catch (Exception e) {
@@ -233,7 +235,7 @@ public class ClientControl implements Closeable {
 
   public Future<Void> submit(ClientJob clientJob) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
-    IgniteFuture<Void> igniteFuture = ignite.compute(location).broadcastAsync((IgniteRunnable) clientJob::run);
+    IgniteFuture<Void> igniteFuture = ignite.compute(location).broadcastAsync((IgniteRunnable) () -> {clientJob.run(new Context(nodeName, ignite));});
     return new ClientJobFuture<>(igniteFuture);
   }
 
@@ -244,13 +246,17 @@ public class ClientControl implements Closeable {
     }
     closed = true;
 
+    logger.info("Wiping up sub-agent '{}' on {}", subNodeName, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     ignite.compute(location).broadcast((IgniteRunnable) () -> {
       try {
+        logger.info("killing sub-agent '{}' with PID {}", subNodeName, subClientPid);
         PidProcess pidProcess = Processes.newPidProcess(subClientPid);
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
-        FileUtils.deleteDirectory(new File(KitManager.KITS_DIR, subNodeName));
+        File subAgentRoot = new File(KitManager.KITS_DIR, subNodeName);
+        logger.info("cleaning up directory structure '{}' of sub-agent {}", subAgentRoot, subNodeName);
+        FileUtils.deleteDirectory(subAgentRoot);
       } catch (Exception e) {
         throw new RuntimeException("Error cleaning up sub-client", e);
       }

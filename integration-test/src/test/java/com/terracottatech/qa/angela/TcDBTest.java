@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.ClientJob;
+import com.terracottatech.qa.angela.common.client.Barrier;
+import com.terracottatech.store.StoreException;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.ClientControl;
@@ -41,22 +44,39 @@ public class TcDBTest {
       Thread.sleep(3000);
 
       try (ClientControl clientControl = control.clientControl("localhost")) {
-        Future<Void> f = clientControl.submit(() -> {
-              try {
-                DatasetManager datasetManager = DatasetManager.clustered(URI.create("terracotta://localhost:9510")).build();
-                DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
-                    .offheap("primary-server-resource");
-                Dataset<String> dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+        ClientJob clientJob = (context) -> {
+          Barrier barrier = context.barrier("testConnection", 2);
+          System.out.println("client started and waiting on barrier");
+          barrier.await();
 
-                // We managed to connect
-
-                dataset.close();
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
+          System.out.println("all client sync'ed");
+          try {
+            DatasetManager datasetManager = DatasetManager.clustered(URI.create("terracotta://localhost:9510")).build();
+            DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
+                .offheap("primary-server-resource");
+            Dataset<String> dataset;
+            try {
+              dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+              System.out.println("created dataset");
+            } catch (StoreException se) {
+              dataset = datasetManager.getDataset("MyDataset", Type.STRING);
+              System.out.println("got existing dataset");
             }
-        );
-        f.get();
+
+            // We managed to connect
+
+            dataset.close();
+            datasetManager.close();
+            System.out.println("client done");
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        };
+
+        Future<Void> f1 = clientControl.submit(clientJob);
+        Future<Void> f2 = clientControl.submit(clientJob);
+        f1.get();
+        f2.get();
       }
 
       System.out.println("---> Stop");

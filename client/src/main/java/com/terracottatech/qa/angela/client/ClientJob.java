@@ -15,6 +15,8 @@
  */
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.common.client.Context;
+
 import java.io.Serializable;
 
 /**
@@ -22,6 +24,6 @@ import java.io.Serializable;
  */
 public interface ClientJob extends Serializable {
 
-  void run();
+  void run(Context context);
 
 }
