@@ -45,7 +45,7 @@ public class Topology {
   }
 
   public KitManager createKitManager() {
-    return new KitManager(distribution);
+    return new KitManager(id, distribution);
   }
 
   public Map<ServerSymbolicName, TerracottaServer> getServers() {

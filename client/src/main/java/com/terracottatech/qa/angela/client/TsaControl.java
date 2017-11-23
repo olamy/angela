@@ -199,7 +199,7 @@ public class TsaControl implements AutoCloseable {
   }
 
   public ClientControl clientControl(String nodeName) {
-    return new ClientControl(nodeName, ignite);
+    return new ClientControl(topology.getId(), nodeName, ignite);
   }
 
 

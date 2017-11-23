@@ -52,13 +52,15 @@ public class ClientControl implements Closeable {
 
   private final static Logger logger = LoggerFactory.getLogger(ClientControl.class);
 
+  private final String topologyId;
   private final String nodeName;
   private final Ignite ignite;
   private final String subNodeName;
   private final int subClientPid;
   private boolean closed = false;
 
-  ClientControl(String nodeName, Ignite ignite) {
+  ClientControl(String topologyId, String nodeName, Ignite ignite) {
+    this.topologyId = topologyId;
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
@@ -72,13 +74,9 @@ public class ClientControl implements Closeable {
 
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
       IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync(remoteClientDownloadClasspathLambda(subNodeName, queue));
-
       uploadClasspath(queue);
-
       remoteDownloadFuture.get();
 
-
-      // demarrer sous-client
       Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> {
         try {
           JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
@@ -86,8 +84,8 @@ public class ClientControl implements Closeable {
           String j8Home = j8Homes.get(0);
 
           final AtomicBoolean started = new AtomicBoolean(false);
-          logger.info("Spawning sub-agent " + Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName()));
-          ProcessExecutor processExecutor = new ProcessExecutor().command(j8Home + "/bin/java", "-classpath", buildClasspath(subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName())
+          logger.info("Spawning sub-agent " + Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(topologyId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName()));
+          ProcessExecutor processExecutor = new ProcessExecutor().command(j8Home + "/bin/java", "-classpath", buildClasspath(topologyId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName())
                   .redirectOutput(new LogOutputStream() {
                     @Override
                     protected void processLine(String s) {
@@ -96,7 +94,7 @@ public class ClientControl implements Closeable {
                         started.set(true);
                       }
                     }
-                  }).directory(new File(KitManager.KITS_DIR, subNodeName));
+                  }).directory(new File(subClientDir(topologyId, subNodeName)));
           StartedProcess startedProcess = processExecutor.start();
 
           while (!started.get()) {
@@ -117,13 +115,13 @@ public class ClientControl implements Closeable {
     }
   }
 
-  private static String buildClasspath(String subNodeName) {
-    File subClientDir = new File(KitManager.KITS_DIR, subNodeName);
+  private static String buildClasspath(String topologyId, String subNodeName) {
+    File subClientDir = new File(subClientDir(topologyId, subNodeName), "lib");
     String[] cpentries = subClientDir.list();
 
     StringBuilder sb = new StringBuilder();
     for (String cpentry : cpentries) {
-      sb.append(cpentry).append(File.pathSeparator);
+      sb.append("lib/" + cpentry).append(File.pathSeparator);
     }
 
     // if
@@ -140,6 +138,10 @@ public class ClientControl implements Closeable {
     }
 
     return sb.toString();
+  }
+
+  private static String subClientDir(String topologyId, String subNodeName) {
+    return KitManager.KITS_DIR + "/" + topologyId.replace(':', '_') + "/" + subNodeName;
   }
 
   private void uploadClasspath(BlockingQueue<Object> queue) throws InterruptedException, IOException {
@@ -192,7 +194,7 @@ public class ClientControl implements Closeable {
   private IgniteRunnable remoteClientDownloadClasspathLambda(String subNodeName, BlockingQueue<Object> queue) {
     return () -> {
       try {
-        File subClientDir = new File(KitManager.KITS_DIR, subNodeName);
+        File subClientDir = new File(subClientDir(topologyId, subNodeName), "lib");
         logger.info("Downloading sub-agent '{}' into {}", subNodeName, subClientDir);
         if (!subClientDir.mkdirs()) {
           throw new RuntimeException("Cannot create sub-client directory '" + subClientDir + "' on " + nodeName);
@@ -254,7 +256,7 @@ public class ClientControl implements Closeable {
         PidProcess pidProcess = Processes.newPidProcess(subClientPid);
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
-        File subAgentRoot = new File(KitManager.KITS_DIR, subNodeName);
+        File subAgentRoot = new File(subClientDir(topologyId, subNodeName));
         logger.info("cleaning up directory structure '{}' of sub-agent {}", subAgentRoot, subNodeName);
         FileUtils.deleteDirectory(subAgentRoot);
       } catch (Exception e) {

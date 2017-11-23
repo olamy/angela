@@ -19,8 +19,6 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -54,9 +52,11 @@ public class KitManager implements Serializable {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private CompressionUtils compressionUtils = new CompressionUtils();
+  private final String topologyId;
   private Distribution distribution;
 
-  public KitManager(final Distribution distribution) {
+  public KitManager(String topologyId, final Distribution distribution) {
+    this.topologyId = topologyId;
     this.distribution = distribution;
   }
 
@@ -433,7 +433,7 @@ public class KitManager implements Serializable {
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File(localInstall + "_" + new SimpleDateFormat("MMddHHmmssSS").format(new Date()));
+    File workingInstall = new File(KITS_DIR + "/" + topologyId.replace(':', '_'), localInstall.getName());
     try {
       FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
