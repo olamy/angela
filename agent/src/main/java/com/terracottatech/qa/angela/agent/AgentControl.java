@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.kit.KitManager;
 import com.terracottatech.qa.angela.common.kit.TerracottaInstall;
@@ -14,11 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,15 +26,15 @@ public class AgentControl {
 
   private final static Logger logger = LoggerFactory.getLogger(AgentControl.class);
 
-  private final Map<String, TerracottaInstall> kitsInstalls = new HashMap<>();
+  private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Ignite ignite;
 
   AgentControl(Ignite ignite) {
     this.ignite = ignite;
   }
 
-  public void install(Topology topology, boolean offline, License license, int tcConfigIndex) {
-    if (kitsInstalls.containsKey(topology.getId())) {
+  public void install(InstanceId instanceId, Topology topology, boolean offline, License license, int tcConfigIndex) {
+    if (kitsInstalls.containsKey(instanceId)) {
       logger.info("kit for " + topology + " already installed");
     } else {
       logger.info("Installing kit for " + topology);
@@ -51,19 +47,19 @@ public class AgentControl {
         tcConfig.writeTcConfigFile(kitDir);
       }
 
-      kitsInstalls.put(topology.getId(), new TerracottaInstall(kitDir, topology));
+      kitsInstalls.put(instanceId, new TerracottaInstall(kitDir, topology));
     }
   }
 
-  public void uninstall(Topology topology) {
-    TerracottaInstall terracottaInstall = kitsInstalls.remove(topology.getId());
+  public void uninstall(InstanceId instanceId, Topology topology) {
+    TerracottaInstall terracottaInstall = kitsInstalls.remove(instanceId);
     if (terracottaInstall != null) {
       try {
         logger.info("Uninstalling kit for " + topology);
-        Files.walk(Paths.get(terracottaInstall.getInstallLocation().getAbsolutePath()), FileVisitOption.FOLLOW_LINKS)
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .forEach(File::delete);
+        KitManager kitManager = topology.createKitManager();
+        // TODO : get log files
+
+        kitManager.deleteInstall(terracottaInstall.getInstallLocation());
       } catch (IOException ioe) {
         throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation().getAbsolutePath(), ioe);
       }
@@ -72,22 +68,22 @@ public class AgentControl {
     }
   }
 
-  public TerracottaServerState start(final String topologyId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(topologyId)
+  public TerracottaServerState start(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
     return serverInstance.start();
   }
 
-  public TerracottaServerState stop(final String topologyId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(topologyId)
+  public TerracottaServerState stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
     return serverInstance.stop();
   }
 
-  public void configureLicense(final String topologyId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(topologyId)
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
-    serverInstance.configureLicense(topologyId, license, tcConfigs);
+    serverInstance.configureLicense(instanceId, license, tcConfigs);
 
   }
 }

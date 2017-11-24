@@ -79,7 +79,7 @@ public class CompressionUtils implements Serializable {
     untar.setSrc(kitInstaller);
     untar.execute();
 
-    cleanup(kitDest);
+    cleanupPermissions(kitDest);
   }
 
   private void extractTarGzCmd(final File kitInstaller, final File kitDest) throws InterruptedException, TimeoutException, IOException {
@@ -155,7 +155,7 @@ public class CompressionUtils implements Serializable {
 
   private void extractZipJava(final File kitInstaller, final File kitDest) throws IOException {
     ZipUtil.unpack(kitInstaller, kitDest);
-    cleanup(kitDest);
+    cleanupPermissions(kitDest);
   }
 
   private void extractZipCmd(final File kitInstaller, final File kitDest) throws InterruptedException, TimeoutException, IOException {
@@ -166,7 +166,7 @@ public class CompressionUtils implements Serializable {
     System.out.println(out.toString());
   }
 
-  public void cleanup(File dest) throws IOException {
+  public void cleanupPermissions(File dest) throws IOException {
     Chmod chmod = new Chmod();
     chmod.setProject(new Project());
     chmod.setPerm("ugo+x");

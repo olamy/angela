@@ -94,7 +94,7 @@ public class Topology {
     return this.tcConfigs;
   }
 
-  public String getId() {
+  String getId() {
     return id;
   }
 

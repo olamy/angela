@@ -1,13 +1,14 @@
 package com.terracottatech.qa.angela.common.kit;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -19,6 +20,13 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +43,7 @@ public class KitManager implements Serializable {
 
   public static String DEFAULT_KIT_DIR = "/data/tsamanager";
   public static final String KITS_DIR;
+
   static {
     String dir = System.getProperty("kitsDir");
     if (dir == null) {
@@ -67,7 +76,7 @@ public class KitManager implements Serializable {
    */
   private String resolveLocalDir() {
     return KITS_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
-            + distribution.getVersion().getVersion(false);
+           + distribution.getVersion().getVersion(false);
   }
 
   /**
@@ -250,20 +259,31 @@ public class KitManager implements Serializable {
    * TODO  Change the method args
    */
   public File installKit(License license, final boolean offline) {
-    File localInstall = resolveLocalInstall(offline);
-    if (localInstall == null) {
-      logger.debug("Local install not available");
-      File localInstaller = resolveLocalInstaller(offline);
-      if (localInstaller == null) {
-        logger.debug("Local installer not available");
-        if (offline) {
-          throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
-        }
-        localInstaller = downloadLocalInstaller();
+    if (distribution.getLocalPath() != null) {
+      logger.info("Local build [" + distribution.getLocalPath().getAbsolutePath() + "] will be used");
+      if (!distribution.getLocalPath().exists()) {
+        throw new IllegalArgumentException("You configured the Distribution to install the local build ["
+                                           + distribution.getLocalPath().getAbsolutePath() + "] but it doesn't exist");
       }
-      localInstall = createLocalInstallFromInstaller(license, localInstaller);
+      return distribution.getLocalPath();
+    } else {
+      logger.info("getting install from the kit/installer");
+      File localInstall = resolveLocalInstall(offline);
+      if (localInstall == null) {
+        logger.debug("Local install not available");
+
+        File localInstaller = resolveLocalInstaller(offline);
+        if (localInstaller == null) {
+          logger.debug("Local installer not available");
+          if (offline) {
+            throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
+          }
+          localInstaller = downloadLocalInstaller();
+        }
+        localInstall = createLocalInstallFromInstaller(license, localInstaller);
+      }
+      return createWorkingCopyFromLocalInstall(localInstall);
     }
-    return createWorkingCopyFromLocalInstall(localInstall);
   }
 
   /**
@@ -433,7 +453,7 @@ public class KitManager implements Serializable {
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File(KITS_DIR + "/" + topologyId.replace(':', '_'), localInstall.getName());
+    File workingInstall = new File(localInstall + "_" + new SimpleDateFormat("MMddHHmmssSS").format(new Date()));
     try {
       FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
@@ -444,17 +464,12 @@ public class KitManager implements Serializable {
 
         }
       }
-      compressionUtils.cleanup(workingInstall);
+      compressionUtils.cleanupPermissions(workingInstall);
     } catch (IOException e) {
       throw new RuntimeException("Can not create working install", e);
     }
     return workingInstall;
   }
-
-  public File getInstallLocation() {
-      return null;
-  }
-
 
   private static void createParentDirs(File file) throws IOException {
     Objects.requireNonNull(file);
@@ -473,7 +488,7 @@ public class KitManager implements Serializable {
     byte[] buf = new byte[8192];
     long total = 0L;
 
-    while(true) {
+    while (true) {
       int r = from.read(buf);
       if (r == -1) {
         return total;
@@ -484,4 +499,12 @@ public class KitManager implements Serializable {
     }
   }
 
+  public void deleteInstall(final File installLocation) throws IOException {
+    if (distribution.getLocalPath() == null) {
+      Files.walk(Paths.get(installLocation.getAbsolutePath()), FileVisitOption.FOLLOW_LINKS)
+          .sorted(Comparator.reverseOrder())
+          .map(Path::toFile)
+          .forEach(File::delete);
+    }
+  }
 }

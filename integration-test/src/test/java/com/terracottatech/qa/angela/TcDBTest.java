@@ -1,32 +1,47 @@
 package com.terracottatech.qa.angela;
 
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.client.ClientControl;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.TsaControl;
 import com.terracottatech.qa.angela.common.client.Barrier;
+import com.terracottatech.qa.angela.common.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.store.Dataset;
-import com.terracottatech.store.StoreException;
+import com.terracottatech.store.DatasetReader;
+import com.terracottatech.store.DatasetWriterReader;
+import com.terracottatech.store.Record;
 import com.terracottatech.store.Type;
 import com.terracottatech.store.configuration.DatasetConfigurationBuilder;
+import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
-import org.junit.Test;
+import com.terracottatech.store.setting.ReadVisibility;
+import com.terracottatech.store.setting.WriteVisibility;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 /**
  * @author Aurelien Broszniowski
  */
 
 public class TcDBTest {
+
+  private final static Logger logger = LoggerFactory.getLogger(TcDBTest.class);
+
   @Test
   public void testConnection() throws Exception {
     TcConfig tcConfig = new TcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-a.xml");
@@ -38,34 +53,54 @@ public class TcDBTest {
       control.startAll();
       control.licenseAll();
 
-      System.out.println("---> Wait for 3 sec");
-      Thread.sleep(3000);
-
       try (ClientControl clientControl = control.clientControl("localhost")) {
         ClientJob clientJob = (context) -> {
           Barrier barrier = context.barrier("testConnection", 2);
-          System.out.println("client started and waiting on barrier");
-          barrier.await();
+          logger.info("client started and waiting on barrier");
+          int rank = barrier.await();
 
-          System.out.println("all client sync'ed");
+          logger.info("all client sync'ed");
           try {
-            DatasetManager datasetManager = DatasetManager.clustered(URI.create("terracotta://localhost:9510")).build();
-            DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
-                .offheap("primary-server-resource");
-            Dataset<String> dataset;
-            try {
-              dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
-              System.out.println("created dataset");
-            } catch (StoreException se) {
-              dataset = datasetManager.getDataset("MyDataset", Type.STRING);
-              System.out.println("got existing dataset");
+            try (DatasetManager datasetManager = DatasetManager.clustered(URI.create("terracotta://localhost:9510")).build()) {
+              DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
+                  .offheap("primary-server-resource");
+              Dataset<String> dataset = null;
+
+              if (rank == 0) {
+                dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+                logger.info("created dataset");
+              }
+
+              barrier.await();
+
+              if (rank != 0) {
+                dataset = datasetManager.getDataset("MyDataset", Type.STRING);
+                logger.info("got existing dataset");
+              }
+
+              barrier.await();
+
+              if (rank == 0) {
+                DatasetWriterReader<String> writerReader = dataset.writerReader(ReadVisibility.ROUTINE.asReadSettings(), WriteVisibility.IMMEDIATE
+                    .asWriteSettings());
+                writerReader.add("ONE", CellDefinition.defineLong("val").newCell(1L));
+                logger.info("Value created for key ONE");
+              }
+
+              barrier.await();
+
+              if (rank != 0) {
+                DatasetReader<String> reader = dataset.reader(ReadVisibility.ROUTINE.asReadSettings());
+                Optional<Record<String>> one = reader.get("ONE");
+                assertThat(one.isPresent(), is(true));
+                logger.info("Cell value = {}", one.get());
+              }
+
+              barrier.await();
+
+              dataset.close();
             }
-
-            // We managed to connect
-
-            dataset.close();
-            datasetManager.close();
-            System.out.println("client done");
+            logger.info("client done");
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
@@ -77,7 +112,7 @@ public class TcDBTest {
         f2.get();
       }
 
-      System.out.println("---> Stop");
+      logger.info("---> Stop");
       control.stopAll();
     }
   }

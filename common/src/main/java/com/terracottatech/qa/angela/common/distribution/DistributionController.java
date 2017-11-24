@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
@@ -27,5 +28,5 @@ public abstract class DistributionController {
 
   public abstract TerracottaServerState stop(final ServerSymbolicName serverSymbolicName, final File location, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess);
 
-  public abstract void configureLicense(final String topologyId, final File location, final License license, final TcConfig[] tcConfigs);
+  public abstract void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs);
 }

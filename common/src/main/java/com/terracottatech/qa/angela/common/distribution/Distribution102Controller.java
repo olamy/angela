@@ -9,6 +9,7 @@ import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.kit.ServerLogOutputStream;
 import com.terracottatech.qa.angela.common.kit.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
@@ -107,14 +108,14 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(final String topologyId, final File location, final License license, final TcConfig[] tcConfigs) {
+  public void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs) {
     Map<String, String> env = new HashMap<String, String>();
     List<String> j8Homes = javaLocationResolver.resolveJava8Location();
     if (j8Homes.size() > 0) {
       env.put("JAVA_HOME", j8Homes.get(0));
     }
 
-    String[] commands = configureCommand(topologyId, location, license, tcConfigs);
+    String[] commands = configureCommand(instanceId, location, license, tcConfigs);
 
     ProcessExecutor executor = new ProcessExecutor()
         .command(commands).directory(location).environment(env);
@@ -132,7 +133,7 @@ public class Distribution102Controller extends DistributionController {
     }
   }
 
-  private synchronized String[] configureCommand(final String clusterName, final File location, final License licenseConfig, final TcConfig[] tcConfigs) {
+  private synchronized String[] configureCommand(final InstanceId instanceId, final File location, final License licenseConfig, final TcConfig[] tcConfigs) {
     List<String> command = new ArrayList<>();
 
     StringBuilder sb = null;
@@ -147,7 +148,7 @@ public class Distribution102Controller extends DistributionController {
     command.add(sb.toString());
     command.add("configure");
     command.add("-n");
-    command.add(clusterName);
+    command.add(instanceId.toString());
 
     if (distribution.getPackageType() == KIT) {
       File tmpLicenseFile = new File(location + File.separator + "license.xml");

@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.common.kit;
 
 
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
@@ -42,8 +43,8 @@ public class TerracottaServerInstance  {
     return this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
   }
 
-  public void configureLicense(final String topologyId, final License license, final TcConfig[] tcConfigs) {
-    this.distributionController.configureLicense(topologyId, location, license, tcConfigs);
+  public void configureLicense(final InstanceId instanceId, final License license, final TcConfig[] tcConfigs) {
+    this.distributionController.configureLicense(instanceId, location, license, tcConfigs);
   }
 
   public static class TerracottaServerInstanceProcess {
