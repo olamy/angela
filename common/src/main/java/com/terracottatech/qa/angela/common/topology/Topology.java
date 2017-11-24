@@ -28,11 +28,13 @@ public class Topology {
   private final String id;
   private final Distribution distribution;
   private final TcConfig[] tcConfigs;
+  private final String kitInstallationPath;
 
   public Topology(final String id, final Distribution distribution, final TcConfig... tcConfigs) {
     this.id = id;
     this.distribution = distribution;
     this.tcConfigs = tcConfigs;
+    this.kitInstallationPath = System.getProperty("kitInstallationPath");
   }
 
   public DistributionController createDistributionController() {
@@ -45,7 +47,7 @@ public class Topology {
   }
 
   public KitManager createKitManager() {
-    return new KitManager(id, distribution);
+    return new KitManager(id, distribution, kitInstallationPath);
   }
 
   public Map<ServerSymbolicName, TerracottaServer> getServers() {
@@ -54,6 +56,10 @@ public class Topology {
       servers.putAll(tcConfig.getServers());
     }
     return servers;
+  }
+
+  public String getKitInstallationPath() {
+    return kitInstallationPath;
   }
 
   public TcConfig get(final int stripeId) {

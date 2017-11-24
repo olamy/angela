@@ -63,10 +63,12 @@ public class KitManager implements Serializable {
   private CompressionUtils compressionUtils = new CompressionUtils();
   private final String topologyId;
   private Distribution distribution;
+  private final String kitInstallationPath;
 
-  public KitManager(String topologyId, final Distribution distribution) {
+  public KitManager(String topologyId, final Distribution distribution, final String kitInstallationPath) {
     this.topologyId = topologyId;
     this.distribution = distribution;
+    this.kitInstallationPath = kitInstallationPath;
   }
 
   /**
@@ -259,13 +261,13 @@ public class KitManager implements Serializable {
    * TODO  Change the method args
    */
   public File installKit(License license, final boolean offline) {
-    if (distribution.getLocalPath() != null) {
-      logger.info("Local build [" + distribution.getLocalPath().getAbsolutePath() + "] will be used");
-      if (!distribution.getLocalPath().exists()) {
-        throw new IllegalArgumentException("You configured the Distribution to install the local build ["
-                                           + distribution.getLocalPath().getAbsolutePath() + "] but it doesn't exist");
+    if (kitInstallationPath != null) {
+      logger.info("Using kitInstallationPath: \"{}\"", kitInstallationPath);
+      if (!new File(kitInstallationPath).isDirectory()) {
+        throw new IllegalArgumentException("You set the kitIntallationPath property to ["
+                                           + kitInstallationPath + "] but the location ins't a directory");
       }
-      return distribution.getLocalPath();
+      return new File(kitInstallationPath);
     } else {
       logger.info("getting install from the kit/installer");
       File localInstall = resolveLocalInstall(offline);
@@ -500,7 +502,7 @@ public class KitManager implements Serializable {
   }
 
   public void deleteInstall(final File installLocation) throws IOException {
-    if (distribution.getLocalPath() == null) {
+    if (kitInstallationPath == null) {
       Files.walk(Paths.get(installLocation.getAbsolutePath()), FileVisitOption.FOLLOW_LINKS)
           .sorted(Comparator.reverseOrder())
           .map(Path::toFile)
