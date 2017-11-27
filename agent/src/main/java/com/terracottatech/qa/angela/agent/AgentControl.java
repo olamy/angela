@@ -11,6 +11,7 @@ import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
+import com.terracottatech.qa.angela.common.util.OS;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -43,6 +44,7 @@ public class AgentControl {
 
   private final static Logger logger = LoggerFactory.getLogger(AgentControl.class);
 
+  private final OS os = new OS();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Ignite ignite;
 
@@ -125,7 +127,12 @@ public class AgentControl {
       String j8Home = j8Homes.get(0);
 
       final AtomicBoolean started = new AtomicBoolean(false);
-      List<String> cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName());
+      List<String> cmdLine;
+      if (os.isWindows()) {
+        cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName());
+      } else {
+        cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName());
+      }
       logger.info("Spawning client {}", cmdLine);
       ProcessExecutor processExecutor = new ProcessExecutor().command(cmdLine)
           .redirectOutput(new LogOutputStream() {
