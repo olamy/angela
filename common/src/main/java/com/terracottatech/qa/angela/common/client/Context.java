@@ -16,6 +16,6 @@ public class Context {
   }
 
   public Barrier barrier(String name, int count) {
-    return new Barrier(ignite, count,  instanceId+ "@" + name);
+    return new Barrier(ignite, count,  instanceId + "@" + name);
   }
 }

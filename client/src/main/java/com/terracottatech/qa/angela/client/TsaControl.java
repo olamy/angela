@@ -68,7 +68,7 @@ public class TsaControl implements AutoCloseable {
     cfg.setDiscoverySpi(spi);
     cfg.setClientMode(true);
     cfg.setPeerClassLoadingEnabled(true);
-    cfg.setIgniteInstanceName("Client@" + instanceId);
+    cfg.setIgniteInstanceName("TsaControl@" + instanceId);
 
     this.ignite = Ignition.start(cfg);
     this.terracottaServerStates = new ConcurrentHashMap<>();

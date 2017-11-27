@@ -15,6 +15,7 @@
  */
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.kit.KitManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,6 +37,7 @@ public class Agent {
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
+    System.out.println("Working directory is " + KitManager.KITS_DIR);
     System.out.println("Registered node '" + nodeName + "'");
   }
 

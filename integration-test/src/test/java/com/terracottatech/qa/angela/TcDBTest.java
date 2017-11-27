@@ -1,14 +1,9 @@
 package com.terracottatech.qa.angela;
 
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.client.ClientControl;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.TsaControl;
 import com.terracottatech.qa.angela.common.client.Barrier;
-import com.terracottatech.qa.angela.common.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -24,6 +19,9 @@ import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
 import com.terracottatech.store.setting.ReadVisibility;
 import com.terracottatech.store.setting.WriteVisibility;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Optional;
