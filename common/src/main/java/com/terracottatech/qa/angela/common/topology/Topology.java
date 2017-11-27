@@ -28,6 +28,10 @@ public class Topology {
   private final String id;
   private final Distribution distribution;
   private final TcConfig[] tcConfigs;
+
+  /*
+   * Galvan mode: if non-null, use the kit in that folder instead of downloading one.
+   */
   private final String kitInstallationPath;
 
   public Topology(final String id, final Distribution distribution, final TcConfig... tcConfigs) {
@@ -43,11 +47,11 @@ public class Topology {
         return new Distribution102Controller(distribution, this);
       }
     }
-    throw new IllegalArgumentException("Version not supported");
+    throw new IllegalArgumentException("Version not supported : " + distribution.getVersion());
   }
 
   public KitManager createKitManager() {
-    return new KitManager(id, distribution, kitInstallationPath);
+    return new KitManager(distribution, kitInstallationPath);
   }
 
   public Map<ServerSymbolicName, TerracottaServer> getServers() {
