@@ -11,6 +11,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,10 +22,13 @@ import java.util.List;
 import java.util.Set;
 
 public class Instance implements AutoCloseable {
+  private final static Logger logger = LoggerFactory.getLogger(Instance.class);
+
   private final InstanceId instanceId;
   private final List<AutoCloseable> controllers = new ArrayList<>();
   private final Set<String> nodesToCleanup = new HashSet<>();
-  private volatile Ignite ignite;
+  private Ignite ignite;
+  private Agent.Node localhostAgent;
 
   public Instance(String idPrefix) {
     this.instanceId = new InstanceId(idPrefix);
@@ -32,6 +37,12 @@ public class Instance implements AutoCloseable {
   private void init(Collection<String> targetServerNames) {
     if (ignite != null) {
       return;
+    }
+
+    if (isLocalhostOnly(targetServerNames)) {
+      logger.info("spawning localhost agent");
+      localhostAgent = new Agent.Node("localhost");
+      localhostAgent.init();
     }
 
     TcpDiscoverySpi spi = new TcpDiscoverySpi();
@@ -46,6 +57,10 @@ public class Instance implements AutoCloseable {
     cfg.setIgniteInstanceName("Instance@" + instanceId);
 
     this.ignite = Ignition.start(cfg);
+  }
+
+  private static boolean isLocalhostOnly(Collection<String> targetServerNames) {
+    return targetServerNames.size() == 1 && targetServerNames.iterator().next().equals("localhost");
   }
 
   public Tsa tsa(Topology topology) {
@@ -90,6 +105,12 @@ public class Instance implements AutoCloseable {
     if (ignite != null) {
       ignite.close();
       ignite = null;
+    }
+
+    if (localhostAgent != null) {
+      logger.info("shutting down localhost agent");
+      localhostAgent.shutdown();
+      localhostAgent = null;
     }
   }
 }

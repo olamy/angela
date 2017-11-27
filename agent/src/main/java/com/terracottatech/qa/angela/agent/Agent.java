@@ -57,7 +57,7 @@ public class Agent {
     System.out.println("Registered node '" + nodeName + "'");
   }
 
-  static class Node {
+  public static class Node {
 
     private final String nodeName;
     private volatile Ignite ignite;
@@ -74,14 +74,13 @@ public class Agent {
       cfg.setPeerClassLoadingEnabled(true);
 
       ignite = Ignition.start(cfg);
-
       CONTROLLER = new AgentController(ignite);
     }
 
     public void shutdown() {
+      CONTROLLER = null;
       ignite.close();
       ignite = null;
-      CONTROLLER = null;
     }
 
   }
