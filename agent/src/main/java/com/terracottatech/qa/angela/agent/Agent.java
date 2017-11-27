@@ -27,7 +27,24 @@ import java.util.Collections;
  */
 public class Agent {
 
-  public static volatile AgentControl CONTROL;
+  private static String DEFAULT_WORK_DIR = "/data/tsamanager";
+  public static final String WORK_DIR;
+
+  static {
+    String dir = System.getProperty("kitsDir");
+    if (dir == null) {
+      WORK_DIR = DEFAULT_WORK_DIR;
+    } else if (dir.isEmpty()) {
+      WORK_DIR = DEFAULT_WORK_DIR;
+    } else if (dir.startsWith(".")) {
+      throw new IllegalArgumentException("Can not use relative path for the WORK_DIR. Please use a fixed one.");
+    } else {
+      WORK_DIR = dir;
+    }
+  }
+
+
+  public static volatile AgentController CONTROLLER;
 
   public static void main(String[] args) throws Exception {
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
@@ -36,6 +53,7 @@ public class Agent {
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
+    System.out.println("Working directory is " + WORK_DIR);
     System.out.println("Registered node '" + nodeName + "'");
   }
 
@@ -57,13 +75,13 @@ public class Agent {
 
       ignite = Ignition.start(cfg);
 
-      CONTROL = new AgentControl(ignite);
+      CONTROLLER = new AgentController(ignite);
     }
 
     public void shutdown() {
       ignite.close();
       ignite = null;
-      CONTROL = null;
+      CONTROLLER = null;
     }
 
   }

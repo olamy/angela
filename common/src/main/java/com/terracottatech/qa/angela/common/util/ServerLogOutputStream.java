@@ -1,4 +1,4 @@
-package com.terracottatech.qa.angela.common.kit;
+package com.terracottatech.qa.angela.common.util;
 
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import org.zeroturnaround.exec.StartedProcess;

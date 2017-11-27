@@ -1,16 +1,17 @@
-package com.terracottatech.qa.angela.common.kit;
+package com.terracottatech.qa.angela.agent.kit;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.LicenseType;
+import com.terracottatech.qa.angela.common.topology.PackageType;
+import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.topology.Version;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.topology.LicenseType;
-import com.terracottatech.qa.angela.common.topology.PackageType;
-import com.terracottatech.qa.angela.common.topology.Version;
-
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,13 +21,6 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -41,34 +35,17 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  */
 public class KitManager implements Serializable {
 
-  public static String DEFAULT_KIT_DIR = "/data/tsamanager";
-  public static final String KITS_DIR;
-
-  static {
-    String dir = System.getProperty("kitsDir");
-    if (dir == null) {
-      KITS_DIR = DEFAULT_KIT_DIR;
-    } else if (dir.isEmpty()) {
-      KITS_DIR = DEFAULT_KIT_DIR;
-    } else if (dir.startsWith(".")) {
-      throw new IllegalArgumentException("Can not use relative path for the KITS_DIR. Please use a fixed one.");
-    } else {
-      KITS_DIR = dir;
-    }
-  }
-
-
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private CompressionUtils compressionUtils = new CompressionUtils();
-  private final String topologyId;
+  private final InstanceId instanceId;
   private Distribution distribution;
   private final String kitInstallationPath;
 
-  public KitManager(String topologyId, final Distribution distribution, final String kitInstallationPath) {
-    this.topologyId = topologyId;
-    this.distribution = distribution;
-    this.kitInstallationPath = kitInstallationPath;
+  public KitManager(InstanceId instanceId, Topology topology) {
+    this.instanceId = instanceId;
+    this.distribution = topology.getDistribution();
+    this.kitInstallationPath = topology.getKitInstallationPath();
   }
 
   /**
@@ -77,7 +54,7 @@ public class KitManager implements Serializable {
    * @return location of the installer archive file
    */
   private String resolveLocalDir() {
-    return KITS_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
+    return Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
            + distribution.getVersion().getVersion(false);
   }
 
@@ -187,69 +164,29 @@ public class KitManager implements Serializable {
       urlConnection.connect();
 
       int contentlength = urlConnection.getContentLength();
-      System.out.println("Length to download = " + contentlength);
+      logger.info("Downloading {} - {} bytes", kitUrl, contentlength);
 
       createParentDirs(kitLocation);
 
-      OutputStream fos = new FileOutputStream(kitLocation);
+      try (OutputStream fos = new FileOutputStream(kitLocation);
+           InputStream is = kitUrl.openStream()) {
+        byte[] buffer = new byte[8192];
+        long len = 0;
+        int count;
+        while ((count = is.read(buffer)) != -1) {
+          len += count;
 
-      InputStream is = new BufferedInputStream(kitUrl.openStream());
-
-      byte[] buffer = new byte[8192];
-      long len1 = 0;
-      int count;
-      while ((count = is.read(buffer)) != -1) {
-        len1 += count;
-
-        System.out.print("\r progress = " + (100 * len1 / contentlength) + "%");
-        fos.write(buffer, 0, count);
+          System.out.print("\r progress = " + (100 * len / contentlength) + "%");
+          fos.write(buffer, 0, count);
+        }
+        System.out.println("");
       }
-      System.out.println("");
-      fos.flush();
-      fos.close();
-      is.close();
 
       logger.info("Success -> file downloaded succesfully. returning 'success' code");
     } catch (IOException e) {
       throw new RuntimeException("Can not download kit located at " + kitUrl, e);
     }
     logger.info("Failed -> file download failed. returning 'error' code");
-  }
-
-  private void download2(final URL kitUrl, final File kitLocation) {
-    // TODO : add a file lock machanism to be sure that two processes don't download the same file
-    InputStream inputStream = null;
-    FileOutputStream outputStream = null;
-    try {
-      createParentDirs(kitLocation);
-
-      URLConnection connection = kitUrl.openConnection();
-      inputStream = connection.getInputStream();
-      outputStream = new FileOutputStream(kitLocation);
-      int contentLength = connection.getContentLength();
-      if (contentLength != -1) {
-
-      } else {
-
-      }
-
-
-      copy(inputStream, outputStream);
-    } catch (IOException e) {
-      throw new RuntimeException("Can not download the kit from kratos", e);
-    } finally {
-      if (inputStream != null) {
-        try {
-          inputStream.close();
-        } catch (IOException e) { }
-      }
-
-      if (outputStream != null) {
-        try {
-          outputStream.close();
-        } catch (IOException e) { }
-      }
-    }
   }
 
   /**
@@ -455,7 +392,7 @@ public class KitManager implements Serializable {
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File(localInstall + "_" + new SimpleDateFormat("MMddHHmmssSS").format(new Date()));
+    File workingInstall = new File( Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
     try {
       FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
@@ -484,29 +421,11 @@ public class KitManager implements Serializable {
     }
   }
 
-  private static long copy(InputStream from, OutputStream to) throws IOException {
-    Objects.requireNonNull(from);
-    Objects.requireNonNull(to);
-    byte[] buf = new byte[8192];
-    long total = 0L;
-
-    while (true) {
-      int r = from.read(buf);
-      if (r == -1) {
-        return total;
-      }
-
-      to.write(buf, 0, r);
-      total += (long)r;
-    }
-  }
-
   public void deleteInstall(final File installLocation) throws IOException {
     if (kitInstallationPath == null) {
-      Files.walk(Paths.get(installLocation.getAbsolutePath()), FileVisitOption.FOLLOW_LINKS)
-          .sorted(Comparator.reverseOrder())
-          .map(Path::toFile)
-          .forEach(File::delete);
+      // only delete when not in galvan mode
+      logger.info("deleting installation in {}", installLocation.getAbsolutePath());
+      FileUtils.deleteDirectory(installLocation);
     }
   }
 }

@@ -10,7 +10,7 @@ public class Barrier {
   private final int index;
   private final String name;
   private volatile IgniteCountDownLatch countDownLatch;
-  private volatile int i;
+  private volatile int resetCount;
 
   Barrier(Ignite ignite, final int count, final String name) {
     this.ignite = ignite;
@@ -23,21 +23,15 @@ public class Barrier {
   }
 
   private void resetLatch() {
-    countDownLatch = ignite.countDownLatch(name + i++, count, true, true);
+    countDownLatch = ignite.countDownLatch(name + "_" + (resetCount++), count, true, true);
   }
 
   public int await() {
-    System.out.println("" + Thread.currentThread().getName() + "  awaiting... ");
     int countDown = countDownLatch.countDown();
-    System.out.println("" + Thread.currentThread().getName() + "  countdown = " + countDown);
     if (countDown > 0) {
-      System.out.println("" + Thread.currentThread().getName() + "  before await ");
       countDownLatch.await();
-      System.out.println("" + Thread.currentThread().getName() + "  after await ");
     }
-    System.out.println("" + Thread.currentThread().getName() + "  before resetLatch ");
     resetLatch();
-    System.out.println("" + Thread.currentThread().getName() + "  after resetLatch ");
     return index;
   }
 

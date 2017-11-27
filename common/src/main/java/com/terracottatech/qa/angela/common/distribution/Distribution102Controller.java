@@ -1,5 +1,17 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import com.terracottatech.qa.angela.common.ClusterToolException;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
+import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,19 +20,6 @@ import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
-
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.kit.ServerLogOutputStream;
-import com.terracottatech.qa.angela.common.kit.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
-import com.terracottatech.qa.angela.common.util.OS;
-import com.terracottatech.qa.angela.common.ClusterToolException;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.io.File;
 import java.io.IOException;

@@ -11,9 +11,8 @@ public class InstanceId {
   private final String prefix;
   private final UUID uuid;
 
-  public InstanceId(final Topology topology) {
-    Objects.requireNonNull(topology);
-    this.prefix = Objects.requireNonNull(topology.getId()).replaceAll("[^a-zA-Z0-9.-]", "_");;
+  public InstanceId(String idPrefix) {
+    this.prefix = Objects.requireNonNull(idPrefix).replaceAll("[^a-zA-Z0-9.-]", "_");;
     this.uuid = UUID.randomUUID();
   }
 
