@@ -43,9 +43,9 @@ import java.util.concurrent.TimeoutException;
 /**
  * @author Ludovic Orban
  */
-public class ClientControl implements Closeable {
+public class Client implements Closeable {
 
-  private final static Logger logger = LoggerFactory.getLogger(ClientControl.class);
+  private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
   private final InstanceId instanceId;
   private final String nodeName;
@@ -54,7 +54,7 @@ public class ClientControl implements Closeable {
   private final int subClientPid;
   private boolean closed = false;
 
-  ClientControl(InstanceId instanceId, String nodeName, Ignite ignite) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
@@ -68,12 +68,12 @@ public class ClientControl implements Closeable {
       final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
 
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync((IgniteRunnable)() -> Agent.CONTROL.downloadClient(instanceId, subNodeName));
+      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadClient(instanceId, subNodeName));
 
       uploadClasspath(queue);
       remoteDownloadFuture.get();
 
-      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROL.spawnClient(instanceId, subNodeName));
+      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, subNodeName));
       int pid = results.iterator().next();
       logger.info("client '{}' on {} started with PID {}", subNodeName, nodeName, pid);
 
@@ -146,7 +146,7 @@ public class ClientControl implements Closeable {
     logger.info("Wiping up client '{}' on {}", subNodeName, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     ignite.compute(location).broadcast((IgniteRunnable) () -> {
-      Agent.CONTROL.destroyClient(instanceId, subNodeName, subClientPid);
+      Agent.CONTROLLER.destroyClient(instanceId, subNodeName, subClientPid);
     });
   }
 

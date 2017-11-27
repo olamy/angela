@@ -44,7 +44,7 @@ public class Agent {
   }
 
 
-  public static volatile AgentControl CONTROL;
+  public static volatile AgentController CONTROLLER;
 
   public static void main(String[] args) throws Exception {
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
@@ -75,13 +75,13 @@ public class Agent {
 
       ignite = Ignition.start(cfg);
 
-      CONTROL = new AgentControl(ignite);
+      CONTROLLER = new AgentController(ignite);
     }
 
     public void shutdown() {
       ignite.close();
       ignite = null;
-      CONTROL = null;
+      CONTROLLER = null;
     }
 
   }

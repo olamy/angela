@@ -40,15 +40,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Aurelien Broszniowski
  */
 
-public class AgentControl {
+public class AgentController {
 
-  private final static Logger logger = LoggerFactory.getLogger(AgentControl.class);
+  private final static Logger logger = LoggerFactory.getLogger(AgentController.class);
 
   private final OS os = new OS();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Ignite ignite;
 
-  AgentControl(Ignite ignite) {
+  AgentController(Ignite ignite) {
     this.ignite = ignite;
   }
 
@@ -112,7 +112,7 @@ public class AgentControl {
       PidProcess pidProcess = Processes.newPidProcess(pid);
       ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
-      File subAgentRoot = new File(clientRootDir(instanceId, subNodeName));
+      File subAgentRoot = clientRootDir(instanceId, subNodeName);
       logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, subNodeName);
       FileUtils.deleteDirectory(subAgentRoot);
     } catch (Exception e) {
@@ -143,7 +143,7 @@ public class AgentControl {
                 started.set(true);
               }
             }
-          }).directory(new File(clientRootDir(instanceId, subNodeName)));
+          }).directory(clientRootDir(instanceId, subNodeName));
       StartedProcess startedProcess = processExecutor.start();
 
       while (!started.get()) {
@@ -230,8 +230,20 @@ public class AgentControl {
   }
 
 
-  private static String clientRootDir(InstanceId instanceId, String subNodeName) {
-    return Agent.WORK_DIR + File.separator + instanceId + File.separator + subNodeName;
+  private static File clientRootDir(InstanceId instanceId, String subNodeName) {
+    return new File(instanceRootDir(instanceId), subNodeName);
   }
 
+  private static File instanceRootDir(InstanceId instanceId) {
+    return new File(Agent.WORK_DIR, instanceId.toString());
+  }
+
+  public void cleanup(InstanceId instanceId) {
+    logger.info("Cleaning up instance {}", instanceId);
+    try {
+      FileUtils.deleteDirectory(instanceRootDir(instanceId));
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error cleaning up instance root directory : " + instanceRootDir(instanceId), ioe);
+    }
+  }
 }

@@ -24,7 +24,6 @@ import java.util.Map;
  */
 
 public class Topology {
-  private final String id;
   private final Distribution distribution;
   private final TcConfig[] tcConfigs;
 
@@ -33,8 +32,7 @@ public class Topology {
    */
   private final String kitInstallationPath;
 
-  public Topology(final String id, final Distribution distribution, final TcConfig... tcConfigs) {
-    this.id = id;
+  public Topology(final Distribution distribution, final TcConfig... tcConfigs) {
     this.distribution = distribution;
     this.tcConfigs = tcConfigs;
     this.kitInstallationPath = System.getProperty("kitInstallationPath");
@@ -99,10 +97,6 @@ public class Topology {
     return this.tcConfigs;
   }
 
-  String getId() {
-    return id;
-  }
-
   public Collection<String> getServersHostnames() {
     List<String> hostnames = new ArrayList<>();
     Map<ServerSymbolicName, TerracottaServer> servers = getServers();
@@ -119,8 +113,7 @@ public class Topology {
   @Override
   public String toString() {
     return "Topology{" +
-        "id='" + id + '\'' +
-        ", distribution=" + distribution +
+        "distribution=" + distribution +
         ", tcConfigs=" + Arrays.toString(tcConfigs) +
         '}';
   }
