@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela.common.topology;
 
-import com.terracottatech.qa.angela.common.kit.KitManager;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -48,10 +47,6 @@ public class Topology {
       }
     }
     throw new IllegalArgumentException("Version not supported : " + distribution.getVersion());
-  }
-
-  public KitManager createKitManager() {
-    return new KitManager(distribution, kitInstallationPath);
   }
 
   public Map<ServerSymbolicName, TerracottaServer> getServers() {
@@ -128,5 +123,9 @@ public class Topology {
         ", distribution=" + distribution +
         ", tcConfigs=" + Arrays.toString(tcConfigs) +
         '}';
+  }
+
+  public Distribution getDistribution() {
+    return distribution;
   }
 }

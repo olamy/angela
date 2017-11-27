@@ -1,10 +1,10 @@
-package com.terracottatech.qa.angela.common.kit;
+package com.terracottatech.qa.angela.common;
 
 
 import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.StartedProcess;
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TerracottaServerInstance  {
 
   private static final Logger logger = LoggerFactory.getLogger(TerracottaServerInstance.class);
+
   private final ServerSymbolicName serverSymbolicName;
   private final DistributionController distributionController;
   private final File location;

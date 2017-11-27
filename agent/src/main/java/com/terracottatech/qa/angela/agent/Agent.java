@@ -15,7 +15,6 @@
  */
 package com.terracottatech.qa.angela.agent;
 
-import com.terracottatech.qa.angela.common.kit.KitManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,6 +27,23 @@ import java.util.Collections;
  */
 public class Agent {
 
+  private static String DEFAULT_WORK_DIR = "/data/tsamanager";
+  public static final String WORK_DIR;
+
+  static {
+    String dir = System.getProperty("kitsDir");
+    if (dir == null) {
+      WORK_DIR = DEFAULT_WORK_DIR;
+    } else if (dir.isEmpty()) {
+      WORK_DIR = DEFAULT_WORK_DIR;
+    } else if (dir.startsWith(".")) {
+      throw new IllegalArgumentException("Can not use relative path for the WORK_DIR. Please use a fixed one.");
+    } else {
+      WORK_DIR = dir;
+    }
+  }
+
+
   public static volatile AgentControl CONTROL;
 
   public static void main(String[] args) throws Exception {
@@ -37,7 +53,7 @@ public class Agent {
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
-    System.out.println("Working directory is " + KitManager.KITS_DIR);
+    System.out.println("Working directory is " + WORK_DIR);
     System.out.println("Registered node '" + nodeName + "'");
   }
 

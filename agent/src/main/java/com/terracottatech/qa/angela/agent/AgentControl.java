@@ -1,9 +1,9 @@
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.kit.KitManager;
-import com.terracottatech.qa.angela.common.kit.TerracottaInstall;
-import com.terracottatech.qa.angela.common.kit.TerracottaServerInstance;
+import com.terracottatech.qa.angela.agent.kit.KitManager;
+import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -55,7 +55,7 @@ public class AgentControl {
       logger.info("kit for " + topology + " already installed");
     } else {
       logger.info("Installing kit for " + topology);
-      KitManager kitManager = topology.createKitManager();
+      KitManager kitManager = new KitManager(instanceId, topology);
       File kitDir = kitManager.installKit(license, offline);
 
       logger.info("Installing the tc-configs");
@@ -73,7 +73,7 @@ public class AgentControl {
     if (terracottaInstall != null) {
       try {
         logger.info("Uninstalling kit for " + topology);
-        KitManager kitManager = topology.createKitManager();
+        KitManager kitManager = new KitManager(instanceId, topology);
         // TODO : get log files
 
         kitManager.deleteInstall(terracottaInstall.getInstallLocation());
@@ -110,7 +110,7 @@ public class AgentControl {
       PidProcess pidProcess = Processes.newPidProcess(pid);
       ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
-      File subAgentRoot = new File(subClientDir(instanceId, subNodeName));
+      File subAgentRoot = new File(clientRootDir(instanceId, subNodeName));
       logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, subNodeName);
       FileUtils.deleteDirectory(subAgentRoot);
     } catch (Exception e) {
@@ -136,7 +136,7 @@ public class AgentControl {
                 started.set(true);
               }
             }
-          }).directory(new File(subClientDir(instanceId, subNodeName)));
+          }).directory(new File(clientRootDir(instanceId, subNodeName)));
       StartedProcess startedProcess = processExecutor.start();
 
       while (!started.get()) {
@@ -152,7 +152,7 @@ public class AgentControl {
   }
 
   private static String buildClasspath(InstanceId instanceId, String subNodeName) {
-    File subClientDir = new File(subClientDir(instanceId, subNodeName), "lib");
+    File subClientDir = new File(clientRootDir(instanceId, subNodeName), "lib");
     String[] cpEntries = subClientDir.list();
     if (cpEntries == null) {
       throw new IllegalStateException("No client to spawn from " + instanceId + " and " + subNodeName);
@@ -182,7 +182,7 @@ public class AgentControl {
   public void downloadClient(InstanceId instanceId, String subNodeName) {
     final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
     try {
-      File subClientDir = new File(subClientDir(instanceId, subNodeName), "lib");
+      File subClientDir = new File(clientRootDir(instanceId, subNodeName), "lib");
       logger.info("Downloading client '{}' into {}", subNodeName, subClientDir);
       if (!subClientDir.mkdirs()) {
         throw new RuntimeException("Cannot create client directory '" + subClientDir + "' on " + subNodeName);
@@ -223,8 +223,8 @@ public class AgentControl {
   }
 
 
-  private static String subClientDir(InstanceId instanceId, String subNodeName) {
-    return KitManager.KITS_DIR + File.separator + instanceId + File.separator + subNodeName;
+  private static String clientRootDir(InstanceId instanceId, String subNodeName) {
+    return Agent.WORK_DIR + File.separator + instanceId + File.separator + subNodeName;
   }
 
 }

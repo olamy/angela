@@ -1,4 +1,4 @@
-package com.terracottatech.qa.angela.common.kit;
+package com.terracottatech.qa.angela.agent.kit;
 
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;

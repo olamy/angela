@@ -1,9 +1,12 @@
-package com.terracottatech.qa.angela.common.kit;
+package com.terracottatech.qa.angela.agent.kit;
 
+import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
+import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -18,8 +21,6 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -34,32 +35,17 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  */
 public class KitManager implements Serializable {
 
-  public static String DEFAULT_KIT_DIR = "/data/tsamanager";
-  public static final String KITS_DIR;
-
-  static {
-    String dir = System.getProperty("kitsDir");
-    if (dir == null) {
-      KITS_DIR = DEFAULT_KIT_DIR;
-    } else if (dir.isEmpty()) {
-      KITS_DIR = DEFAULT_KIT_DIR;
-    } else if (dir.startsWith(".")) {
-      throw new IllegalArgumentException("Can not use relative path for the KITS_DIR. Please use a fixed one.");
-    } else {
-      KITS_DIR = dir;
-    }
-  }
-
-
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private CompressionUtils compressionUtils = new CompressionUtils();
+  private final InstanceId instanceId;
   private Distribution distribution;
   private final String kitInstallationPath;
 
-  public KitManager(final Distribution distribution, final String kitInstallationPath) {
-    this.distribution = distribution;
-    this.kitInstallationPath = kitInstallationPath;
+  public KitManager(InstanceId instanceId, Topology topology) {
+    this.instanceId = instanceId;
+    this.distribution = topology.getDistribution();
+    this.kitInstallationPath = topology.getKitInstallationPath();
   }
 
   /**
@@ -68,7 +54,7 @@ public class KitManager implements Serializable {
    * @return location of the installer archive file
    */
   private String resolveLocalDir() {
-    return KITS_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
+    return Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
            + distribution.getVersion().getVersion(false);
   }
 
@@ -406,7 +392,7 @@ public class KitManager implements Serializable {
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File(localInstall + "_" + new SimpleDateFormat("MMddHHmmssSS").format(new Date()));
+    File workingInstall = new File( Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
     try {
       FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
@@ -437,6 +423,8 @@ public class KitManager implements Serializable {
 
   public void deleteInstall(final File installLocation) throws IOException {
     if (kitInstallationPath == null) {
+      // only delete when not in galvan mode
+      logger.info("deleting installation in {}", installLocation.getAbsolutePath());
       FileUtils.deleteDirectory(installLocation);
     }
   }

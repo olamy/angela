@@ -1,5 +1,6 @@
-package com.terracottatech.qa.angela.common.kit;
+package com.terracottatech.qa.angela.agent.kit;
 
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.slf4j.Logger;
