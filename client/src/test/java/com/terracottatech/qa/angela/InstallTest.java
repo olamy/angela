@@ -23,8 +23,8 @@ public class InstallTest {
 
   @Test
   public void testRemoteInstall() throws Exception {
-    Topology topology = new Topology(distribution(version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-a.xml"));
+    Topology topology = new Topology(distribution(version("10.2.0.0.53"), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version("10.2.0.0.53"), "/terracotta/10/tc-config-a.xml"));
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
     try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteInstall")) {
@@ -33,16 +33,10 @@ public class InstallTest {
       tsa.startAll();
       tsa.licenseAll();
 
-      System.out.println("---> Wait for 3 sec");
-      Thread.sleep(3000);
-
       try (Client client = instance.client("localhost")) {
-        Future<Void> f = client.submit((context) -> System.out.println("hello dudes 5"));
+        Future<Void> f = client.submit((context) -> System.out.println("hello world"));
         f.get();
       }
-
-      System.out.println("---> Stop");
-      tsa.stopAll();
     }
   }
 }

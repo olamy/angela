@@ -20,9 +20,9 @@ public class MultistripesTest {
 
   @Test
   public void test2Stripes() throws Exception {
-    Topology topology = new Topology(distribution(version("10.1.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-multistripes1.xml"),
-        tcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-multistripes2.xml"));
+    Topology topology = new Topology(distribution(version("10.2.0.0.53"), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version("10.2.0.0.53"), "/terracotta/10/tc-config-multistripes1.xml"),
+        tcConfig(version("10.2.0.0.53"), "/terracotta/10/tc-config-multistripes2.xml"));
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
     try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes")) {
@@ -30,11 +30,6 @@ public class MultistripesTest {
       tsa.installAll();
       tsa.startAll();
       tsa.licenseAll();
-
-      System.out.println("---> Wait for 3 sec");
-      Thread.sleep(3000);
-
-      System.out.println("---> Stop");
     }
   }
 }
