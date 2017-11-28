@@ -17,8 +17,8 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_
  */
 
 public class ServerLogOutputStream extends LogOutputStream {
-  private AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>();
-  private AtomicInteger pid;
+  private final AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>();
+  private final AtomicInteger pid;
 
   public ServerLogOutputStream(final AtomicInteger pid) {
     this.pid = pid;

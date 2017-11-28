@@ -1,18 +1,16 @@
 package com.terracottatech.qa.angela.common;
 
 
-import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.StartedProcess;
 
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-
 import java.io.File;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -22,12 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TerracottaServerInstance  {
 
-  private static final Logger logger = LoggerFactory.getLogger(TerracottaServerInstance.class);
+  private static final TerracottaServerInstanceProcess TSIP_STOPPED = new TerracottaServerInstanceProcess(null, null, null, TerracottaServerState.STOPPED);
 
   private final ServerSymbolicName serverSymbolicName;
   private final DistributionController distributionController;
   private final File location;
-  private TerracottaServerInstanceProcess terracottaServerInstanceProcess;
+  private volatile TerracottaServerInstanceProcess terracottaServerInstanceProcess = TSIP_STOPPED;
 
   public TerracottaServerInstance(final ServerSymbolicName serverSymbolicName, final DistributionController distributionController, final File location) {
     this.serverSymbolicName = serverSymbolicName;
@@ -37,6 +35,17 @@ public class TerracottaServerInstance  {
 
   public TerracottaServerState start() {
     this.terracottaServerInstanceProcess = this.distributionController.start(serverSymbolicName, location);
+    // spawn a thread that resets terracottaServerInstanceProcess to null when the TC server process dies
+    Thread processWatcher = new Thread(() -> {
+      try {
+        terracottaServerInstanceProcess.startedProcess.getFuture().get();
+        terracottaServerInstanceProcess = TSIP_STOPPED;
+      } catch (InterruptedException | ExecutionException e) {
+        throw new RuntimeException(e);
+      }
+    });
+    processWatcher.setDaemon(true);
+    processWatcher.start();
     return this.terracottaServerInstanceProcess.getState();
   }
 
@@ -46,6 +55,10 @@ public class TerracottaServerInstance  {
 
   public void configureLicense(final InstanceId instanceId, final License license, final TcConfig[] tcConfigs) {
     this.distributionController.configureLicense(instanceId, location, license, tcConfigs);
+  }
+
+  public TerracottaServerState getTerracottaServerState() {
+    return this.terracottaServerInstanceProcess.getState();
   }
 
   public static class TerracottaServerInstanceProcess {

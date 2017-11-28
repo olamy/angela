@@ -1,5 +1,13 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteCallable;
@@ -7,20 +15,10 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.topology.Topology;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
@@ -36,7 +34,6 @@ public class Tsa implements AutoCloseable {
   public static final long TIMEOUT = 60000;
 
   private final Topology topology;
-  private final Map<ServerSymbolicName, TerracottaServerState> terracottaServerStates;
   private final Ignite ignite;
   private final License license;
   private final InstanceId instanceId;
@@ -54,7 +51,6 @@ public class Tsa implements AutoCloseable {
     this.license = license;
     this.instanceId = instanceId;
     this.ignite = ignite;
-    this.terracottaServerStates = new ConcurrentHashMap<>();
   }
 
   public void installAll() {
@@ -70,8 +66,8 @@ public class Tsa implements AutoCloseable {
   }
 
   private void install(int tcConfigIndex, TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
-    if (terracottaServerState != null) {
+    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
+    if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
 
@@ -81,14 +77,11 @@ public class Tsa implements AutoCloseable {
     logger.info("installing on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
         Agent.CONTROLLER.install(instanceId, topology, offline, license, finalTcConfigIndex));
-
-    terracottaServerStates.put(terracottaServer.getServerSymbolicName(), TerracottaServerState.STOPPED);
   }
 
   public void uninstallAll() {
     TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
-      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
+    for (final TcConfig tcConfig : tcConfigs) {
       for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
 
@@ -98,7 +91,7 @@ public class Tsa implements AutoCloseable {
   }
 
   private void uninstall(TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
+    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
     if (terracottaServerState == null) {
       return;
     }
@@ -109,14 +102,11 @@ public class Tsa implements AutoCloseable {
     logger.info("uninstalling from {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
         Agent.CONTROLLER.uninstall(instanceId, topology));
-
-    terracottaServerStates.remove(terracottaServer.getServerSymbolicName());
   }
 
   public void startAll() {
     TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
-      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
+    for (final TcConfig tcConfig : tcConfigs) {
       for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         start(terracottaServer);
@@ -125,7 +115,7 @@ public class Tsa implements AutoCloseable {
   }
 
   private void start(final TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
+    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
     if (terracottaServerState == STARTED_AS_ACTIVE || terracottaServerState == STARTED_AS_PASSIVE) {
       return;
     }
@@ -134,17 +124,14 @@ public class Tsa implements AutoCloseable {
     }
 
     logger.info("starting on {}", terracottaServer.getHostname());
-    TerracottaServerState state = executeRemotely(terracottaServer.getHostname(), TIMEOUT,
+    executeRemotely(terracottaServer.getHostname(), TIMEOUT,
         (IgniteCallable<TerracottaServerState>)() ->
             Agent.CONTROLLER.start(instanceId, terracottaServer));
-
-    terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
   }
 
   public void stopAll() {
     TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
-      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
+    for (final TcConfig tcConfig : tcConfigs) {
       for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         stop(terracottaServer);
@@ -153,7 +140,7 @@ public class Tsa implements AutoCloseable {
   }
 
   private void stop(final TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = terracottaServerStates.get(terracottaServer.getServerSymbolicName());
+    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
     if (terracottaServerState == STOPPED) {
       return;
     }
@@ -162,17 +149,16 @@ public class Tsa implements AutoCloseable {
     }
 
     logger.info("stopping on {}", terracottaServer.getHostname());
-    TerracottaServerState state = executeRemotely(terracottaServer.getHostname(), TIMEOUT,
+    executeRemotely(terracottaServer.getHostname(), TIMEOUT,
         (IgniteCallable<TerracottaServerState>)() ->
             Agent.CONTROLLER.stop(instanceId, terracottaServer));
-
-    terracottaServerStates.put(terracottaServer.getServerSymbolicName(), state);
   }
 
   public void licenseAll() {
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
-    for (Map.Entry<ServerSymbolicName, TerracottaServerState> entry : terracottaServerStates.entrySet()) {
-      if ((entry.getValue() != STARTED_AS_ACTIVE) && (entry.getValue() != STARTED_AS_PASSIVE)) {
+    for (Map.Entry<ServerSymbolicName, TerracottaServer> entry : topology.getServers().entrySet()) {
+      TerracottaServerState terracottaServerState = getTerracottaServerState(entry.getValue());
+      if ((terracottaServerState != STARTED_AS_ACTIVE) && (terracottaServerState != STARTED_AS_PASSIVE)) {
         notStartedServers.add(entry.getKey());
       }
     }
@@ -184,6 +170,11 @@ public class Tsa implements AutoCloseable {
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
+  }
+
+  private TerracottaServerState getTerracottaServerState(TerracottaServer terracottaServer) {
+    return executeRemotely(terracottaServer.getHostname(), () ->
+        Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer));
   }
 
   @Override
@@ -210,6 +201,15 @@ public class Tsa implements AutoCloseable {
   private void executeRemotely(final String hostname, final long timeout, final IgniteRunnable runnable) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
     ignite.compute(location).withTimeout(timeout).broadcast(runnable);
+  }
+
+  private <R> R executeRemotely(final String hostname, final IgniteCallable<R> callable) {
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
+    Collection<R> results = ignite.compute(location).broadcast(callable);
+    if (results.size() != 1) {
+      throw new IllegalStateException("Multiple response for the Execution on " + hostname);
+    }
+    return results.iterator().next();
   }
 
   private <R> R executeRemotely(final String hostname, final long timeout, final IgniteCallable<R> callable) {

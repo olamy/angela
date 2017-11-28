@@ -1,9 +1,9 @@
 package com.terracottatech.qa.angela.agent;
 
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.agent.kit.KitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -97,6 +97,15 @@ public class AgentController {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
     return serverInstance.stop();
+  }
+
+  public TerracottaServerState getTerracottaServerState(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      return TerracottaServerState.NOT_INSTALLED;
+    }
+    TerracottaServerInstance serverInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
+    return serverInstance.getTerracottaServerState();
   }
 
   public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs) {

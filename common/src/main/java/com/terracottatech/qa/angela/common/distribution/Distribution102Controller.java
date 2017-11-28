@@ -57,7 +57,6 @@ public class Distribution102Controller extends DistributionController {
     if (j8Homes.size() > 0) {
       env.put("JAVA_HOME", j8Homes.get(0));
     }
-    System.out.println("[Server-side] Jenkins build Id = " + System.getProperty("jenkins.build.id"));
 
     AtomicInteger pid = new AtomicInteger(-1);
     ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream(pid);
