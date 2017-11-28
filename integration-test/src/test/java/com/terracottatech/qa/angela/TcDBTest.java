@@ -2,7 +2,7 @@ package com.terracottatech.qa.angela;
 
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
-import com.terracottatech.qa.angela.client.Instance;
+import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.tcconfig.License;
@@ -47,13 +47,13 @@ public class TcDBTest {
         tcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-a.xml"));
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
-    try (Instance instance = new Instance("TcDBTest::testConnection")) {
-      Tsa tsa = instance.tsa(topology, license);
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+      Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
       tsa.licenseAll();
 
-      Client client = instance.client("localhost");
+      Client client = factory.client("localhost");
       ClientJob clientJob = (context) -> {
         Barrier barrier = context.barrier("testConnection", 2);
         logger.info("client started and waiting on barrier");

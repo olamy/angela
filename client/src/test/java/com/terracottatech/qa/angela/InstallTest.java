@@ -1,7 +1,7 @@
 package com.terracottatech.qa.angela;
 
 import com.terracottatech.qa.angela.client.Client;
-import com.terracottatech.qa.angela.client.Instance;
+import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -27,7 +27,7 @@ public class InstallTest {
         tcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-a.xml"));
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
-    try (Instance instance = new Instance("InstallTest::testRemoteInstall")) {
+    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteInstall")) {
       Tsa tsa = instance.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();

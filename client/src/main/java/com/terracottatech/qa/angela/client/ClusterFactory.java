@@ -21,8 +21,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Instance implements AutoCloseable {
-  private final static Logger logger = LoggerFactory.getLogger(Instance.class);
+public class ClusterFactory implements AutoCloseable {
+  private final static Logger logger = LoggerFactory.getLogger(ClusterFactory.class);
 
   private final InstanceId instanceId;
   private final List<AutoCloseable> controllers = new ArrayList<>();
@@ -30,7 +30,7 @@ public class Instance implements AutoCloseable {
   private Ignite ignite;
   private Agent.Node localhostAgent;
 
-  public Instance(String idPrefix) {
+  public ClusterFactory(String idPrefix) {
     this.instanceId = new InstanceId(idPrefix);
   }
 

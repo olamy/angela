@@ -1,6 +1,6 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.Instance;
+import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -25,8 +25,8 @@ public class MultistripesTest {
         tcConfig(version("10.1.0-SNAPSHOT"), "/terracotta/10/tc-config-multistripes2.xml"));
     License license = new License("/terracotta/10/TerracottaDB101_license.xml");
 
-    try (Instance instance = new Instance("MultistripesTest::test2Stripes")) {
-      Tsa tsa = instance.tsa(topology, license);
+    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes")) {
+      Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
       tsa.licenseAll();
