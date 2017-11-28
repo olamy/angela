@@ -2,12 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <artifactId>angela</artifactId>
     <groupId>com.terracottatech.qa</groupId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
-  <modelVersion>4.0.0</modelVersion>
 
   <artifactId>docs</artifactId>
 
@@ -15,19 +16,16 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
     </dependency>
 
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-client</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-common</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
@@ -36,8 +34,6 @@
       <plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>1.5.6</version>
-
         <executions>
           <execution>
             <id>output-html</id>
@@ -58,15 +54,6 @@
         <configuration>
           <sourceDirectory>src/main/asciidoc</sourceDirectory>
           <headerFooter>true</headerFooter>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <target>1.8</target>
-          <source>1.8</source>
         </configuration>
       </plugin>
     </plugins>
