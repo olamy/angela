@@ -1,0 +1,65 @@
+= Getting started
+
+Angela provides a Java API to handle a Terracotta cluster lifecycle.
+It also provides a set of utility methods to help with testing (e.g. network controlling for HA testing)
+
+It can set up a TSA from :
+
+ - a Kit tarball
+ - the SAG installer
+ - a local build
+
+It can install the cluster locally or remotely
+
+It can execute functions that contain client code locally or remotely
+
+It supports TC DB and TC Ehcache
+
+== Tsa Cluster example
+
+Given the following cluster configuration:
+
+[source,xml]
+----
+include::../resources/tc-config-a.xml[tags=servers]
+----
+
+We expect the TSA to contain one Terracotta server running on localhost, and this will be automatically resolved by Angela.
+We can ask now Angela to setup such a cluster:
+
+[source,java]
+----
+include::../java/GettingStarted.java[tags=configureCluster]
+----
+<1> Creates the TSA cluster topology
+<2> Defines the Terracotta distribution : version, package type (KIT) and License (TC DB)
+<3> Defines the Terracotta cluster config
+<4> The license in case the distribution is enterprise
+<5> Creates a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
+<6> Installs the Tsa from the distribution on the appropriate server(s) (localhost in this case)
+<7> Starts all servers from the Tsa
+<8> Install the license with the cluster tool
+<9> Stops all Terracotta servers and cleans up the installation
+
+== Client example
+
+[source,java]
+----
+include::../java/GettingStarted.java[tags=runClient]
+----
+<1> Creates a client on a remote server (localhost in this case)
+<2> executes the function on the remote client
+<3> Wait until the client execution finishes
+
+== Full example
+
+See class TcDBTest
+
+[source,java]
+----
+include::../../../../integration-test/src/test/java/com/terracottatech/qa/angela/TcDBTest.java[]
+----
+
+
+
+
