@@ -19,6 +19,7 @@
     <module>agent</module>
     <module>client</module>
     <module>integration-test</module>
+    <module>docs</module>
   </modules>
 
   <dependencyManagement>
