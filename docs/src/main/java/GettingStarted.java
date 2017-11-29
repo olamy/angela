@@ -1,13 +1,17 @@
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
+import java.util.Collection;
 import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -48,5 +52,35 @@ public class GettingStarted {
 
     factory.close();
     // end::runClient[]
+  }
+
+  @Test
+  public void showTsaApi() throws Exception {
+    Topology topology = new Topology(
+        distribution(version("10.2.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version("10.2.0-SNAPSHOT"), getClass().getResource("/tc-config-ap.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    try (ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster")) {
+      Tsa tsa = factory.tsa(topology, license);
+      // tag::showTsaApi[]
+      tsa.installAll(); // <1>
+      tsa.startAll(); // <2>
+      tsa.licenseAll(); // <3>
+
+      TerracottaServer active = tsa.getActive(); // <4>
+      Collection<TerracottaServer> actives = tsa.getActives(); // <5>
+      TerracottaServer passive = tsa.getPassive(); // <6>
+      Collection<TerracottaServer> passives = tsa.getPassives(); // <7>
+
+      tsa.stopAll(); // <8>
+
+      tsa.start(active); // <9>
+      tsa.start(passive);
+
+      tsa.stop(active); // <10>
+      TerracottaServerState state = tsa.getState(passive); // <11>
+      Assert.assertEquals(TerracottaServerState.STARTED_AS_ACTIVE, state);
+      // end::showTsaApi[]
+    }
   }
 }

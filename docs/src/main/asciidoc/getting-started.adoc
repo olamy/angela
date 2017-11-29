@@ -41,6 +41,24 @@ include::../java/GettingStarted.java[tags=configureCluster]
 <8> Install the license with the cluster tool
 <9> Stops all Terracotta servers and cleans up the installation
 
+=== Tsa API
+
+[source,java]
+----
+include::../java/GettingStarted.java[tags=showTsaApi]
+----
+<1> install all Terracotta servers for the given topology
+<2> start all Terracotta servers
+<3> license all Terracotta servers
+<4> get the reference of the active server. Null is returned if there is none. An exception is throw if there are more than one
+<5> get the references of all active servers. Get an empty collection if there are none.
+<6> get the reference of the passive server. Null is returned if there is none. An exception is throw if there are more than one
+<7> get the references of all passive servers. Get an empty collection if there are none.
+<8> stop all Terracotta servers
+<9> start one Terracotta server
+<10> stop one Terracotta server
+<11> get the current state of the Terracotta server
+
 == Client example
 
 [source,java]
