@@ -70,7 +70,7 @@ public class InstallTest {
       assertThat(tsa.getState(active), is(TerracottaServerState.STOPPED));
 
       System.out.println("********** wait for passive to become active");
-      await().atMost(15, SECONDS).until(() -> tsa.getState(passive) == TerracottaServerState.STARTED_AS_ACTIVE);
+      await().atMost(15, SECONDS).until(() -> tsa.getState(passive), is(TerracottaServerState.STARTED_AS_ACTIVE));
 
       System.out.println("********** done, shutting down");
     }
