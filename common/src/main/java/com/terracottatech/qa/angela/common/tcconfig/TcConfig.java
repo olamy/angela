@@ -31,7 +31,7 @@ public class TcConfig implements Serializable {
   }
 
   private TcConfig(Version version, URL tcConfigPath) {
-    this.tcConfigName = tcConfigPath.getFile();
+    this.tcConfigName = new File(tcConfigPath.getPath()).getName();
     this.tcConfigHolder = initTcConfigHolder(version, tcConfigPath);
   }
 
