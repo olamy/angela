@@ -7,9 +7,10 @@ import com.terracottatech.qa.angela.common.tcconfig.holders.TcConfigHolder;
 import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -22,43 +23,40 @@ import java.util.Properties;
  */
 public class TcConfig implements Serializable {
 
-  private final String tcConfigPath;
   private final TcConfigHolder tcConfigHolder;
   private final String tcConfigName;
 
-  public static TcConfig tcConfig(Version version, String tcConfigPath) {
+  public static TcConfig tcConfig(Version version, URL tcConfigPath) {
     return new TcConfig(version, tcConfigPath);
   }
 
-  public TcConfig(final Version version, final String tcConfigPath) {
-    this.tcConfigPath = tcConfigPath;
-    this.tcConfigName = new File(tcConfigPath).getName();
-    this.tcConfigHolder = initTcConfigHolder(version);
+  private TcConfig(Version version, URL tcConfigPath) {
+    this.tcConfigName = tcConfigPath.getFile();
+    this.tcConfigHolder = initTcConfigHolder(version, tcConfigPath);
   }
 
-  private TcConfigHolder initTcConfigHolder(final Version version) {
+  private TcConfigHolder initTcConfigHolder(Version version, URL tcConfigPath) {
     try {
-      if (version.getMajor() == 4) {
-        if (version.getMinor() == 0) {
-          return new TcConfig8Holder(new FileInputStream(
-              getClass().getResource(this.tcConfigPath).getPath()));
-        } else if (version.getMinor() >= 1) {
-          return new TcConfig9Holder(new FileInputStream(
-              getClass().getResource(this.tcConfigPath).getPath()));
+      try (InputStream is = tcConfigPath.openStream()) {
+        if (version.getMajor() == 4) {
+          if (version.getMinor() == 0) {
+            return new TcConfig8Holder(is);
+          } else if (version.getMinor() >= 1) {
+            return new TcConfig9Holder(is);
+          } else {
+            throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
+          }
+        } else if (version.getMajor() == 5) {
+          return new TcConfig10Holder(is);
+        } else if (version.getMajor() == 10) {
+          return new TcConfig10Holder(is);
         } else {
           throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
         }
-      } else if (version.getMajor() == 5) {
-        return new TcConfig10Holder(new FileInputStream(
-            getClass().getResource(this.tcConfigPath).getPath()));
-      } else if (version.getMajor() == 10) {
-        return new TcConfig10Holder(new FileInputStream(
-            getClass().getResource(this.tcConfigPath).getPath()));
-      } else {
-        throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
       }
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException("Cannot read tc-config file : " + this.tcConfigPath, e);
+    }
+    catch (IOException e) {
+      throw new RuntimeException("Cannot read tc-config file : " + tcConfigPath, e);
     }
   }
 

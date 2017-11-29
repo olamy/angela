@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.net.URL;
 
 /**
  * Created by esebasti on 7/21/17.
@@ -15,8 +16,8 @@ public class License implements Serializable {
 
   private final String licenseContent;
 
-  public License(String licensePath) {
-    try (InputStream is = getClass().getResourceAsStream(licensePath)) {
+  public License(URL licensePath) {
+    try (InputStream is = licensePath.openStream()) {
       if (is == null) {
         throw new IllegalArgumentException("License file is not present");
       }

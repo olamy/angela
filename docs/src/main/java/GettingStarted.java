@@ -25,8 +25,8 @@ public class GettingStarted {
     // tag::configureCluster[]
     Topology topology = new Topology( // <1>
         distribution(version("10.2.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), // <2>
-        tcConfig(version("10.2.0-SNAPSHOT"), "/tc-config-a.xml")); // <3>
-    License license = new License("/TerracottaDB101_license.xml"); // <4>
+        tcConfig(version("10.2.0-SNAPSHOT"), getClass().getResource("/tc-config-a.xml"))); // <3>
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")); // <4>
 
     ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster");   // <5>
     Tsa tsa = factory.tsa(topology, license); // <5>
