@@ -4,14 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>org.terracotta.forge</groupId>
+    <artifactId>forge-parent</artifactId>
+    <version>3.23</version>
+  </parent>
+
   <groupId>com.terracottatech.qa</groupId>
   <artifactId>angela</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>1.8</java.version>
+    <java.build.version>1.8</java.build.version>
   </properties>
 
   <modules>
@@ -108,14 +113,6 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.5.1</version>
-          <configuration>
-            <target>${java.version}</target>
-            <source>${java.version}</source>
-          </configuration>
-        </plugin>
-        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>3.1.0</version>
@@ -128,5 +125,24 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <scm>
+    <connection>scm:git:ssh://git@irepo.eur.ad.sag:7999/tabqa/angela.git</connection>
+    <developerConnection>scm:git:ssh://git@irepo.eur.ad.sag:7999/tabqa/angela.git</developerConnection>
+  </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>terracotta-ee-releases</id>
+      <name>Terracotta EE Releases Repository</name>
+      <url>${terracotta-ee-releases-url}</url>
+    </repository>
+    <snapshotRepository>
+      <id>terracotta-ee-snapshots</id>
+      <uniqueVersion>false</uniqueVersion>
+      <name>Terracotta Snapshots Repository</name>
+      <url>${terracotta-ee-snapshots-url}</url>
+    </snapshotRepository>
+  </distributionManagement>
 
 </project>
