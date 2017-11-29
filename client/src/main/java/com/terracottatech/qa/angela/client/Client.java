@@ -88,7 +88,7 @@ public class Client implements Closeable {
     String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
     for (String classpathJarName : classpathJarNames) {
       if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile().getPath())) {
-        logger.debug("skipping " + classpathJarName);
+        logger.debug("skipping {}", classpathJarName);
         continue; // part of the JVM, skip it
       }
 
@@ -99,8 +99,12 @@ public class Client implements Closeable {
 
   private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
     FileMetadata fileMetadata = new FileMetadata(path, file);
+    if (!file.exists()) {
+      logger.debug("skipping upload of non-existent classpath entry {}", fileMetadata);
+      return;
+    }
     queue.put(fileMetadata);
-    logger.debug("uploading " + fileMetadata);
+    logger.debug("uploading {}", fileMetadata);
 
     if (file.isDirectory()) {
       File[] files = file.listFiles();
@@ -126,7 +130,7 @@ public class Client implements Closeable {
           queue.put(toSend);
         }
       }
-      logger.debug("uploaded " + fileMetadata);
+      logger.debug("uploaded {}", fileMetadata);
     }
   }
 
