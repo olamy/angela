@@ -31,7 +31,7 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 public class Tsa implements AutoCloseable {
 
   private final static Logger logger = LoggerFactory.getLogger(Tsa.class);
-  public static final long TIMEOUT = 60000;
+  private static final long TIMEOUT = 60000;
 
   private final Topology topology;
   private final Ignite ignite;
@@ -76,7 +76,7 @@ public class Tsa implements AutoCloseable {
 
     logger.info("installing on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
-        Agent.CONTROLLER.install(instanceId, topology, offline, license, finalTcConfigIndex));
+        Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex));
   }
 
   public void uninstallAll() {
@@ -101,7 +101,7 @@ public class Tsa implements AutoCloseable {
 
     logger.info("uninstalling from {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
-        Agent.CONTROLLER.uninstall(instanceId, topology));
+        Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer));
   }
 
   public void startAll() {

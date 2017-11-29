@@ -53,12 +53,13 @@ public class AgentController {
     this.ignite = ignite;
   }
 
-  public void install(InstanceId instanceId, Topology topology, boolean offline, License license, int tcConfigIndex) {
-    if (kitsInstalls.containsKey(instanceId)) {
-      logger.info("kit for " + topology + " already installed");
-      kitsInstalls.get(instanceId).incrementInstallationsCount();
+  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall != null) {
+      logger.info("Kit for " + terracottaServer + " already installed");
+      terracottaInstall.addServer(terracottaServer);
     } else {
-      logger.info("Installing kit for " + topology);
+      logger.info("Installing kit for " + terracottaServer);
       KitManager kitManager = new KitManager(instanceId, topology);
       File kitDir = kitManager.installKit(license, offline);
 
@@ -68,14 +69,14 @@ public class AgentController {
         tcConfig.writeTcConfigFile(kitDir);
       }
 
-      kitsInstalls.put(instanceId, new TerracottaInstall(kitDir, topology));
+      kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
     }
   }
 
-  public void uninstall(InstanceId instanceId, Topology topology) {
+  public void uninstall(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall != null) {
-      int installationsCount = terracottaInstall.decrementInstallationsCount();
+      int installationsCount = terracottaInstall.removeServer(terracottaServer);
       if (installationsCount == 0) {
         try {
           logger.info("Uninstalling kit for " + topology);
@@ -89,7 +90,7 @@ public class AgentController {
               .getAbsolutePath(), ioe);
         }
       } else {
-        logger.info("Kits install still in use by {} Terracotta servers", installationsCount);
+        logger.info("Kit install still in use by {} Terracotta servers", installationsCount);
       }
     } else {
       logger.info("No installed kit for " + topology);
@@ -114,6 +115,9 @@ public class AgentController {
       return TerracottaServerState.NOT_INSTALLED;
     }
     TerracottaServerInstance serverInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
+    if (serverInstance == null) {
+      return TerracottaServerState.NOT_INSTALLED;
+    }
     return serverInstance.getTerracottaServerState();
   }
 
