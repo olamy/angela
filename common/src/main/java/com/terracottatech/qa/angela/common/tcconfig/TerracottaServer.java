@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -9,7 +8,7 @@ import java.net.UnknownHostException;
  *
  * @author Aurelien Broszniowski
  */
-public class TerracottaServer implements Serializable {
+public class TerracottaServer {
 
   private final ServerSymbolicName serverSymbolicName;
   private final String hostname;

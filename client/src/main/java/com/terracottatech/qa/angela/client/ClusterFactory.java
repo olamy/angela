@@ -60,7 +60,12 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   private static boolean isLocalhostOnly(Collection<String> targetServerNames) {
-    return targetServerNames.size() == 1 && targetServerNames.iterator().next().equals("localhost");
+    for (String targetServerName : targetServerNames) {
+      if (!targetServerName.equals("localhost")) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public Tsa tsa(Topology topology) {

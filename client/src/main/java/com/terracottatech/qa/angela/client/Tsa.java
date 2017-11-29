@@ -66,7 +66,7 @@ public class Tsa implements AutoCloseable {
   }
 
   private void install(int tcConfigIndex, TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
@@ -91,7 +91,7 @@ public class Tsa implements AutoCloseable {
   }
 
   private void uninstall(TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState == null) {
       return;
     }
@@ -115,7 +115,7 @@ public class Tsa implements AutoCloseable {
   }
 
   private void start(final TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState == STARTED_AS_ACTIVE || terracottaServerState == STARTED_AS_PASSIVE) {
       return;
     }
@@ -139,8 +139,8 @@ public class Tsa implements AutoCloseable {
     }
   }
 
-  private void stop(final TerracottaServer terracottaServer) {
-    TerracottaServerState terracottaServerState = getTerracottaServerState(terracottaServer);
+  public void stop(final TerracottaServer terracottaServer) {
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState == STOPPED) {
       return;
     }
@@ -157,7 +157,7 @@ public class Tsa implements AutoCloseable {
   public void licenseAll() {
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
     for (Map.Entry<ServerSymbolicName, TerracottaServer> entry : topology.getServers().entrySet()) {
-      TerracottaServerState terracottaServerState = getTerracottaServerState(entry.getValue());
+      TerracottaServerState terracottaServerState = getState(entry.getValue());
       if ((terracottaServerState != STARTED_AS_ACTIVE) && (terracottaServerState != STARTED_AS_PASSIVE)) {
         notStartedServers.add(entry.getKey());
       }
@@ -172,7 +172,7 @@ public class Tsa implements AutoCloseable {
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
   }
 
-  private TerracottaServerState getTerracottaServerState(TerracottaServer terracottaServer) {
+  public TerracottaServerState getState(TerracottaServer terracottaServer) {
     return executeRemotely(terracottaServer.getHostname(), () ->
         Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer));
   }
@@ -221,5 +221,20 @@ public class Tsa implements AutoCloseable {
     return results.iterator().next();
   }
 
+  public TerracottaServer getSinglePassive() {
+    TerracottaServer passiveServer = null;
+    Map<ServerSymbolicName, TerracottaServer> servers = topology.getServers();
+    for (TerracottaServer terracottaServer : servers.values()) {
+      TerracottaServerState terracottaServerState = getState(terracottaServer);
+      if (terracottaServerState == STARTED_AS_PASSIVE) {
+        if (passiveServer != null) {
+          throw new RuntimeException("There is more than one Passive Terracotta server");
+        } else {
+          passiveServer = terracottaServer;
+        }
+      }
+    }
+    return passiveServer;
+  }
 }
 

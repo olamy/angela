@@ -1,11 +1,11 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.distribution.DistributionController;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -13,6 +13,7 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -26,7 +27,7 @@ public class TerracottaInstall {
   private final File installLocation;
   //  private final NetworkController networkController;
   private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances;
-
+  private final AtomicInteger installationsCount = new AtomicInteger(1);
 
   public TerracottaInstall(final File location, final Topology topology) {
     this.topology = topology;
@@ -41,7 +42,8 @@ public class TerracottaInstall {
     for (TcConfig tcConfig : tcConfigs) {
       Map<ServerSymbolicName, TerracottaServer> servers = tcConfig.getServers();
       for (TerracottaServer terracottaServer : servers.values()) {
-        terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), distributionController, location));
+        terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer
+            .getServerSymbolicName(), distributionController, location));
       }
     }
     return terracottaServerInstances;
@@ -53,5 +55,13 @@ public class TerracottaInstall {
 
   public File getInstallLocation() {
     return installLocation;
+  }
+
+  public void incrementInstallationsCount() {
+    this.installationsCount.incrementAndGet();
+  }
+
+  public int decrementInstallationsCount() {
+    return this.installationsCount.decrementAndGet();
   }
 }

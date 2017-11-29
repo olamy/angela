@@ -1,17 +1,5 @@
 package com.terracottatech.qa.angela.agent;
 
-import com.terracottatech.qa.angela.agent.kit.KitManager;
-import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
-import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
-import com.terracottatech.qa.angela.common.util.OS;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -24,6 +12,19 @@ import org.zeroturnaround.process.PidProcess;
 import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
+
+import com.terracottatech.qa.angela.agent.kit.KitManager;
+import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.FileMetadata;
+import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
+import com.terracottatech.qa.angela.common.util.OS;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -55,6 +56,7 @@ public class AgentController {
   public void install(InstanceId instanceId, Topology topology, boolean offline, License license, int tcConfigIndex) {
     if (kitsInstalls.containsKey(instanceId)) {
       logger.info("kit for " + topology + " already installed");
+      kitsInstalls.get(instanceId).incrementInstallationsCount();
     } else {
       logger.info("Installing kit for " + topology);
       KitManager kitManager = new KitManager(instanceId, topology);
@@ -71,16 +73,23 @@ public class AgentController {
   }
 
   public void uninstall(InstanceId instanceId, Topology topology) {
-    TerracottaInstall terracottaInstall = kitsInstalls.remove(instanceId);
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall != null) {
-      try {
-        logger.info("Uninstalling kit for " + topology);
-        KitManager kitManager = new KitManager(instanceId, topology);
-        // TODO : get log files
+      int installationsCount = terracottaInstall.decrementInstallationsCount();
+      if (installationsCount == 0) {
+        try {
+          logger.info("Uninstalling kit for " + topology);
+          KitManager kitManager = new KitManager(instanceId, topology);
+          // TODO : get log files
 
-        kitManager.deleteInstall(terracottaInstall.getInstallLocation());
-      } catch (IOException ioe) {
-        throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation().getAbsolutePath(), ioe);
+          kitManager.deleteInstall(terracottaInstall.getInstallLocation());
+          kitsInstalls.remove(instanceId);
+        } catch (IOException ioe) {
+          throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation()
+              .getAbsolutePath(), ioe);
+        }
+      } else {
+        logger.info("Kits install still in use by {} Terracotta servers", installationsCount);
       }
     } else {
       logger.info("No installed kit for " + topology);
@@ -138,9 +147,11 @@ public class AgentController {
       final AtomicBoolean started = new AtomicBoolean(false);
       List<String> cmdLine;
       if (os.isWindows()) {
-        cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName());
+        cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class
+            .getName());
       } else {
-        cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class.getName());
+        cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class
+            .getName());
       }
       logger.info("Spawning client {}", cmdLine);
       ProcessExecutor processExecutor = new ProcessExecutor().command(cmdLine)
@@ -189,7 +200,8 @@ public class AgentController {
     if (agentClassPath.startsWith("file:")) {
       sb.append(agentClassPath.substring("file:".length(), agentClassPath.lastIndexOf('!')));
     } else {
-      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(Agent.class.getName().replace('.', File.separatorChar))));
+      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(Agent.class.getName()
+          .replace('.', File.separatorChar))));
     }
 
     return sb.toString();
@@ -211,7 +223,7 @@ public class AgentController {
           break;
         }
 
-        FileMetadata fileMetadata = (FileMetadata) read;
+        FileMetadata fileMetadata = (FileMetadata)read;
         logger.debug("downloading " + fileMetadata);
         if (!fileMetadata.isDirectory()) {
           long readFileLength = 0L;
@@ -219,7 +231,7 @@ public class AgentController {
           file.getParentFile().mkdirs();
           try (FileOutputStream fos = new FileOutputStream(file)) {
             while (true) {
-              byte[] buffer = (byte[]) queue.take();
+              byte[] buffer = (byte[])queue.take();
               fos.write(buffer);
               readFileLength += buffer.length;
               if (readFileLength == fileMetadata.getLength()) {
