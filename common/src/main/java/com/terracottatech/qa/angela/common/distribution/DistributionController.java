@@ -26,7 +26,7 @@ public abstract class DistributionController {
 
   public abstract TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, File installLocation);
 
-  public abstract TerracottaServerState stop(final ServerSymbolicName serverSymbolicName, final File location, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess);
+  public abstract void stop(final ServerSymbolicName serverSymbolicName, final File location, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess);
 
   public abstract void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs);
 }

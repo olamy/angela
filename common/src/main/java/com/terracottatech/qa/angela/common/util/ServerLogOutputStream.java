@@ -1,10 +1,10 @@
 package com.terracottatech.qa.angela.common.util;
 
 import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.exec.stream.LogOutputStream;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,30 +17,34 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_
  */
 
 public class ServerLogOutputStream extends LogOutputStream {
-  private final AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>();
-  private final AtomicInteger pid;
+  private final Pattern pattern = Pattern.compile("PID is (\\d*)");
+  private final ServerSymbolicName serverSymbolicName;
+  private final AtomicReference<TerracottaServerState> stateRef;
+  private volatile int pid = -1;
 
-  public ServerLogOutputStream(final AtomicInteger pid) {
-    this.pid = pid;
+  public ServerLogOutputStream(ServerSymbolicName serverSymbolicName, AtomicReference<TerracottaServerState> stateRef) {
+    this.serverSymbolicName = serverSymbolicName;
+    this.stateRef = stateRef;
   }
 
   @Override
   protected void processLine(final String line) {
-    System.out.println(line);
+    if (line.contains("WARN") || line.contains("ERROR")) {
+      System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + line);
+    }
     if (line.contains("Terracotta Server instance has started up as ACTIVE")) {
       stateRef.set(STARTED_AS_ACTIVE);
     } else if (line.contains("Moved to State[ PASSIVE-STANDBY ]")) {
       stateRef.set(STARTED_AS_PASSIVE);
     } else if (line.contains("PID is")) {
-      Pattern pattern = Pattern.compile("PID is (\\d*)");
       Matcher matcher = pattern.matcher(line);
       if (matcher.find()) {
-        this.pid.set(Integer.parseInt(matcher.group(1)));
+        this.pid = Integer.parseInt(matcher.group(1));
       }
     }
   }
 
-  public TerracottaServerState waitForStartedState(final StartedProcess startedProcess) {
+  public void waitForStartedState(final StartedProcess startedProcess) {
     while (stateRef.get() != STARTED_AS_ACTIVE && stateRef.get() != STARTED_AS_PASSIVE) {
       if (!startedProcess.getProcess().isAlive()) {
         throw new RuntimeException("TCServer exited without reaching ACTIVE or PASSIVE state");
@@ -51,10 +55,12 @@ public class ServerLogOutputStream extends LogOutputStream {
         throw new RuntimeException(e);
       }
     }
-    return stateRef.get();
   }
 
-  public void stop() {
-
+  public int getPid() {
+    if (pid == -1) {
+      throw new IllegalStateException("Terracotta Server instance has not yet logged its PID");
+    }
+    return pid;
   }
 }

@@ -67,6 +67,7 @@ public class AgentController {
       for (TcConfig tcConfig : topology.getTcConfigs()) {
         tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
         tcConfig.writeTcConfigFile(kitDir);
+        logger.info("Tc Config installed config path : {}", tcConfig.getPath());
       }
 
       kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
@@ -97,16 +98,16 @@ public class AgentController {
     }
   }
 
-  public TerracottaServerState start(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+  public void start(final InstanceId instanceId, final TerracottaServer terracottaServer) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
-    return serverInstance.start();
+    serverInstance.start();
   }
 
-  public TerracottaServerState stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+  public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
-    return serverInstance.stop();
+    serverInstance.stop();
   }
 
   public TerracottaServerState getTerracottaServerState(final InstanceId instanceId, final TerracottaServer terracottaServer) {

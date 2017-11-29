@@ -14,6 +14,8 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,11 +52,27 @@ public class InstallTest {
       tsa.startAll();
       tsa.licenseAll();
 
-      TerracottaServer passive = tsa.getSinglePassive();
+      TerracottaServer passive = tsa.getPassive();
+      System.out.println("********** stop passive");
       tsa.stop(passive);
 
       assertThat(tsa.getState(passive), is(TerracottaServerState.STOPPED));
-      assertThat(tsa.getSinglePassive(), is(nullValue()));
+      assertThat(tsa.getPassive(), is(nullValue()));
+
+      System.out.println("********** restart passive");
+      tsa.start(passive);
+      assertThat(tsa.getState(passive), is(TerracottaServerState.STARTED_AS_PASSIVE));
+
+      TerracottaServer active = tsa.getActive();
+      assertThat(tsa.getState(active), is(TerracottaServerState.STARTED_AS_ACTIVE));
+      System.out.println("********** stop active");
+      tsa.stop(active);
+      assertThat(tsa.getState(active), is(TerracottaServerState.STOPPED));
+
+      System.out.println("********** wait for passive to become active");
+      await().atMost(15, SECONDS).until(() -> tsa.getState(passive) == TerracottaServerState.STARTED_AS_ACTIVE);
+
+      System.out.println("********** done, shutting down");
     }
   }
 

@@ -43,10 +43,10 @@ public abstract class TcConfigHolder {
 
   private final static Logger logger = LoggerFactory.getLogger(TcConfigHolder.class);
 
-  protected String tcConfigContent;        // tc config content
-  private String installedTcConfigPath;
-  private Properties tcProperties = null;
-  private List<String> logsPathList = new ArrayList<String>();
+  protected volatile String tcConfigContent;        // tc config content
+  private volatile String installedTcConfigPath;
+  private volatile Properties tcProperties = null;
+  private final List<String> logsPathList = new ArrayList<String>();
 
   public TcConfigHolder() {
   }
@@ -131,7 +131,6 @@ public abstract class TcConfigHolder {
   }
 
   public String getTcConfigPath() {
-    logger.info("Tc Config installed config path : {}", installedTcConfigPath);
     return this.installedTcConfigPath;
   }
 
