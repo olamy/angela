@@ -168,6 +168,7 @@ public class KitManager implements Serializable {
 
       createParentDirs(kitLocation);
 
+      long lastProgress = -1;
       try (OutputStream fos = new FileOutputStream(kitLocation);
            InputStream is = kitUrl.openStream()) {
         byte[] buffer = new byte[8192];
@@ -176,17 +177,19 @@ public class KitManager implements Serializable {
         while ((count = is.read(buffer)) != -1) {
           len += count;
 
-          System.out.print("\r progress = " + (100 * len / contentlength) + "%");
+          long progress = 100 * len / contentlength;
+          if (progress % 10 == 0 && progress > lastProgress) {
+            logger.info("Download progress = {}%", progress);
+            lastProgress = progress;
+          }
           fos.write(buffer, 0, count);
         }
-        System.out.println("");
       }
 
-      logger.info("Success -> file downloaded succesfully. returning 'success' code");
+      logger.debug("Success -> file downloaded succesfully");
     } catch (IOException e) {
       throw new RuntimeException("Can not download kit located at " + kitUrl, e);
     }
-    logger.info("Failed -> file download failed. returning 'error' code");
   }
 
   /**
