@@ -296,7 +296,7 @@ public class CompressionUtils implements Serializable {
                      "e2ei/11/TDB_.LATEST/TDB/TDBCommon," +
                      "e2ei/11/TDB_.LATEST/TDB/TDBConsole," +
                      "e2ei/11/TDB_.LATEST/TDB/TDBCluster," +
-                     "e2ei/11/TPL_.LATEST/License/licenseAll");
+                     "e2ei/11/TPL_.LATEST/License/license");
       writer.println("InstallDir=" + localInstallDir.getPath());
       writer.println("TDB.licenseAll=__VERSION1__," + licenseFile.getPath());
       writer.println("ServerURL=http://aquarius_va.ame.ad.sag/cgi-bin/dataserve" + getSandboxName(version) + ".cgi");
