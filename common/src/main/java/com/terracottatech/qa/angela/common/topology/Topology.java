@@ -28,7 +28,7 @@ public class Topology {
   private final TcConfig[] tcConfigs;
 
   /*
-   * Galvan mode: if non-null, use the kit in that folder instead of downloading one.
+   * Galvan compatibility mode: if non-null, use the kit in that folder instead of downloading one.
    */
   private final String kitInstallationPath;
 

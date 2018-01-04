@@ -14,13 +14,14 @@ import org.apache.tools.ant.taskdefs.Chmod;
 import org.apache.tools.ant.taskdefs.ExecuteOn;
 import org.apache.tools.ant.taskdefs.Untar;
 import org.apache.tools.ant.types.FileSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.zip.ZipUtil;
 
-
-import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.util.OS;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -40,7 +41,8 @@ import java.util.zip.ZipOutputStream;
 
 public class CompressionUtils implements Serializable {
 
-  private static final int BUFFER_SIZE = 8 * 1024;
+  private static final Logger logger = LoggerFactory.getLogger(CompressionUtils.class);
+
   private OS os = new OS();
 
   public CompressionUtils() {
@@ -58,6 +60,7 @@ public class CompressionUtils implements Serializable {
     } catch (Exception e) {
       throw new RuntimeException("Error when extracting installer package", e);
     }
+    logger.info("kit installation path = {}", kitDest.getAbsolutePath());
   }
 
   private void extractTarGz(File kitInstaller, File kitDest) throws IOException, TimeoutException, InterruptedException {
@@ -274,12 +277,13 @@ public class CompressionUtils implements Serializable {
     }
   }
 
-  public void extractSag(final Version version, License license, final File sagInstaller, final File dest, final File localInstallDir)  {
+  public void extractSag(final Version version, License license, final File sagInstaller, final File dest) {
+    final File localInstallDir = new File(dest.getPath() + File.separatorChar + "TDB");
     // create console script
     File scriptFile = new File(dest.getPath() + File.separatorChar + "install-script.txt");
     scriptFile.delete();
 
-    File licenseFile = new File(dest.getPath() + File.separatorChar + "licenseAll.xml");
+    File licenseFile = new File(dest.getPath() + File.separatorChar + "license.xml");
     license.WriteToFile(licenseFile);
 
     try {
@@ -308,6 +312,7 @@ public class CompressionUtils implements Serializable {
           .redirectOutput(out)
           .execute();
       System.out.println(out.toString());
+      logger.info("kit installation path = {}", localInstallDir.getAbsolutePath());
     } catch (Exception e) {
       throw new RuntimeException("Problem when installing Terracotta from SAG installer script " + scriptFile.getPath());
     }

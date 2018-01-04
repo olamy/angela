@@ -1,5 +1,9 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
@@ -8,9 +12,6 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,28 +36,22 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  */
 public class KitManager implements Serializable {
 
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(KitManager.class);
 
   private CompressionUtils compressionUtils = new CompressionUtils();
   private final InstanceId instanceId;
   private Distribution distribution;
   private final String kitInstallationPath;
+  private final String localInstallationPath;
 
   public KitManager(InstanceId instanceId, Topology topology) {
     this.instanceId = instanceId;
     this.distribution = topology.getDistribution();
     this.kitInstallationPath = topology.getKitInstallationPath();
+    this.localInstallationPath = Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
+                                 + distribution.getVersion().getVersion(false);
   }
 
-  /**
-   * Verify that we have the up-to-date installer archive
-   *
-   * @return location of the installer archive file
-   */
-  private String resolveLocalDir() {
-    return Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
-           + distribution.getVersion().getVersion(false);
-  }
 
   /**
    * define kratos url for version
@@ -158,7 +153,8 @@ public class KitManager implements Serializable {
     throw new RuntimeException("Can not resolve the kratos url for the distribution package");
   }
 
-  private void download(final URL kitUrl, final File kitLocation) {
+  private void downloadLocalInstaller() {
+    URL kitUrl = resolveUrl();
     try {
       URLConnection urlConnection = kitUrl.openConnection();
       urlConnection.connect();
@@ -166,10 +162,10 @@ public class KitManager implements Serializable {
       int contentlength = urlConnection.getContentLength();
       logger.info("Downloading {} - {} bytes", kitUrl, contentlength);
 
-      createParentDirs(kitLocation);
+      createParentDirs(new File(this.localInstallationPath));
 
       long lastProgress = -1;
-      try (OutputStream fos = new FileOutputStream(kitLocation);
+      try (OutputStream fos = new FileOutputStream(new File(this.localInstallationPath));
            InputStream is = kitUrl.openStream()) {
         byte[] buffer = new byte[8192];
         long len = 0;
@@ -193,12 +189,6 @@ public class KitManager implements Serializable {
   }
 
   /**
-   * -> tcConfigId is Tc config id for the current install, kitLocation is tarball dir, version is version for specificities
-   * /work/kitinstall/156523236586232/hostname:111/
-   * \--------------/ \-------------/ \----------/
-   * base install     tcconfig id     tc instance
-   * <p/>
-   * TODO  Change the method args
    */
   public File installKit(License license, final boolean offline) {
     if (kitInstallationPath != null) {
@@ -210,61 +200,57 @@ public class KitManager implements Serializable {
       return new File(kitInstallationPath);
     } else {
       logger.info("getting install from the kit/installer");
-      File localInstall = resolveLocalInstall(offline);
-      if (localInstall == null) {
+      File localInstallerFilename = new File(resolveLocalInstallerFilename());
+      File localInstallPath = new File(this.localInstallationPath
+                                       + File.separatorChar + getDirFromArchive(localInstallerFilename));
+      if (!isValidLocalInstallPath(offline, localInstallPath)) {
         logger.debug("Local install not available");
 
-        File localInstaller = resolveLocalInstaller(offline);
-        if (localInstaller == null) {
+        if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
           logger.debug("Local installer not available");
           if (offline) {
             throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
           }
-          localInstaller = downloadLocalInstaller();
+          downloadLocalInstaller();
         }
-        localInstall = createLocalInstallFromInstaller(license, localInstaller);
+        createLocalInstallFromInstaller(license, localInstallerFilename);
       }
-      return createWorkingCopyFromLocalInstall(localInstall);
+      File workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(localInstallPath);
+      logger.info("Working install is located in {}", workingCopyFromLocalInstall);
+      return workingCopyFromLocalInstall;
     }
   }
 
   /**
-   * Resolve local install location
+   * Resolve local install path that will be used to create a working copy
+   * <p>
    * This is the directory containing the exploded terracotta install, that will be copied to give a
    * single instance working installation
    * <p>
    * e.g. : /data/tsamanager/kits/10.1.0/terracotta-db-10.1.0-SNAPSHOT
    *
    * @param offline
+   * @param localInstallPath
    * @return location of the install to be used to create the working install
    */
-  protected File resolveLocalInstall(final boolean offline) {
-    logger.debug("Resolving local install location");
-    File localInstaller = resolveLocalInstaller(offline);
-    if (localInstaller == null) {
-      return null;
-    }
-    logger.debug("Installer is available. Checking install.");
-    File localInstall = new File(resolveLocalInstallName()
-                                 + File.separatorChar + getDirFromArchive(localInstaller));
-
-    if (!localInstall.isDirectory()) {
+  private boolean isValidLocalInstallPath(final boolean offline, final File localInstallPath) {
+    if (!localInstallPath.isDirectory()) {
       logger.debug("Install is not available.");
-      return null;
+      return false;
     }
 
     // if we have a snapshot that is older than 24h, we reload it
     if (!offline && distribution.getVersion().isSnapshot()
-        && Math.abs(System.currentTimeMillis() - localInstall.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
+        && Math.abs(System.currentTimeMillis() - localInstallPath.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
       try {
         logger.debug("Version is snapshot and older than 24h and mode is online, so we reinstall it.");
-        FileUtils.deleteDirectory(localInstall);
+        FileUtils.deleteDirectory(localInstallPath);
       } catch (IOException e) {
-        return null;
+        return false;
       }
-      return null;
+      return false;
     }
-    return localInstall;
+    return true;
   }
 
   private String getDirFromArchive(final File localInstaller) {
@@ -281,16 +267,11 @@ public class KitManager implements Serializable {
         if (distribution.getVersion().getMajor() == 10) {
           return "Terracotta-" + distribution.getVersion().toString();
         }
-
       }
     } catch (Exception e) {
       throw new RuntimeException("Can not resolve the local kit distribution package", e);
     }
     throw new RuntimeException("Can not resolve the local kit distribution package");
-  }
-
-  private String resolveLocalInstallName() {
-    return resolveLocalDir();
   }
 
   /**
@@ -299,26 +280,25 @@ public class KitManager implements Serializable {
    * @param offline
    * @return location of the installer archive file
    */
-  private File resolveLocalInstaller(final boolean offline) {
-    File localInstaller = new File(resolveLocalInstallerName());
-    if (!localInstaller.isFile()) {
-      logger.debug("Kit {} is not an existing file", localInstaller.getAbsolutePath());
-      return null;
+  private boolean isValidLocalInstallerFilePath(final boolean offline, File localInstallerFilename) {
+    if (!localInstallerFilename.isFile()) {
+      logger.debug("Kit {} is not an existing file", localInstallerFilename.getAbsolutePath());
+      return false;
     }
 
     // if we have a snapshot that is older than 24h, we reload it
     if (!offline && distribution.getVersion().isSnapshot()
-        && Math.abs(System.currentTimeMillis() - localInstaller.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
+        && Math.abs(System.currentTimeMillis() - localInstallerFilename.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
       logger.debug("Our version is a snapshot, is older than 24h and we are not offline so we are deleting it to produce a reload.");
-      FileUtils.deleteQuietly(localInstaller);
-      return null;
+      FileUtils.deleteQuietly(localInstallerFilename);
+      return false;
     }
-    return localInstaller;
+    return true;
   }
 
-  String resolveLocalInstallerName() {
+  private String resolveLocalInstallerFilename() {
     logger.debug("Resolving the local installer name");
-    StringBuilder sb = new StringBuilder(resolveLocalDir());
+    StringBuilder sb = new StringBuilder(this.localInstallationPath);
     sb.append(File.separator);
     Version version = distribution.getVersion();
     if (distribution.getPackageType() == KIT) {
@@ -373,29 +353,19 @@ public class KitManager implements Serializable {
     throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
-  private File downloadLocalInstaller() {
-    URL installerUrl = resolveUrl();
-    File installerLocation = new File(resolveLocalInstallerName());
-    download(installerUrl, installerLocation);
-    return installerLocation;
-  }
-
-  private File createLocalInstallFromInstaller(License license, final File localInstaller) {
-    File dest = new File(resolveLocalInstallName());
+  private void createLocalInstallFromInstaller(License license, final File localInstallerFilename) {
+    File dest = new File(this.localInstallationPath);
     if (distribution.getPackageType() == KIT) {
-      File localInstall = new File(resolveLocalInstallName() + File.separatorChar + getDirFromArchive(localInstaller));
-      compressionUtils.extract(localInstaller, dest);
-      return localInstall;
+      compressionUtils.extract(localInstallerFilename, dest);
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      File localInstallDir = new File(resolveLocalInstallName() + File.separatorChar + "TDB");
-      compressionUtils.extractSag(distribution.getVersion(), license, localInstaller, dest, localInstallDir);
-      return dest;
+      compressionUtils.extractSag(distribution.getVersion(), license, localInstallerFilename, dest);
+    } else {
+      throw new RuntimeException("Can not resolve the local kit distribution package");
     }
-    throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File( Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
+    File workingInstall = new File(Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
     try {
       FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
