@@ -33,9 +33,7 @@ public class License implements Serializable {
 
   public void WriteToFile(File file) {
     try  {
-      FileOutputStream fos = new FileOutputStream(file);
-      IOUtils.write(licenseContent, fos, Charset.defaultCharset());
-      fos.close();
+      Files.write(file.toPath(), licenseContent.getBytes());
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
