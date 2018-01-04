@@ -153,7 +153,7 @@ public class KitManager implements Serializable {
     throw new RuntimeException("Can not resolve the kratos url for the distribution package");
   }
 
-  private void downloadLocalInstaller() {
+  private void downloadLocalInstaller(final File localInstallerFilename) {
     URL kitUrl = resolveUrl();
     try {
       URLConnection urlConnection = kitUrl.openConnection();
@@ -162,10 +162,10 @@ public class KitManager implements Serializable {
       int contentlength = urlConnection.getContentLength();
       logger.info("Downloading {} - {} bytes", kitUrl, contentlength);
 
-      createParentDirs(new File(this.localInstallationPath));
+      createParentDirs(localInstallerFilename);
 
       long lastProgress = -1;
-      try (OutputStream fos = new FileOutputStream(new File(this.localInstallationPath));
+      try (OutputStream fos = new FileOutputStream(localInstallerFilename);
            InputStream is = kitUrl.openStream()) {
         byte[] buffer = new byte[8192];
         long len = 0;
@@ -211,7 +211,7 @@ public class KitManager implements Serializable {
           if (offline) {
             throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
           }
-          downloadLocalInstaller();
+          downloadLocalInstaller(localInstallerFilename);
         }
         createLocalInstallFromInstaller(license, localInstallerFilename);
       }

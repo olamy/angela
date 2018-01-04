@@ -31,7 +31,6 @@ public class License implements Serializable {
     }
   }
 
-
   public void WriteToFile(File file) {
     try  {
       FileOutputStream fos = new FileOutputStream(file);
