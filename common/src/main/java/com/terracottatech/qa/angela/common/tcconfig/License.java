@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -8,6 +9,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * Created by esebasti on 7/21/17.
@@ -30,8 +32,9 @@ public class License implements Serializable {
 
   public void WriteToFile(File file) {
     try  {
-      System.out.println("->"+file.toPath().toAbsolutePath());
-      Files.write(file.toPath().toAbsolutePath(), licenseContent.getBytes());
+      String normalized = FilenameUtils.normalize(file.getAbsolutePath());
+      System.out.println("->" + normalized);
+      Files.write(Paths.get(normalized), licenseContent.getBytes());
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
