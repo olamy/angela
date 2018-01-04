@@ -3,11 +3,11 @@ package com.terracottatech.qa.angela.common.tcconfig;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.file.Files;
 
 /**
  * Created by esebasti on 7/21/17.
@@ -29,8 +29,8 @@ public class License implements Serializable {
 
 
   public void WriteToFile(File file) {
-    try (FileOutputStream fos = new FileOutputStream(file)) {
-      IOUtils.write(licenseContent, fos);
+    try  {
+      Files.write(file.toPath(), licenseContent.getBytes());
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
