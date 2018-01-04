@@ -30,7 +30,7 @@ public class License implements Serializable {
 
   public void WriteToFile(File file) {
     try  {
-      Files.write(file.toPath(), licenseContent.getBytes());
+      Files.write(file.toPath().toAbsolutePath(), licenseContent.getBytes());
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
