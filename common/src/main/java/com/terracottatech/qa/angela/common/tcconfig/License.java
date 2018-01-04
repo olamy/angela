@@ -4,10 +4,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -32,9 +34,9 @@ public class License implements Serializable {
 
   public void WriteToFile(File file) {
     try  {
-      String normalized = FilenameUtils.normalize(file.getAbsolutePath());
-      System.out.println("->" + normalized);
-      Files.write(Paths.get(normalized), licenseContent.getBytes());
+      FileOutputStream fos = new FileOutputStream(file);
+      IOUtils.write(licenseContent, fos, Charset.defaultCharset());
+      fos.close();
     } catch (IOException ioe) {
       throw new RuntimeException(ioe);
     }
