@@ -22,14 +22,11 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.file.Files;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
-import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 
 /**
@@ -373,13 +370,12 @@ public class KitManager implements Serializable {
       logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall.getAbsolutePath());
       boolean res = workingInstall.mkdirs();
       logger.info("Directories created? {}", res);
-      Files.copy(localInstall.toPath(), workingInstall.toPath(), COPY_ATTRIBUTES, REPLACE_EXISTING);
+      FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
         for (String path : System.getProperty("extraServerJars").split(File.pathSeparator)) {
           FileUtils.copyFileToDirectory(new File(path),
-              new File(workingInstall, "server" + File.separator + "plugins" + File.separator + "lib"));
-
+              new File(workingInstall, "TDB" + File.separator +"TerracottaDB" + File.separator + "server" + File.separator + "plugins" + File.separator + "lib"));
         }
       }
       compressionUtils.cleanupPermissions(workingInstall);
