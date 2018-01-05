@@ -368,7 +368,7 @@ public class KitManager implements Serializable {
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File(Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
+    File workingInstall = new File(Agent.WORK_DIR + File.separator + instanceId);
     try {
       logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall.getAbsolutePath());
       workingInstall.mkdirs();
