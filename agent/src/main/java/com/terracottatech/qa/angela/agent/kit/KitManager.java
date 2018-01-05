@@ -367,6 +367,7 @@ public class KitManager implements Serializable {
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
     File workingInstall = new File(Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
     try {
+      logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall.getAbsolutePath());
       FileUtils.copyDirectory(localInstall, workingInstall);
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
