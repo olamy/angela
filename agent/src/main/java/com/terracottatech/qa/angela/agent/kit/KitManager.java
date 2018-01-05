@@ -22,11 +22,14 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 
 /**
@@ -368,7 +371,8 @@ public class KitManager implements Serializable {
     File workingInstall = new File(Agent.WORK_DIR + File.separator + instanceId + File.separator + localInstall.getName());
     try {
       logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall.getAbsolutePath());
-      FileUtils.copyDirectory(localInstall, workingInstall);
+      workingInstall.mkdirs();
+      Files.copy(localInstall.toPath(), workingInstall.toPath(), COPY_ATTRIBUTES, REPLACE_EXISTING);
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
         for (String path : System.getProperty("extraServerJars").split(File.pathSeparator)) {
