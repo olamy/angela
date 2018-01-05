@@ -265,7 +265,7 @@ public class KitManager implements Serializable {
         }
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
         if (distribution.getVersion().getMajor() == 10) {
-          return "Terracotta-" + distribution.getVersion().toString();
+          return "TDB";
         }
       }
     } catch (Exception e) {
