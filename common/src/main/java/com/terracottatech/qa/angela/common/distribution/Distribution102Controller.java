@@ -142,7 +142,7 @@ public class Distribution102Controller extends DistributionController {
       sb = new StringBuilder(location.getAbsolutePath() + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
           .append(os.getShellExtension());
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      sb = new StringBuilder(location.getAbsolutePath() + File.separator + "TDB" + File.separator + "TerracottaDB"
+      sb = new StringBuilder(location.getAbsolutePath()  + File.separator + "TerracottaDB"
                              + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
           .append(os.getShellExtension());
     }
@@ -229,7 +229,7 @@ public class Distribution102Controller extends DistributionController {
             .append(os.getShellExtension());
         return sb.toString();
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
-        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TDB" + File.separator + "TerracottaDB"
+        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator +"TerracottaDB"
                                              + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server")
             .append(os.getShellExtension());
         return sb.toString();

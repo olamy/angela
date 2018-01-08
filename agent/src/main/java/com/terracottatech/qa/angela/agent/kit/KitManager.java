@@ -43,13 +43,15 @@ public class KitManager implements Serializable {
   private Distribution distribution;
   private final String kitInstallationPath;
   private final String localInstallationPath;
+  private final String workingInstall;
 
   public KitManager(InstanceId instanceId, Topology topology) {
     this.instanceId = instanceId;
     this.distribution = topology.getDistribution();
     this.kitInstallationPath = topology.getKitInstallationPath();
-    this.localInstallationPath = Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits") + File.separator
-                                 + distribution.getVersion().getVersion(false);
+    this.localInstallationPath = Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
+                                 + File.separator + distribution.getVersion().getVersion(false);
+    this.workingInstall = Agent.WORK_DIR + File.separator + "work" + File.separator + instanceId;
   }
 
 
@@ -201,17 +203,19 @@ public class KitManager implements Serializable {
     } else {
       logger.info("getting install from the kit/installer");
       File localInstallerFilename = new File(resolveLocalInstallerFilename());
+      if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
+        downloadLocalInstaller(localInstallerFilename);
+      }
+
       File localInstallPath = new File(this.localInstallationPath
                                        + File.separatorChar + getDirFromArchive(localInstallerFilename));
+
       if (!isValidLocalInstallPath(offline, localInstallPath)) {
         logger.debug("Local install not available");
 
-        if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
-          logger.debug("Local installer not available");
-          if (offline) {
-            throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
-          }
-          downloadLocalInstaller(localInstallerFilename);
+        logger.debug("Local installer not available");
+        if (offline) {
+          throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
         }
         createLocalInstallFromInstaller(license, localInstallerFilename);
       }
@@ -365,24 +369,27 @@ public class KitManager implements Serializable {
   }
 
   private File createWorkingCopyFromLocalInstall(final File localInstall) {
-    File workingInstall = new File(Agent.WORK_DIR + File.separator + instanceId);
     try {
-      logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall.getAbsolutePath());
-      boolean res = workingInstall.mkdirs();
+      logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall);
+      File workingInstallPath = new File(workingInstall);
+      boolean res = workingInstallPath.mkdirs();
       logger.info("Directories created? {}", res);
-      FileUtils.copyDirectory(localInstall, workingInstall);
+      FileUtils.copyDirectory(localInstall, workingInstallPath);
+
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
         for (String path : System.getProperty("extraServerJars").split(File.pathSeparator)) {
+          String serverlib = (distribution.getPackageType() == SAG_INSTALLER ? "TerracottaDB" + File.separator : "")
+                             + "server" + File.separator + "plugins" + File.separator + "lib";
           FileUtils.copyFileToDirectory(new File(path),
-              new File(workingInstall, "TDB" + File.separator +"TerracottaDB" + File.separator + "server" + File.separator + "plugins" + File.separator + "lib"));
+              new File(workingInstall + File.separator + localInstall.getName(), serverlib));
         }
       }
-      compressionUtils.cleanupPermissions(workingInstall);
+      compressionUtils.cleanupPermissions(workingInstallPath);
     } catch (IOException e) {
       throw new RuntimeException("Can not create working install", e);
     }
-    return workingInstall;
+    return new File(workingInstall);
   }
 
   private static void createParentDirs(File file) throws IOException {
