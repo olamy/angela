@@ -1,5 +1,15 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.process.PidUtil;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
+
 import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
@@ -12,15 +22,6 @@ import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidUtil;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +102,7 @@ public class Distribution102Controller extends DistributionController {
     logger.info("Destroying L2 process for " + serverSymbolicName);
     for (int pid : pids) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid),30, TimeUnit.SECONDS,10, TimeUnit.SECONDS);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
       } catch (Exception e) {
         logger.warn("Could not destroy process {}", pid, e);
       }
@@ -130,7 +131,8 @@ public class Distribution102Controller extends DistributionController {
     }
 
     if (processResult.getExitValue() != 0) {
-      throw new ClusterToolException("Error when installing the cluster license", processResult.outputString(), processResult.getExitValue());
+      throw new ClusterToolException("Error when installing the cluster license", processResult.outputString(), processResult
+          .getExitValue());
     }
   }
 
@@ -142,7 +144,7 @@ public class Distribution102Controller extends DistributionController {
       sb = new StringBuilder(location.getAbsolutePath() + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
           .append(os.getShellExtension());
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      sb = new StringBuilder(location.getAbsolutePath()  + File.separator + "TerracottaDB"
+      sb = new StringBuilder(location.getAbsolutePath() + File.separator + "TerracottaDB"
                              + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
           .append(os.getShellExtension());
     }
@@ -151,19 +153,13 @@ public class Distribution102Controller extends DistributionController {
     command.add("-n");
     command.add(instanceId.toString());
 
-    if (distribution.getPackageType() == KIT) {
-      File tmpLicenseFile = new File(location + File.separator + "license.xml");
-      licenseConfig.WriteToFile(tmpLicenseFile);
-      command.add("-l");
-      command.add(tmpLicenseFile.getAbsolutePath());
-    } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      //No explicit license for cluster tool on sag install as it uses default license put by sag installer
-      //on cluster-tool/conf folder
-    }
+    File tmpLicenseFile = new File(location + File.separator + "license.xml");
+    licenseConfig.WriteToFile(tmpLicenseFile);
+    command.add("-l");
+    command.add(tmpLicenseFile.getAbsolutePath());
 
     File tmpConfigDir = new File(location + File.separator + "tc-configs");
     tmpConfigDir.mkdir();
-
 
     for (TcConfig tcConfig : tcConfigs) {
       tcConfig.writeTcConfigFile(tmpConfigDir);
@@ -229,7 +225,7 @@ public class Distribution102Controller extends DistributionController {
             .append(os.getShellExtension());
         return sb.toString();
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
-        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator +"TerracottaDB"
+        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
                                              + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server")
             .append(os.getShellExtension());
         return sb.toString();
