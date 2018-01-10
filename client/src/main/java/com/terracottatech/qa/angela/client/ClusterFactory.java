@@ -14,11 +14,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class ClusterFactory implements AutoCloseable {
@@ -29,6 +31,7 @@ public class ClusterFactory implements AutoCloseable {
   private final Set<String> nodesToCleanup = new HashSet<>();
   private Ignite ignite;
   private Agent.Node localhostAgent;
+  private Optional<URI> clusterURI;
 
   public ClusterFactory(String idPrefix) {
     this.instanceId = new InstanceId(idPrefix);
@@ -82,6 +85,12 @@ public class ClusterFactory implements AutoCloseable {
     nodesToCleanup.addAll(topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, license);
+    // only keep the cluster URI if a single Tsa was created
+    if (clusterURI == null) {
+      clusterURI = Optional.of(tsa.clusterURI());
+    } else {
+      clusterURI = Optional.empty();
+    }
     controllers.add(tsa);
     return tsa;
   }
@@ -90,7 +99,7 @@ public class ClusterFactory implements AutoCloseable {
     init(Collections.singleton(nodeName));
     nodesToCleanup.add(nodeName);
 
-    Client client = new Client(ignite, instanceId, nodeName);
+    Client client = new Client(ignite, instanceId, nodeName, clusterURI == null ? null : clusterURI.orElse(null));
     controllers.add(client);
     return client;
   }
@@ -106,6 +115,7 @@ public class ClusterFactory implements AutoCloseable {
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
       ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
     }
+    nodesToCleanup.clear();
 
     if (ignite != null) {
       ignite.close();
@@ -117,5 +127,7 @@ public class ClusterFactory implements AutoCloseable {
       localhostAgent.shutdown();
       localhostAgent = null;
     }
+
+    clusterURI = null;
   }
 }

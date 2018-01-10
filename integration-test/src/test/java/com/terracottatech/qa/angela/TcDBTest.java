@@ -61,7 +61,7 @@ public class TcDBTest {
 
         logger.info("all client sync'ed");
         try {
-          try (DatasetManager datasetManager = DatasetManager.clustered(URI.create("terracotta://localhost:9510")).build()) {
+          try (DatasetManager datasetManager = DatasetManager.clustered(context.clusterURI()).build()) {
             DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
                 .offheap("primary-server-resource");
             Dataset<String> dataset = null;

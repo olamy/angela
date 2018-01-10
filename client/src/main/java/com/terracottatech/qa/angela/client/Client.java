@@ -32,6 +32,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -51,14 +52,16 @@ public class Client implements Closeable {
   private final String nodeName;
   private final Ignite ignite;
   private final String subNodeName;
+  private final URI clusterUri;
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, URI clusterUri) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
+    this.clusterUri = clusterUri;
     this.subClientPid = spawnSubClient();
   }
 
@@ -136,7 +139,7 @@ public class Client implements Closeable {
 
   public Future<Void> submit(ClientJob clientJob) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
-    IgniteFuture<Void> igniteFuture = ignite.compute(location).broadcastAsync((IgniteRunnable) () -> {clientJob.run(new Context(nodeName, ignite, instanceId));});
+    IgniteFuture<Void> igniteFuture = ignite.compute(location).broadcastAsync((IgniteRunnable) () -> {clientJob.run(new Context(nodeName, ignite, instanceId, clusterUri));});
     return new ClientJobFuture<>(igniteFuture);
   }
 

@@ -15,6 +15,8 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -217,6 +219,22 @@ public class Tsa implements AutoCloseable {
         return servers.iterator().next();
       default:
         throw new IllegalStateException("There is more than one Active Terracotta server, found " + servers.size());
+    }
+  }
+
+  public URI clusterURI() {
+    StringBuilder sb = new StringBuilder("terracotta://");
+    for (TerracottaServer terracottaServer : topology.getServers().values()) {
+      sb.append(terracottaServer.getHostname()).append(":").append(terracottaServer.getPorts().getTsaPort());
+      sb.append(",");
+    }
+    if (!topology.getServers().isEmpty()) {
+      sb.deleteCharAt(sb.length() - 1);
+    }
+    try {
+      return new URI(sb.toString());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
     }
   }
 
