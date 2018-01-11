@@ -24,6 +24,6 @@ import java.io.Serializable;
  */
 public interface ClientJob extends Serializable {
 
-  void run(Context context);
+  void run(Context context) throws Exception;
 
 }

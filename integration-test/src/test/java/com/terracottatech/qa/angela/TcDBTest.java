@@ -60,50 +60,46 @@ public class TcDBTest {
         int rank = barrier.await();
 
         logger.info("all client sync'ed");
-        try {
-          try (DatasetManager datasetManager = DatasetManager.clustered(context.clusterURI()).build()) {
-            DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
-                .offheap("primary-server-resource");
-            Dataset<String> dataset = null;
+        try (DatasetManager datasetManager = DatasetManager.clustered(context.clusterURI()).build()) {
+          DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
+              .offheap("primary-server-resource");
+          Dataset<String> dataset = null;
 
-            if (rank == 0) {
-              dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
-              logger.info("created dataset");
-            }
-
-            barrier.await();
-
-            if (rank != 0) {
-              dataset = datasetManager.getDataset("MyDataset", Type.STRING);
-              logger.info("got existing dataset");
-            }
-
-            barrier.await();
-
-            if (rank == 0) {
-              DatasetWriterReader<String> writerReader = dataset.writerReader(ReadVisibility.ROUTINE.asReadSettings(), WriteVisibility.IMMEDIATE
-                  .asWriteSettings());
-              writerReader.add("ONE", CellDefinition.defineLong("val").newCell(1L));
-              logger.info("Value created for key ONE");
-            }
-
-            barrier.await();
-
-            if (rank != 0) {
-              DatasetReader<String> reader = dataset.reader(ReadVisibility.ROUTINE.asReadSettings());
-              Optional<Record<String>> one = reader.get("ONE");
-              assertThat(one.isPresent(), is(true));
-              logger.info("Cell value = {}", one.get());
-            }
-
-            barrier.await();
-
-            dataset.close();
+          if (rank == 0) {
+            dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+            logger.info("created dataset");
           }
-          logger.info("client done");
-        } catch (Exception e) {
-          throw new RuntimeException(e);
+
+          barrier.await();
+
+          if (rank != 0) {
+            dataset = datasetManager.getDataset("MyDataset", Type.STRING);
+            logger.info("got existing dataset");
+          }
+
+          barrier.await();
+
+          if (rank == 0) {
+            DatasetWriterReader<String> writerReader = dataset.writerReader(ReadVisibility.ROUTINE.asReadSettings(), WriteVisibility.IMMEDIATE
+                .asWriteSettings());
+            writerReader.add("ONE", CellDefinition.defineLong("val").newCell(1L));
+            logger.info("Value created for key ONE");
+          }
+
+          barrier.await();
+
+          if (rank != 0) {
+            DatasetReader<String> reader = dataset.reader(ReadVisibility.ROUTINE.asReadSettings());
+            Optional<Record<String>> one = reader.get("ONE");
+            assertThat(one.isPresent(), is(true));
+            logger.info("Cell value = {}", one.get());
+          }
+
+          barrier.await();
+
+          dataset.close();
         }
+        logger.info("client done");
       };
 
       Future<Void> f1 = client.submit(clientJob);

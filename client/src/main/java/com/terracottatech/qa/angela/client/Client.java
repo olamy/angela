@@ -139,8 +139,11 @@ public class Client implements Closeable {
 
   public Future<Void> submit(ClientJob clientJob) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
-    IgniteFuture<Void> igniteFuture = ignite.compute(location).broadcastAsync((IgniteRunnable) () -> {clientJob.run(new Context(nodeName, ignite, instanceId, clusterUri));});
-    return new ClientJobFuture<>(igniteFuture);
+    IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
+      clientJob.run(new Context(nodeName, ignite, instanceId, clusterUri));
+      return null;
+    });
+    return new ClientJobFuture(igniteFuture);
   }
 
   @Override
