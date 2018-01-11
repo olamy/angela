@@ -52,16 +52,16 @@ public class Client implements Closeable {
   private final String nodeName;
   private final Ignite ignite;
   private final String subNodeName;
-  private final URI clusterUri;
+  private final URI tsaUri;
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, URI clusterUri) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, URI tsaUri) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
-    this.clusterUri = clusterUri;
+    this.tsaUri = tsaUri;
     this.subClientPid = spawnSubClient();
   }
 
@@ -140,7 +140,7 @@ public class Client implements Closeable {
   public Future<Void> submit(ClientJob clientJob) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
-      clientJob.run(new Context(nodeName, ignite, instanceId, clusterUri));
+      clientJob.run(new Context(nodeName, ignite, instanceId, tsaUri));
       return null;
     });
     return new ClientJobFuture(igniteFuture);

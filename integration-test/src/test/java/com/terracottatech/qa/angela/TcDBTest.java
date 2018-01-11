@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.Future;
 
@@ -60,7 +59,7 @@ public class TcDBTest {
         int rank = barrier.await();
 
         logger.info("all client sync'ed");
-        try (DatasetManager datasetManager = DatasetManager.clustered(context.clusterURI()).build()) {
+        try (DatasetManager datasetManager = DatasetManager.clustered(context.tsaURI()).build()) {
           DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
               .offheap("primary-server-resource");
           Dataset<String> dataset = null;

@@ -10,20 +10,20 @@ public class Context {
   private final String nodeName;
   private final Ignite ignite;
   private final InstanceId instanceId;
-  private final URI clusterUri;
+  private final URI tsaUri;
 
-  public Context(String nodeName, Ignite ignite, InstanceId instanceId, URI clusterUri) {
+  public Context(String nodeName, Ignite ignite, InstanceId instanceId, URI tsaUri) {
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.instanceId = instanceId;
-    this.clusterUri = clusterUri;
+    this.tsaUri = tsaUri;
   }
 
   public Barrier barrier(String name, int count) {
     return new Barrier(ignite, count,instanceId + "@" + name);
   }
 
-  public URI clusterURI() {
-    return clusterUri;
+  public URI tsaURI() {
+    return tsaUri;
   }
 }

@@ -222,7 +222,7 @@ public class Tsa implements AutoCloseable {
     }
   }
 
-  public URI clusterURI() {
+  public URI uri() {
     StringBuilder sb = new StringBuilder("terracotta://");
     for (TerracottaServer terracottaServer : topology.getServers().values()) {
       sb.append(terracottaServer.getHostname()).append(":").append(terracottaServer.getPorts().getTsaPort());

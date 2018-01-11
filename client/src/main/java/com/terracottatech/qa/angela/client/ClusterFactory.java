@@ -31,7 +31,7 @@ public class ClusterFactory implements AutoCloseable {
   private final Set<String> nodesToCleanup = new HashSet<>();
   private Ignite ignite;
   private Agent.Node localhostAgent;
-  private Optional<URI> clusterURI;
+  private Optional<URI> tsaURI;
 
   public ClusterFactory(String idPrefix) {
     this.instanceId = new InstanceId(idPrefix);
@@ -86,10 +86,10 @@ public class ClusterFactory implements AutoCloseable {
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, license);
     // only keep the cluster URI if a single Tsa was created
-    if (clusterURI == null) {
-      clusterURI = Optional.of(tsa.clusterURI());
+    if (tsaURI == null) {
+      tsaURI = Optional.of(tsa.uri());
     } else {
-      clusterURI = Optional.empty();
+      tsaURI = Optional.empty();
     }
     controllers.add(tsa);
     return tsa;
@@ -99,7 +99,7 @@ public class ClusterFactory implements AutoCloseable {
     init(Collections.singleton(nodeName));
     nodesToCleanup.add(nodeName);
 
-    Client client = new Client(ignite, instanceId, nodeName, clusterURI == null ? null : clusterURI.orElse(null));
+    Client client = new Client(ignite, instanceId, nodeName, tsaURI == null ? null : tsaURI.orElse(null));
     controllers.add(client);
     return client;
   }
@@ -128,6 +128,6 @@ public class ClusterFactory implements AutoCloseable {
       localhostAgent = null;
     }
 
-    clusterURI = null;
+    tsaURI = null;
   }
 }
