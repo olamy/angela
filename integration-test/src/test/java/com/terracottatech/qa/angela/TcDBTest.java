@@ -19,15 +19,21 @@ import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
 import com.terracottatech.store.setting.ReadVisibility;
 import com.terracottatech.store.setting.WriteVisibility;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Optional;
 import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
+import static com.terracottatech.qa.angela.common.topology.TmsConfig.withTms;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -51,6 +57,7 @@ public class TcDBTest {
       tsa.installAll();
       tsa.startAll();
       tsa.licenseAll();
+      tsa.connectTmsToCluster();
 
       Client client = factory.client("localhost");
       ClientJob clientJob = (context) -> {
@@ -101,10 +108,34 @@ public class TcDBTest {
         logger.info("client done");
       };
 
+      ClientJob clientJobTms = (context) -> {
+        String tmsHostname = topology.getTmsConfig().getHostname();
+        try {
+          String url = "http://" + tmsHostname + ":9480/api/connections";
+          URL obj = new URL(url);
+          HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+          int responseCode = con.getResponseCode();
+          BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+          String inputLine;
+          StringBuilder response = new StringBuilder();
+          while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+          }
+          in.close();
+          logger.info("tms list connections result :" + response.toString());
+          assertThat(response.toString(), Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
+        } catch (Exception e) {
+
+        }
+      };
+
       Future<Void> f1 = client.submit(clientJob);
       Future<Void> f2 = client.submit(clientJob);
       f1.get();
       f2.get();
+
+      Future<Void> fTms = client.submit(clientJobTms);
+      fTms.get();
     }
 
     logger.info("---> Stop");

@@ -1,12 +1,14 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.TmsConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -15,13 +17,20 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
@@ -66,6 +75,9 @@ public class Tsa implements AutoCloseable {
         install(tcConfigIndex, terracottaServer);
       }
     }
+    if (topology.getTmsConfig() != null) {
+      installTms(topology.getTmsConfig());
+    }
   }
 
   private void install(int tcConfigIndex, TerracottaServer terracottaServer) {
@@ -78,7 +90,7 @@ public class Tsa implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
     logger.info("installing on {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () ->
         Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex));
   }
 
@@ -103,7 +115,7 @@ public class Tsa implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () ->
         Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer));
   }
 
@@ -114,6 +126,9 @@ public class Tsa implements AutoCloseable {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         start(terracottaServer);
       }
+    }
+    if (topology.getTmsConfig() != null) {
+      startTms(topology.getTmsConfig());
     }
   }
 
@@ -128,7 +143,7 @@ public class Tsa implements AutoCloseable {
 
     logger.info("starting on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), TIMEOUT,
-        (IgniteRunnable)() -> Agent.CONTROLLER.start(instanceId, terracottaServer));
+        (IgniteRunnable) () -> Agent.CONTROLLER.start(instanceId, terracottaServer));
   }
 
   public void stopAll() {
@@ -138,6 +153,9 @@ public class Tsa implements AutoCloseable {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         stop(terracottaServer);
       }
+    }
+    if (topology.getTmsConfig() != null) {
+      stopTms(topology.getTmsConfig());
     }
   }
 
@@ -152,7 +170,7 @@ public class Tsa implements AutoCloseable {
 
     logger.info("stopping on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), TIMEOUT,
-        (IgniteRunnable)() -> Agent.CONTROLLER.stop(instanceId, terracottaServer));
+        (IgniteRunnable) () -> Agent.CONTROLLER.stop(instanceId, terracottaServer));
   }
 
   public void licenseAll() {
@@ -170,7 +188,7 @@ public class Tsa implements AutoCloseable {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
@@ -282,5 +300,100 @@ public class Tsa implements AutoCloseable {
     return results.iterator().next();
   }
 
+  private void installTms(TmsConfig tmsConfig) {
+    logger.info("starting TMS on {}", tmsConfig.getHostname());
+    TmsConfig terracottaManagementServer = new TmsConfig(tmsConfig.getHostname(), tmsConfig.getTmsPort());
+    executeRemotely(tmsConfig.getHostname(), TIMEOUT,
+        (IgniteRunnable) () -> Agent.CONTROLLER.installTms(instanceId, topology, terracottaManagementServer, license));
+  }
+
+  public void stopTms(final TmsConfig terracottaServer) {
+    TerracottaManagementServerState terracottaManagementServerState = getTmsState(terracottaServer);
+    if (terracottaManagementServerState == TerracottaManagementServerState.STOPPED) {
+      return;
+    }
+    if (terracottaManagementServerState != TerracottaManagementServerState.STARTED) {
+      throw new IllegalStateException("Cannot stop: TMS server , already in state " + terracottaManagementServerState);
+    }
+
+    logger.info("stopping on {}", terracottaServer.getHostname());
+    executeRemotely(terracottaServer.getHostname(), TIMEOUT,
+        (IgniteRunnable) () -> Agent.CONTROLLER.stopTms(instanceId));
+  }
+
+  public TerracottaManagementServerState getTmsState(TmsConfig tmsConfig) {
+    return executeRemotely(tmsConfig.getHostname(), () ->
+        Agent.CONTROLLER.getTerracottaManagementServerState(instanceId));
+  }
+
+  private void startTms(TmsConfig tmsConfig) {
+    logger.info("starting TMS on {}", tmsConfig.getHostname());
+    executeRemotely(tmsConfig.getHostname(), TIMEOUT,
+        (IgniteRunnable) () -> Agent.CONTROLLER.startTms(instanceId));
+  }
+
+  public void connectTmsToCluster() {
+    logger.info("connecting TMS to {}", topology.getServers().keySet().stream().map(ServerSymbolicName::getSymbolicName).collect(Collectors.joining(", ")));
+
+    // probe
+    try {
+      String tcServerHostname = topology.getServers().values().iterator().next().getHostname();
+      int tsaPort = topology.getServers().values().iterator().next().getPorts().getTsaPort();
+      String tmsHostname = topology.getTmsConfig().getHostname();
+      String url = "http://" + tmsHostname + ":9480/api/connections/probe/" +
+          URLEncoder.encode(
+              "terracotta://" +
+                  tcServerHostname +
+                  ":" +
+                  tsaPort, "UTF-8");
+
+      URL obj = new URL(url);
+      HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+      int responseCode = con.getResponseCode();
+      BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+      String inputLine;
+      StringBuilder response = new StringBuilder();
+      while ((inputLine = in.readLine()) != null) {
+        response.append(inputLine);
+      }
+      in.close();
+      logger.info("tms probe result :" + response.toString());
+
+      // connect
+      url = "http://" + tmsHostname + ":9480/api/connections";
+      obj = new URL(url);
+      con = (HttpURLConnection) obj.openConnection();
+
+      //add reuqest header
+      con.setRequestMethod("POST");
+      con.setRequestProperty("Accept", "application/json");
+      con.setRequestProperty("content-type", "application/json");
+
+      // Send post request
+      con.setDoOutput(true);
+      DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+      wr.writeBytes(response.toString());
+      wr.flush();
+      wr.close();
+
+      responseCode = con.getResponseCode();
+
+      in = new BufferedReader(
+          new InputStreamReader(con.getInputStream()));
+      response = new StringBuilder();
+
+      while ((inputLine = in.readLine()) != null) {
+        response.append(inputLine);
+      }
+      in.close();
+
+      //print result
+      logger.info("tms connect result :" + response.toString());
+
+
+    } catch (Exception e) {
+
+    }
+  }
 }
 

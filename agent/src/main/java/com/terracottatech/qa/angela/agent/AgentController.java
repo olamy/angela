@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
+import com.terracottatech.qa.angela.common.topology.TmsConfig;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -72,6 +75,44 @@ public class AgentController {
 
       kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
     }
+  }
+
+  public void installTms(InstanceId instanceId, Topology topology, TmsConfig terracottaManagementServer, License license) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall != null) {
+      logger.info("Kit for " + terracottaManagementServer + " already installed");
+      terracottaInstall.addTerracottaManagementServer();
+    } else {
+      logger.info("Installing kit for " + terracottaManagementServer);
+      KitManager kitManager = new KitManager(instanceId, topology);
+      File kitDir = kitManager.installKit(license, false);
+
+      kitsInstalls.put(instanceId, new TerracottaInstall(topology, kitDir));
+    }
+  }
+
+  public void startTms(final InstanceId instanceId) {
+    TerracottaManagementServerInstance serverInstance = kitsInstalls.get(instanceId)
+        .getTerracottaManagementServerInstance();
+    serverInstance.start();
+  }
+
+  public void stopTms(final InstanceId instanceId) {
+    TerracottaManagementServerInstance serverInstance = kitsInstalls.get(instanceId)
+        .getTerracottaManagementServerInstance();
+    serverInstance.stop();
+  }
+
+  public TerracottaManagementServerState getTerracottaManagementServerState(final InstanceId instanceId) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      return TerracottaManagementServerState.NOT_INSTALLED;
+    }
+    TerracottaManagementServerInstance serverInstance = terracottaInstall.getTerracottaManagementServerInstance();
+    if (serverInstance == null) {
+      return TerracottaManagementServerState.NOT_INSTALLED;
+    }
+    return serverInstance.getTerracottaManagementServerState();
   }
 
   public void uninstall(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer) {
