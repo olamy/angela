@@ -17,7 +17,7 @@ public class Barrier {
     this.count = count;
     IgniteAtomicLong igniteCounter = ignite.atomicLong(name, 0, true);
     this.index = (int)igniteCounter.getAndIncrement();
-    igniteCounter.compareAndSet(count - 1, 0);
+    igniteCounter.compareAndSet(count,0);
     this.name = name;
     resetLatch();
   }
