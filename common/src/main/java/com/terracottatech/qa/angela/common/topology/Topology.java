@@ -32,17 +32,10 @@ public class Topology {
    */
   private final String kitInstallationPath;
 
-  public TmsConfig getTmsConfig() {
-    return tmsConfig;
-  }
-
-  private final TmsConfig tmsConfig;
-
-  public Topology(final Distribution distribution, final TmsConfig tmsConfig, final TcConfig... tcConfigs) {
+  public Topology(final Distribution distribution, final TcConfig... tcConfigs) {
     this.distribution = distribution;
     this.tcConfigs = tcConfigs;
     this.kitInstallationPath = System.getProperty("kitInstallationPath");
-    this.tmsConfig = tmsConfig;
   }
 
   public DistributionController createDistributionController() {
@@ -109,9 +102,6 @@ public class Topology {
     Map<ServerSymbolicName, TerracottaServer> servers = getServers();
     for (TerracottaServer terracottaServer : servers.values()) {
       hostnames.add(terracottaServer.getHostname());
-    }
-    if(tmsConfig != null) {
-      hostnames.add(tmsConfig.getHostname());
     }
     return hostnames;
   }

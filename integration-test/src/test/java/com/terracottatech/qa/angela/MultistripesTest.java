@@ -5,7 +5,6 @@ import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
-import com.terracottatech.qa.angela.common.topology.TmsConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.junit.Test;
 
@@ -22,7 +21,6 @@ public class MultistripesTest {
   @Test
   public void test2Stripes() throws Exception {
     Topology topology = new Topology(distribution(version("10.2.0.0.53"), PackageType.KIT, LicenseType.TC_DB),
-        TmsConfig.noTms(),
         tcConfig(version("10.2.0.0.53"), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
         tcConfig(version("10.2.0.0.53"), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));

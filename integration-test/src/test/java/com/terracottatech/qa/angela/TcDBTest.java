@@ -3,8 +3,10 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
+import com.terracottatech.qa.angela.client.Tms;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.client.Barrier;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
@@ -48,8 +50,9 @@ public class TcDBTest {
 
   @Test
   public void testConnection() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.53"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.53"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Distribution distribution = distribution(version("10.2.0.0.129"), PackageType.KIT, LicenseType.TC_DB);
+    Topology topology = new Topology(distribution,
+        tcConfig(version("10.2.0.0.129"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
@@ -57,8 +60,11 @@ public class TcDBTest {
       tsa.installAll();
       tsa.startAll();
       tsa.licenseAll();
-      tsa.connectTmsToCluster();
-
+      String tmsHostname = "localhost";
+      Tms tms = factory.tms(distribution, license, tmsHostname);
+      tms.install();
+      tms.start();
+      tms.connectToCluster(tsa.clusterURI());
       Client client = factory.client("localhost");
       ClientJob clientJob = (context) -> {
         Barrier barrier = context.barrier("testConnection", 2);
@@ -109,7 +115,6 @@ public class TcDBTest {
       };
 
       ClientJob clientJobTms = (context) -> {
-        String tmsHostname = topology.getTmsConfig().getHostname();
         try {
           String url = "http://" + tmsHostname + ":9480/api/connections";
           URL obj = new URL(url);

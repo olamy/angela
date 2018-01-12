@@ -1,8 +1,9 @@
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
-import com.terracottatech.qa.angela.common.topology.TmsConfig;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -50,6 +51,7 @@ public class AgentController {
 
   private final OS os = new OS();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
+  private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
   private final Ignite ignite;
 
   AgentController(Ignite ignite) {
@@ -63,7 +65,7 @@ public class AgentController {
       terracottaInstall.addServer(terracottaServer);
     } else {
       logger.info("Installing kit for " + terracottaServer);
-      KitManager kitManager = new KitManager(instanceId, topology);
+      KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
       File kitDir = kitManager.installKit(license, offline);
 
       logger.info("Installing the tc-configs");
@@ -77,34 +79,34 @@ public class AgentController {
     }
   }
 
-  public void installTms(InstanceId instanceId, Topology topology, TmsConfig terracottaManagementServer, License license) {
-    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
-    if (terracottaInstall != null) {
-      logger.info("Kit for " + terracottaManagementServer + " already installed");
-      terracottaInstall.addTerracottaManagementServer();
+  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, String kitInstallationPath, License license) {
+    TmsInstall tmsInstall = tmsInstalls.get(instanceId);
+    if (tmsInstall != null) {
+      logger.info("Kit for " + tmsHostname + " already installed");
+      tmsInstall.addTerracottaManagementServer();
     } else {
-      logger.info("Installing kit for " + terracottaManagementServer);
-      KitManager kitManager = new KitManager(instanceId, topology);
+      logger.info("Installing kit for " + tmsHostname);
+      KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationPath);
       File kitDir = kitManager.installKit(license, false);
 
-      kitsInstalls.put(instanceId, new TerracottaInstall(topology, kitDir));
+      tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir));
     }
   }
 
   public void startTms(final InstanceId instanceId) {
-    TerracottaManagementServerInstance serverInstance = kitsInstalls.get(instanceId)
+    TerracottaManagementServerInstance serverInstance = tmsInstalls.get(instanceId)
         .getTerracottaManagementServerInstance();
     serverInstance.start();
   }
 
   public void stopTms(final InstanceId instanceId) {
-    TerracottaManagementServerInstance serverInstance = kitsInstalls.get(instanceId)
+    TerracottaManagementServerInstance serverInstance = tmsInstalls.get(instanceId)
         .getTerracottaManagementServerInstance();
     serverInstance.stop();
   }
 
   public TerracottaManagementServerState getTerracottaManagementServerState(final InstanceId instanceId) {
-    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    TmsInstall terracottaInstall = tmsInstalls.get(instanceId);
     if (terracottaInstall == null) {
       return TerracottaManagementServerState.NOT_INSTALLED;
     }
@@ -119,10 +121,10 @@ public class AgentController {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall != null) {
       int installationsCount = terracottaInstall.removeServer(terracottaServer);
-      if (installationsCount == 0) {
+      if (installationsCount == 0 && tmsInstalls.get(instanceId).getTerracottaManagementServerInstance() == null) {
         try {
           logger.info("Uninstalling kit for " + topology);
-          KitManager kitManager = new KitManager(instanceId, topology);
+          KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
           // TODO : get log files
 
           kitManager.deleteInstall(terracottaInstall.getInstallLocation());
@@ -132,10 +134,36 @@ public class AgentController {
               .getAbsolutePath(), ioe);
         }
       } else {
-        logger.info("Kit install still in use by {} Terracotta servers", installationsCount);
+        logger.info("Kit install still in use by {} Terracotta servers", installationsCount + (tmsInstalls.get(instanceId).getTerracottaManagementServerInstance() == null ? 0 : 1));
       }
     } else {
       logger.info("No installed kit for " + topology);
+    }
+  }
+
+
+  public void uninstallTms(InstanceId instanceId, Distribution distribution, String kitInstallationPath, String tmsHostname) {
+    TmsInstall tmsInstall = tmsInstalls.get(instanceId);
+    if (tmsInstall != null) {
+      tmsInstall.removeServer();
+      int numberOfTerracottaInstances = kitsInstalls.get(instanceId).numberOfTerracottaInstances();
+      if (numberOfTerracottaInstances == 0) {
+        try {
+          logger.info("Uninstalling kit for " + tmsHostname);
+          KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationPath);
+          // TODO : get log files
+
+          kitManager.deleteInstall(tmsInstall.getInstallLocation());
+          kitsInstalls.remove(instanceId);
+        } catch (IOException ioe) {
+          throw new RuntimeException("Unable to uninstall kit at " + tmsInstall.getInstallLocation()
+              .getAbsolutePath(), ioe);
+        }
+      } else {
+        logger.info("Kit install still in use by {} Terracotta servers", numberOfTerracottaInstances);
+      }
+    } else {
+      logger.info("No installed kit for " + tmsHostname);
     }
   }
 

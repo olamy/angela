@@ -1,4 +1,3 @@
-import com.terracottatech.qa.angela.common.topology.TmsConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +29,6 @@ public class GettingStarted {
     // tag::configureCluster[]
     Topology topology = new Topology( // <1>
         distribution(version("10.2.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), // <2>
-        TmsConfig.noTms(),
         tcConfig(version("10.2.0-SNAPSHOT"), getClass().getResource("/tc-config-a.xml"))); // <3>
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")); // <4>
 
@@ -60,7 +58,6 @@ public class GettingStarted {
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
         distribution(version("10.2.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB),
-        TmsConfig.noTms(),
         tcConfig(version("10.2.0-SNAPSHOT"), getClass().getResource("/tc-config-ap.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     try (ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster")) {

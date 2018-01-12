@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.common.topology.TmsConfig;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.ClusterFactory;
@@ -30,7 +29,6 @@ public class InstallTest {
   @Test
   public void testLocallInstall() throws Exception {
     Topology topology = new Topology(distribution(version("10.2.0.0.127"), PackageType.KIT, LicenseType.TC_DB),
-        TmsConfig.noTms(),
         tcConfig(version("10.2.0.0.127"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
@@ -45,7 +43,6 @@ public class InstallTest {
   @Test
   public void testStopPassive() throws Exception {
     Topology topology = new Topology(distribution(version("10.2.0.0.127"), PackageType.KIT, LicenseType.TC_DB),
-        TmsConfig.noTms(),
         tcConfig(version("10.2.0.0.53"), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 

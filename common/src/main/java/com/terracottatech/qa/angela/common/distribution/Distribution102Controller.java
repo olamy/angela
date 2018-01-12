@@ -251,7 +251,7 @@ public class Distribution102Controller extends DistributionController {
     TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
 
     ProcessExecutor executor = new ProcessExecutor()
-        .command(startTMSCommand(topology, installLocation))
+        .command(startTMSCommand(installLocation))
         .directory(installLocation)
         .environment(env)
         .redirectOutput(terracottaManagementServerLogOutputStream);
@@ -297,10 +297,9 @@ public class Distribution102Controller extends DistributionController {
   /**
    * Construct the Start Command with the Version
    *
-   * @param topology
    * @return String[] representing the start command and its parameters
    */
-  private String[] startTMSCommand(final Topology topology, final File installLocation) {
+  private String[] startTMSCommand(final File installLocation) {
     List<String> options = new ArrayList<String>();
     // start command
     options.add(getStartTMSCmd(installLocation));

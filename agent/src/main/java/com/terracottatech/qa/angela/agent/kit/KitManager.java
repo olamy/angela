@@ -45,10 +45,10 @@ public class KitManager implements Serializable {
   private final String localInstallationPath;
   private final String workingInstall;
 
-  public KitManager(InstanceId instanceId, Topology topology) {
+  public KitManager(InstanceId instanceId, Distribution distribution, String kitInstallationPath) {
     this.instanceId = instanceId;
-    this.distribution = topology.getDistribution();
-    this.kitInstallationPath = topology.getKitInstallationPath();
+    this.distribution = distribution;
+    this.kitInstallationPath = kitInstallationPath;
     this.localInstallationPath = Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
                                  + File.separator + distribution.getVersion().getVersion(false);
     this.workingInstall = Agent.WORK_DIR + File.separator + "work" + File.separator + instanceId;

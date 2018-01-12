@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -20,7 +19,6 @@ public class TerracottaInstall {
   private final File installLocation;
   //  private final NetworkController networkController;
   private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
-  private TerracottaManagementServerInstance terracottaManagementServerInstance;
 
   public TerracottaInstall(final Topology topology, TerracottaServer terracottaServer, File location) {
     this.topology = topology;
@@ -50,19 +48,8 @@ public class TerracottaInstall {
     }
   }
 
-  public TerracottaInstall(final Topology topology, File location) {
-    this.topology = topology;
-    this.installLocation = location;
-    addTerracottaManagementServer();
-//    this.networkController = networkController;
-  }
-
-  public void addTerracottaManagementServer() {
-    terracottaManagementServerInstance = new TerracottaManagementServerInstance(topology.createDistributionController(), installLocation);
-  }
-
-  public TerracottaManagementServerInstance getTerracottaManagementServerInstance() {
-    return terracottaManagementServerInstance;
+  public synchronized int numberOfTerracottaInstances() {
+    return terracottaServerInstances.size();
   }
 
 }
