@@ -121,7 +121,8 @@ public class AgentController {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall != null) {
       int installationsCount = terracottaInstall.removeServer(terracottaServer);
-      if (installationsCount == 0 && tmsInstalls.get(instanceId).getTerracottaManagementServerInstance() == null) {
+      TmsInstall tmsInstall = tmsInstalls.get(instanceId);
+      if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null)) {
         try {
           logger.info("Uninstalling kit for " + topology);
           KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
@@ -134,7 +135,7 @@ public class AgentController {
               .getAbsolutePath(), ioe);
         }
       } else {
-        logger.info("Kit install still in use by {} Terracotta servers", installationsCount + (tmsInstalls.get(instanceId).getTerracottaManagementServerInstance() == null ? 0 : 1));
+        logger.info("Kit install still in use by {} Terracotta servers", installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1));
       }
     } else {
       logger.info("No installed kit for " + topology);

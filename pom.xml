@@ -62,7 +62,7 @@
       <dependency>
         <groupId>com.terracottatech.store</groupId>
         <artifactId>terracotta-store-client</artifactId>
-        <version>10.2.0.0.53</version>
+        <version>10.2.0.0.144</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -121,6 +121,16 @@
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
           <version>1.5.6</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <groupId>org.apache.maven.plugins</groupId>
+          <version>2.20.1</version>
+          <configuration>
+            <systemProperties>
+              <kitsDir>${java.io.tmpdir}/angelaKits/</kitsDir>
+            </systemProperties>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

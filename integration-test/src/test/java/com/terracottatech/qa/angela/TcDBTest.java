@@ -19,8 +19,6 @@ import com.terracottatech.store.Type;
 import com.terracottatech.store.configuration.DatasetConfigurationBuilder;
 import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
-import com.terracottatech.store.setting.ReadVisibility;
-import com.terracottatech.store.setting.WriteVisibility;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -35,7 +33,6 @@ import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
-import static com.terracottatech.qa.angela.common.topology.TmsConfig.withTms;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -50,9 +47,9 @@ public class TcDBTest {
 
   @Test
   public void testConnection() throws Exception {
-    Distribution distribution = distribution(version("10.2.0.0.129"), PackageType.KIT, LicenseType.TC_DB);
+    Distribution distribution = distribution(version("10.2.0.0.144"), PackageType.KIT, LicenseType.TC_DB);
     Topology topology = new Topology(distribution,
-        tcConfig(version("10.2.0.0.129"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+        tcConfig(version("10.2.0.0.144"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
@@ -64,7 +61,7 @@ public class TcDBTest {
       Tms tms = factory.tms(distribution, license, tmsHostname);
       tms.install();
       tms.start();
-      tms.connectToCluster(tsa.clusterURI());
+      tms.connectToCluster(tsa.uri());
       Client client = factory.client("localhost");
       ClientJob clientJob = (context) -> {
         Barrier barrier = context.barrier("testConnection", 2);
@@ -78,8 +75,11 @@ public class TcDBTest {
           Dataset<String> dataset = null;
 
           if (rank == 0) {
-            dataset = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
-            logger.info("created dataset");
+            boolean datasetCreated = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+            if (datasetCreated) {
+              logger.info("created dataset");
+            }
+            dataset = datasetManager.getDataset("MyDataset", Type.STRING);
           }
 
           barrier.await();
@@ -92,8 +92,7 @@ public class TcDBTest {
           barrier.await();
 
           if (rank == 0) {
-            DatasetWriterReader<String> writerReader = dataset.writerReader(ReadVisibility.ROUTINE.asReadSettings(), WriteVisibility.IMMEDIATE
-                .asWriteSettings());
+            DatasetWriterReader<String> writerReader = dataset.writerReader();
             writerReader.add("ONE", CellDefinition.defineLong("val").newCell(1L));
             logger.info("Value created for key ONE");
           }
@@ -101,7 +100,7 @@ public class TcDBTest {
           barrier.await();
 
           if (rank != 0) {
-            DatasetReader<String> reader = dataset.reader(ReadVisibility.ROUTINE.asReadSettings());
+            DatasetReader<String> reader = dataset.reader();
             Optional<Record<String>> one = reader.get("ONE");
             assertThat(one.isPresent(), is(true));
             logger.info("Cell value = {}", one.get());
