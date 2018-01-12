@@ -78,7 +78,7 @@ public class Tsa implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
     logger.info("installing on {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () ->
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
         Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex));
   }
 
@@ -103,7 +103,7 @@ public class Tsa implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () ->
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
         Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer));
   }
 
@@ -128,7 +128,7 @@ public class Tsa implements AutoCloseable {
 
     logger.info("starting on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.start(instanceId, terracottaServer));
+        (IgniteRunnable)() -> Agent.CONTROLLER.start(instanceId, terracottaServer));
   }
 
   public void stopAll() {
@@ -152,7 +152,7 @@ public class Tsa implements AutoCloseable {
 
     logger.info("stopping on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.stop(instanceId, terracottaServer));
+        (IgniteRunnable)() -> Agent.CONTROLLER.stop(instanceId, terracottaServer));
   }
 
   public void licenseAll() {
@@ -170,7 +170,7 @@ public class Tsa implements AutoCloseable {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {

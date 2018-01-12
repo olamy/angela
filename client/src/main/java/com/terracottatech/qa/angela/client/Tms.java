@@ -2,11 +2,9 @@ package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.topology.TmsConfig;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteCallable;
@@ -14,14 +12,15 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.terracottatech.qa.angela.common.http.HttpUtils.sendGetRequest;
+import static com.terracottatech.qa.angela.common.http.HttpUtils.sendPostRequest;
 
 public class Tms implements AutoCloseable {
 
@@ -52,59 +51,24 @@ public class Tms implements AutoCloseable {
 
   public void connectToCluster(URI uri) {
     logger.info("connecting TMS to {}", uri.toString());
-
     // probe
+    String url;
     try {
-      String url = "http://" + tmsHostname + ":9480/api/connections/probe/" +
+      url = "http://" + tmsHostname + ":9480/api/connections/probe/" +
           URLEncoder.encode(uri.toString(), "UTF-8");
-
-      URL obj = new URL(url);
-      HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-      int responseCode = con.getResponseCode();
-      BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-      String inputLine;
-      StringBuilder response = new StringBuilder();
-      while ((inputLine = in.readLine()) != null) {
-        response.append(inputLine);
-      }
-      in.close();
-      logger.info("tms probe result :" + response.toString());
-
-      // connect
-      url = "http://" + tmsHostname + ":9480/api/connections";
-      obj = new URL(url);
-      con = (HttpURLConnection) obj.openConnection();
-
-      //add reuqest header
-      con.setRequestMethod("POST");
-      con.setRequestProperty("Accept", "application/json");
-      con.setRequestProperty("content-type", "application/json");
-
-      // Send post request
-      con.setDoOutput(true);
-      DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-      wr.writeBytes(response.toString());
-      wr.flush();
-      wr.close();
-
-      responseCode = con.getResponseCode();
-
-      in = new BufferedReader(
-          new InputStreamReader(con.getInputStream()));
-      response = new StringBuilder();
-
-      while ((inputLine = in.readLine()) != null) {
-        response.append(inputLine);
-      }
-      in.close();
-
-      //print result
-      logger.info("tms connect result :" + response.toString());
-
-
-    } catch (Exception e) {
-
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException("Could not encode terracotta connection url", e);
     }
+    String response = sendGetRequest(url);
+    logger.info("tms probe result :" + response.toString());
+
+    // create connection
+    url = "http://" + tmsHostname + ":9480/api/connections";
+    Map<String, String> headers =  new HashMap<>();
+    headers.put("Accept", "application/json");
+    headers.put("content-type", "application/json");
+    response = sendPostRequest(url, response, headers);
+    logger.info("tms connect result :" + response.toString());
   }
 
   @Override
