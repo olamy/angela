@@ -18,7 +18,10 @@ package com.terracottatech.qa.angela.agent;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.util.Collections;
 
@@ -27,14 +30,14 @@ import java.util.Collections;
  */
 public class Agent {
 
-  private static String DEFAULT_WORK_DIR = "/data/tsamanager";
+  private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
+
   public static final String WORK_DIR;
 
   static {
-    String dir = System.getProperty("kitsDir");
-    if (dir == null) {
-      WORK_DIR = DEFAULT_WORK_DIR;
-    } else if (dir.isEmpty()) {
+    final String dir = System.getProperty("kitsDir");
+    final String DEFAULT_WORK_DIR = "/data/tsamanager";
+    if (dir == null || dir.isEmpty()) {
       WORK_DIR = DEFAULT_WORK_DIR;
     } else if (dir.startsWith(".")) {
       throw new IllegalArgumentException("Can not use relative path for the WORK_DIR. Please use a fixed one.");
@@ -53,8 +56,7 @@ public class Agent {
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
-    System.out.println("Working directory is " + WORK_DIR);
-    System.out.println("Registered node '" + nodeName + "'");
+    LOGGER.info("Agent is ready");
   }
 
   public static class Node {
@@ -67,6 +69,15 @@ public class Agent {
     }
 
     public void init() {
+      File workDirFile = new File(WORK_DIR);
+      LOGGER.info("Working directory is : " + workDirFile);
+      if (!workDirFile.isDirectory()) {
+        throw new RuntimeException("Working directory is not a folder : " + workDirFile);
+      }
+      if (!workDirFile.canWrite()) {
+        throw new RuntimeException("Working directory is not writable : " + workDirFile);
+      }
+
       IgniteConfiguration cfg = new IgniteConfiguration();
 
       cfg.setUserAttributes(Collections.singletonMap("nodename", nodeName));
@@ -75,12 +86,15 @@ public class Agent {
 
       ignite = Ignition.start(cfg);
       CONTROLLER = new AgentController(ignite);
+      LOGGER.info("Registered node '" + nodeName + "'");
     }
 
     public void shutdown() {
       CONTROLLER = null;
-      ignite.close();
-      ignite = null;
+      if (ignite != null) {
+        ignite.close();
+        ignite = null;
+      }
     }
 
   }
