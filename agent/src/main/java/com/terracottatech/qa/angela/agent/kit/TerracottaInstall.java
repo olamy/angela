@@ -47,4 +47,9 @@ public class TerracottaInstall {
       return terracottaServerInstances.size();
     }
   }
+
+  public synchronized int numberOfTerracottaInstances() {
+    return terracottaServerInstances.size();
+  }
+
 }

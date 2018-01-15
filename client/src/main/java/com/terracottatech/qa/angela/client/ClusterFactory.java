@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -129,5 +131,14 @@ public class ClusterFactory implements AutoCloseable {
     }
 
     tsaURI = null;
+  }
+
+  public Tms tms(Distribution distribution, License license, String hostname) {
+    init(Arrays.asList(hostname));
+    nodesToCleanup.add(hostname);
+
+    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution);
+    controllers.add(tms);
+    return tms;
   }
 }

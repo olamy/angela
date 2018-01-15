@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
+import com.terracottatech.qa.angela.common.util.TerracottaManagementServerLogOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -232,5 +235,99 @@ public class Distribution102Controller extends DistributionController {
       }
     }
     throw new IllegalStateException("Can not define Terracotta server Start Command for distribution: " + distribution);
+  }
+
+
+  @Override
+  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation) {
+    Map<String, String> env = new HashMap<>();
+    List<String> j8Homes = javaLocationResolver.resolveJava8Location();
+    if (j8Homes.size() > 0) {
+      env.put("JAVA_HOME", j8Homes.get(0));
+    }
+
+    AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference(TerracottaManagementServerState.STOPPED);
+    ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
+    TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
+
+    ProcessExecutor executor = new ProcessExecutor()
+        .command(startTMSCommand(installLocation))
+        .directory(installLocation)
+        .environment(env)
+        .redirectOutput(terracottaManagementServerLogOutputStream);
+    StartedProcess startedProcess;
+    try {
+      startedProcess = executor.start();
+      // spawn a thread that resets stateRef to STOPPED when the TC server process dies
+      Thread processWatcher = new Thread(() -> {
+        try {
+          startedProcess.getFuture().get();
+          stateRef.set(TerracottaManagementServerState.STOPPED);
+        } catch (InterruptedException | ExecutionException e) {
+          throw new RuntimeException(e);
+        }
+      });
+      processWatcher.setDaemon(true);
+      processWatcher.start();
+    } catch (IOException e) {
+      throw new RuntimeException("Can not start Terracotta server process " + tmsSymbolicName, e);
+    }
+
+
+    terracottaManagementServerLogOutputStream.waitForStartedState(startedProcess);
+
+    int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
+    int javaProcessPid = terracottaManagementServerLogOutputStream.getPid();
+    return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
+  }
+
+  @Override
+  public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess) {
+    int[] pids = terracottaServerInstanceProcess.getPids();
+    logger.info("Destroying TMS process");
+    for (int pid : pids) {
+      try {
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        logger.warn("Could not destroy process {}", pid, e);
+      }
+    }
+  }
+
+  /**
+   * Construct the Start Command with the Version
+   *
+   * @return String[] representing the start command and its parameters
+   */
+  private String[] startTMSCommand(final File installLocation) {
+    List<String> options = new ArrayList<String>();
+    // start command
+    options.add(getStartTMSCmd(installLocation));
+
+    StringBuilder sb = new StringBuilder();
+    for (String option : options) {
+      sb.append(option).append(" ");
+    }
+    logger.info(" Start command = {}", sb.toString());
+
+    return options.toArray(new String[options.size()]);
+  }
+
+  private String getStartTMSCmd(File installLocation) {
+    Version version = distribution.getVersion();
+
+    if (version.getMajor() == 4 || version.getMajor() == 5 || version.getMajor() == 10) {
+      if (distribution.getPackageType() == KIT) {
+        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "tools" + File.separator + "management" + File.separator + "bin" + File.separator + "start")
+            .append(os.getShellExtension());
+        return sb.toString();
+      } else if (distribution.getPackageType() == SAG_INSTALLER) {
+        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
+            + File.separator + "tools" + File.separator + "management" + File.separator + "bin" + File.separator + "start")
+            .append(os.getShellExtension());
+        return sb.toString();
+      }
+    }
+    throw new IllegalStateException("Can not define TMS Start Command for distribution: " + distribution);
   }
 }
