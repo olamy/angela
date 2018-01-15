@@ -13,9 +13,9 @@
   <artifactId>angela-agent-lib</artifactId>
 
   <dependencies>
-     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
     <dependency>
