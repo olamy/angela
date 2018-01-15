@@ -10,21 +10,17 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>angela-client</artifactId>
+  <artifactId>angela-agent-lib</artifactId>
 
   <dependencies>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
+     <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.terracottatech.qa</groupId>
-      <artifactId>angela-agent-lib</artifactId>
     </dependency>
 
     <dependency>
