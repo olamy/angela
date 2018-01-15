@@ -32,17 +32,17 @@ public class Agent {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
 
-  public static final String WORK_DIR;
+  public static final String ROOT_DIR;
 
   static {
     final String dir = System.getProperty("kitsDir");
     final String DEFAULT_WORK_DIR = "/data/tsamanager";
     if (dir == null || dir.isEmpty()) {
-      WORK_DIR = DEFAULT_WORK_DIR;
+      ROOT_DIR = DEFAULT_WORK_DIR;
     } else if (dir.startsWith(".")) {
-      throw new IllegalArgumentException("Can not use relative path for the WORK_DIR. Please use a fixed one.");
+      throw new IllegalArgumentException("Can not use relative path for the ROOT_DIR. Please use a fixed one.");
     } else {
-      WORK_DIR = dir;
+      ROOT_DIR = dir;
     }
   }
 
@@ -69,13 +69,13 @@ public class Agent {
     }
 
     public void init() {
-      File workDirFile = new File(WORK_DIR);
-      LOGGER.info("Working directory is : " + workDirFile);
+      File workDirFile = new File(ROOT_DIR);
+      LOGGER.info("Root directory is : " + workDirFile);
       if (!workDirFile.isDirectory()) {
-        throw new RuntimeException("Working directory is not a folder : " + workDirFile);
+        throw new RuntimeException("Root directory is not a folder : " + workDirFile);
       }
       if (!workDirFile.canWrite()) {
-        throw new RuntimeException("Working directory is not writable : " + workDirFile);
+        throw new RuntimeException("Root directory is not writable : " + workDirFile);
       }
 
       IgniteConfiguration cfg = new IgniteConfiguration();

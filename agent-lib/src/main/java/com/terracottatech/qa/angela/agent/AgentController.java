@@ -331,7 +331,7 @@ public class AgentController {
   }
 
   private static File instanceRootDir(InstanceId instanceId) {
-    return new File(Agent.WORK_DIR, instanceId.toString());
+    return new File(Agent.ROOT_DIR, instanceId.toString());
   }
 
   public void cleanup(InstanceId instanceId) {

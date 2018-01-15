@@ -10,7 +10,6 @@ import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
-import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.io.File;
@@ -49,9 +48,9 @@ public class KitManager implements Serializable {
     this.instanceId = instanceId;
     this.distribution = distribution;
     this.kitInstallationPath = kitInstallationPath;
-    this.localInstallationPath = Agent.WORK_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
+    this.localInstallationPath = Agent.ROOT_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
                                  + File.separator + distribution.getVersion().getVersion(false);
-    this.workingInstall = Agent.WORK_DIR + File.separator + "work" + File.separator + instanceId;
+    this.workingInstall = Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId;
   }
 
 
