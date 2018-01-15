@@ -10,7 +10,7 @@
     <version>1.0.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>angela-client</artifactId>
+  <artifactId>angela-agent-lib</artifactId>
 
   <dependencies>
     <dependency>
@@ -21,10 +21,6 @@
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.terracottatech.qa</groupId>
-      <artifactId>angela-agent-lib</artifactId>
     </dependency>
 
     <dependency>
