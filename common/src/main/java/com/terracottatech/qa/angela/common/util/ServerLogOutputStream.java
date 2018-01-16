@@ -17,6 +17,7 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_
  */
 
 public class ServerLogOutputStream extends LogOutputStream {
+  private final boolean fullLogs = Boolean.getBoolean("angela.tsa.log.full");
   private final Pattern pattern = Pattern.compile("PID is (\\d*)");
   private final ServerSymbolicName serverSymbolicName;
   private final AtomicReference<TerracottaServerState> stateRef;
@@ -29,7 +30,7 @@ public class ServerLogOutputStream extends LogOutputStream {
 
   @Override
   protected void processLine(final String line) {
-    if (line.contains("WARN") || line.contains("ERROR") || Boolean.getBoolean("angela.tsa.log.full")) {
+    if (fullLogs || line.contains("WARN") || line.contains("ERROR")) {
       System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + line);
     }
     if (line.contains("Terracotta Server instance has started up as ACTIVE")) {
