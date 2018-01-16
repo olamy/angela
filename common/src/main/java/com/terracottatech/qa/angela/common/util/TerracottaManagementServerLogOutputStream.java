@@ -25,7 +25,7 @@ public class TerracottaManagementServerLogOutputStream extends LogOutputStream {
 
   @Override
   protected void processLine(final String line) {
-    if (line.contains("WARN") || line.contains("ERROR")) {
+    if (line.contains("WARN") || line.contains("ERROR") || Boolean.getBoolean("angela.tms.log.full")) {
       System.out.println("[TMS] " + line);
     }
     if (line.contains("Started TmsApplication")) {
