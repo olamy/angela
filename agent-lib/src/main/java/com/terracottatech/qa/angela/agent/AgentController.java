@@ -222,10 +222,10 @@ public class AgentController {
       final AtomicBoolean started = new AtomicBoolean(false);
       List<String> cmdLine;
       if (os.isWindows()) {
-        cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class
+        cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
             .getName());
       } else {
-        cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, Agent.class
+        cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
             .getName());
       }
       logger.info("Spawning client {}", cmdLine);
@@ -234,7 +234,7 @@ public class AgentController {
             @Override
             protected void processLine(String line) {
               System.out.println(" |" + subNodeName + "| " + line);
-              if (line.startsWith("Registered node ")) {
+              if (line.equals(Agent.AGENT_IS_READY_MARKER_LOG)) {
                 started.set(true);
               }
             }

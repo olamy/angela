@@ -33,9 +33,11 @@ public class Agent {
   private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
 
   public static final String ROOT_DIR;
+  public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
+  public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
 
   static {
-    final String dir = System.getProperty("kitsDir");
+    final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
     final String DEFAULT_WORK_DIR = "/data/tsamanager";
     if (dir == null || dir.isEmpty()) {
       ROOT_DIR = DEFAULT_WORK_DIR;
@@ -56,7 +58,8 @@ public class Agent {
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
-    LOGGER.info("Agent is ready");
+    // Do not use logger here as the marker is being grep'ed at and we do not want to depend upon the logger config
+    System.out.println(AGENT_IS_READY_MARKER_LOG);
   }
 
   public static class Node {
