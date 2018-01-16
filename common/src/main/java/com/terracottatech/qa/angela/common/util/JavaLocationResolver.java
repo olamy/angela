@@ -2,15 +2,14 @@ package com.terracottatech.qa.angela.common.util;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Find current java location
@@ -20,52 +19,62 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 public class JavaLocationResolver {
 
-  public List<String> resolveJava8Location() {
-    List<String> j8Homes = getJavaHome("1.8", System.getProperty("user.home") + File.separator + ".m2" + File.separator + "toolchains.xml");
-    if (j8Homes.size() == 0) {
-      j8Homes = getJavaHome("1.8", "/data/jenkins-slave" + File.separator + ".m2" + File.separator + "toolchains.xml");
-    }
-    if (j8Homes.size() == 0) {
-      j8Homes.add(System.getProperty("java.home"));
-    }
-    return j8Homes;
+  private final List<JDK> jdks;
+
+  public JavaLocationResolver() {
+    jdks = findJDKs();
   }
 
-  private List<String> getJavaHome(String version, String toolchainsLocation) {
-    List<String > locations = new ArrayList<String>();
+  public List<JDK> resolveJavaLocation(String version) {
+    return resolveJavaLocation(version, null);
+  }
+
+  public List<JDK> resolveJavaLocation(String version, String vendor) {
+    return jdks.stream()
+        .filter(jdk -> jdk.getVersion().equals(version))
+        .filter(jdk -> vendor == null || jdk.getVendor().equals(vendor))
+        .collect(Collectors.toList());
+  }
+
+  private static List<JDK> findJDKs() {
+    List<JDK> jdks = findJDKs(System.getProperty("user.home") + File.separator + ".m2" + File.separator + "toolchains.xml");
+    if (jdks.isEmpty()) {
+      jdks = findJDKs("/data/jenkins-slave" + File.separator + ".m2" + File.separator + "toolchains.xml");
+    }
+    return jdks;
+  }
+
+  private static List<JDK> findJDKs(String toolchainsLocation) {
     try {
-      File fXmlFile = new File(toolchainsLocation);
+      List<JDK> jdks = new ArrayList<>();
+
       DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
       DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-      Document doc = dBuilder.parse(fXmlFile);
+      Document doc = dBuilder.parse(new File(toolchainsLocation));
       doc.getDocumentElement().normalize();
 
 
-      NodeList nList = doc.getElementsByTagName("toolchain");
-      for (int temp = 0; temp < nList.getLength(); temp++) {
-        Node nNode = nList.item(temp);
+      NodeList toolchainList = doc.getElementsByTagName("toolchain");
+      for (int i = 0; i < toolchainList.getLength(); i++) {
+        Element toolchainElement = (Element) toolchainList.item(i);
 
-        if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-          Element eElement = (Element)nNode;
-          NodeList providesElement = eElement.getElementsByTagName("provides");
-          for (int i=0; i< providesElement.getLength(); i++) {
-            NodeList childNodes = providesElement.item(i).getChildNodes();
-            for (int j=0; j< childNodes.getLength(); j++) {
-              if ("version".equalsIgnoreCase(childNodes.item(j).getNodeName()) &&
-                  version.equalsIgnoreCase(childNodes.item(j).getTextContent())) {
-                String jdkHome = eElement.getElementsByTagName("jdkHome").item(0).getTextContent();
-                File jdkHomeFile = new File(jdkHome);
-                if (jdkHomeFile.exists()) {
-                  locations.add(jdkHome);
-                }
-              }
-            }
-          }
+        Element providesElement = (Element) toolchainElement.getElementsByTagName("provides").item(0);
+        Element configurationElement = (Element) toolchainElement.getElementsByTagName("configuration").item(0);
+
+        String home = configurationElement.getElementsByTagName("jdkHome").item(0).getTextContent();
+        if (!new File(home).isDirectory()) {
+          continue;
         }
+
+        String version = providesElement.getElementsByTagName("version").item(0).getTextContent();
+        String vendor = providesElement.getElementsByTagName("vendor").item(0).getTextContent();
+
+        jdks.add(new JDK(home, version, vendor));
       }
+
+      return jdks;
     } catch (Exception e) {
-      return locations;
+      throw new RuntimeException(e);
     }
-    return locations;
   }
 }

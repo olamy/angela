@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.util.JDK;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -50,6 +51,7 @@ public class AgentController {
   private final static Logger logger = LoggerFactory.getLogger(AgentController.class);
 
   private final OS os = new OS();
+  private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
   private final Ignite ignite;
@@ -213,11 +215,21 @@ public class AgentController {
     }
   }
 
+  private String findJdk8Home() {
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
+    if (!j8Homes.isEmpty()) {
+      if (j8Homes.size() > 1) {
+        logger.info("Multiple JDK 8 homes found: {}", j8Homes);
+      }
+      return j8Homes.get(0).getHome();
+    } else {
+      throw new RuntimeException("Missing JDK 8 config in toolchains.xml");
+    }
+  }
+
   public int spawnClient(InstanceId instanceId, String subNodeName) {
     try {
-      JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
-      List<String> j8Homes = javaLocationResolver.resolveJava8Location();
-      String j8Home = j8Homes.get(0);
+      String j8Home = findJdk8Home();
 
       final AtomicBoolean started = new AtomicBoolean(false);
       List<String> cmdLine;

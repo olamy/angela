@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
+import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.TerracottaManagementServerLogOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -59,11 +60,7 @@ public class Distribution102Controller extends DistributionController {
 
   @Override
   public TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, final File installLocation) {
-    Map<String, String> env = new HashMap<>();
-    List<String> j8Homes = javaLocationResolver.resolveJava8Location();
-    if (j8Homes.size() > 0) {
-      env.put("JAVA_HOME", j8Homes.get(0));
-    }
+    Map<String, String> env = buildEnv();
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream(serverSymbolicName, stateRef);
@@ -100,6 +97,21 @@ public class Distribution102Controller extends DistributionController {
     return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
   }
 
+  private Map<String, String> buildEnv() {
+    Map<String, String> env = new HashMap<>();
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
+    if (!j8Homes.isEmpty()) {
+      if (j8Homes.size() > 1) {
+        logger.info("Multiple JDK 8 homes found: {}", j8Homes);
+      }
+      env.put("JAVA_HOME", j8Homes.get(0).getHome());
+      logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
+    } else {
+      throw new RuntimeException("Missing JDK 8 config in toolchains.xml");
+    }
+    return env;
+  }
+
   @Override
   public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
     int[] pids = terracottaServerInstanceProcess.getPids();
@@ -115,11 +127,7 @@ public class Distribution102Controller extends DistributionController {
 
   @Override
   public void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs) {
-    Map<String, String> env = new HashMap<String, String>();
-    List<String> j8Homes = javaLocationResolver.resolveJava8Location();
-    if (j8Homes.size() > 0) {
-      env.put("JAVA_HOME", j8Homes.get(0));
-    }
+    Map<String, String> env = buildEnv();
 
     String[] commands = configureCommand(instanceId, location, license, tcConfigs);
 
@@ -241,13 +249,9 @@ public class Distribution102Controller extends DistributionController {
 
   @Override
   public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation) {
-    Map<String, String> env = new HashMap<>();
-    List<String> j8Homes = javaLocationResolver.resolveJava8Location();
-    if (j8Homes.size() > 0) {
-      env.put("JAVA_HOME", j8Homes.get(0));
-    }
+    Map<String, String> env = buildEnv();
 
-    AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference(TerracottaManagementServerState.STOPPED);
+    AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
     ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
     TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
 
