@@ -35,6 +35,7 @@ public abstract class LogOutputStream extends OutputStream {
    * @see java.io.OutputStream#write(int)
    */
   public void write(final int cc) throws IOException {
+    System.err.println("byte!");
     final byte c = (byte) cc;
     if ((c == '\n') || (c == '\r')) {
       // new line is started in case of
@@ -111,6 +112,7 @@ public abstract class LogOutputStream extends OutputStream {
    * Converts the buffer to a string and sends it to <code>processLine</code>.
    */
   protected void processBuffer() {
+    System.err.println("process buffer!");
     processLine(buffer.toString());
     buffer.reset();
   }
