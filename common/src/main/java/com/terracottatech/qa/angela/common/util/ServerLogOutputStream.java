@@ -29,7 +29,7 @@ public class ServerLogOutputStream extends LogOutputStream {
 
   @Override
   protected void processLine(final String line) {
-    if (line.contains("WARN") || line.contains("ERROR")) {
+    if (line.contains("WARN") || line.contains("ERROR") || Boolean.getBoolean("angela.tsa.log.full")) {
       System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + line);
     }
     if (line.contains("Terracotta Server instance has started up as ACTIVE")) {

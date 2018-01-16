@@ -72,6 +72,7 @@ public class Distribution102Controller extends DistributionController {
         .command(startCommand(serverSymbolicName, topology, installLocation))
         .directory(installLocation)
         .environment(env)
+        .redirectError(System.err)
         .redirectOutput(serverLogOutputStream);
     StartedProcess startedProcess;
     try {
@@ -254,6 +255,7 @@ public class Distribution102Controller extends DistributionController {
         .command(startTMSCommand(installLocation))
         .directory(installLocation)
         .environment(env)
+        .redirectError(System.err)
         .redirectOutput(terracottaManagementServerLogOutputStream);
     StartedProcess startedProcess;
     try {
