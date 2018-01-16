@@ -19,6 +19,24 @@ import java.util.stream.Collectors;
 
 public class JavaLocationResolver {
 
+  public enum Vendor {
+    SUN("sun"),
+    ORACLE("Oracle Corporation"),
+    OPENJDK("openjdk"),
+    IBM("ibm"),
+    ;
+
+    private final String name;
+
+    Vendor(String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return name;
+    }
+  }
+
   private final List<JDK> jdks;
 
   public JavaLocationResolver() {
@@ -29,10 +47,10 @@ public class JavaLocationResolver {
     return resolveJavaLocation(version, null);
   }
 
-  public List<JDK> resolveJavaLocation(String version, String vendor) {
+  public List<JDK> resolveJavaLocation(String version, Vendor vendor) {
     return jdks.stream()
         .filter(jdk -> jdk.getVersion().equals(version))
-        .filter(jdk -> vendor == null || jdk.getVendor().equals(vendor))
+        .filter(jdk -> vendor == null || jdk.getVendor().equals(vendor.getName()))
         .collect(Collectors.toList());
   }
 
