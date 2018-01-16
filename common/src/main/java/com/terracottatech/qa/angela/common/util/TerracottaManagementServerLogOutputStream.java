@@ -29,11 +29,11 @@ public class TerracottaManagementServerLogOutputStream extends LogOutputStream {
     }
     if (line.contains("Started TmsApplication")) {
       stateRef.set(STARTED);
-    } else if (line.contains("PID=")) {
-      Matcher matcher = pattern.matcher(line);
-      if (matcher.find()) {
-        this.pid = Integer.parseInt(matcher.group(1));
-      }
+//    } else if (line.contains("PID=")) {
+//      Matcher matcher = pattern.matcher(line);
+//      if (matcher.find()) {
+//        this.pid = Integer.parseInt(matcher.group(1));
+//      }
     }
   }
 
