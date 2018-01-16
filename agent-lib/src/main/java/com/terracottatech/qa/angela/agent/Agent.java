@@ -71,6 +71,9 @@ public class Agent {
     public void init() {
       File workDirFile = new File(ROOT_DIR);
       LOGGER.info("Root directory is : " + workDirFile);
+      if (!workDirFile.exists()) {
+        workDirFile.mkdirs();
+      }
       if (!workDirFile.isDirectory()) {
         throw new RuntimeException("Root directory is not a folder : " + workDirFile);
       }
