@@ -129,7 +129,7 @@
           <version>2.20.1</version>
           <configuration>
             <systemProperties>
-              <kitsDir>${java.io.tmpdir}/angelaKits/</kitsDir>
+              <kitsDir>${project.build.directory}/tsamanager</kitsDir>
             </systemProperties>
           </configuration>
         </plugin>
