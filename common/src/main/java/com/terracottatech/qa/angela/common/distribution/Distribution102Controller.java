@@ -29,7 +29,6 @@ import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -254,15 +253,14 @@ public class Distribution102Controller extends DistributionController {
 
     AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
     ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
-//    TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
+    TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
 
     ProcessExecutor executor = new ProcessExecutor()
         .command(startTMSCommand(installLocation))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
-//        .redirectOutput(terracottaManagementServerLogOutputStream);
-        .redirectOutput(System.out);
+        .redirectOutput(terracottaManagementServerLogOutputStream);
     StartedProcess startedProcess;
     try {
       startedProcess = executor.start();
@@ -281,36 +279,11 @@ public class Distribution102Controller extends DistributionController {
       throw new RuntimeException("Can not start Terracotta server process " + tmsSymbolicName, e);
     }
 
-    // wait until the TMS bound its port
-    while (true) {
-      Socket socket = null;
-      try {
-        socket = new Socket("localhost", 9480);
-        break;
-      } catch (IOException ioe) {
-        if (!startedProcess.getProcess().isAlive()) {
-          throw new RuntimeException("TMS exited without completing startup");
-        }
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      } finally {
-        try {
-          if (socket != null) {
-            socket.close();
-          }
-        } catch (IOException e) {
-          // ignore
-        }
-      }
-    }
-
-//    terracottaManagementServerLogOutputStream.waitForStartedState(startedProcess);
+    terracottaManagementServerLogOutputStream.waitForStartedState(startedProcess);
 
     int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
-    return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid);
+    int javaProcessPid = terracottaManagementServerLogOutputStream.getPid();
+    return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
   }
 
   @Override

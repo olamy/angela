@@ -2,7 +2,6 @@ package com.terracottatech.qa.angela.common.util;
 
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.exec.stream.LogOutputStream;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
