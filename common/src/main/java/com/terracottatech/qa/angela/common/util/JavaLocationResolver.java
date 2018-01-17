@@ -50,7 +50,7 @@ public class JavaLocationResolver {
   public List<JDK> resolveJavaLocation(String version, Vendor vendor) {
     return jdks.stream()
         .filter(jdk -> jdk.getVersion().equals(version))
-        .filter(jdk -> vendor == null || jdk.getVendor().equals(vendor.getName()))
+        .filter(jdk -> vendor == null || jdk.getVendor().equalsIgnoreCase(vendor.getName()))
         .collect(Collectors.toList());
   }
 
