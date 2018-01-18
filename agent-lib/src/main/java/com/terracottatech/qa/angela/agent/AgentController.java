@@ -217,14 +217,10 @@ public class AgentController {
 
   private String findJdk8Home() {
     List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
-    if (!j8Homes.isEmpty()) {
-      if (j8Homes.size() > 1) {
-        logger.info("Multiple JDK 8 homes found: {}", j8Homes);
-      }
-      return j8Homes.get(0).getHome();
-    } else {
-      throw new RuntimeException("Missing JDK 8 config in toolchains.xml");
+    if (j8Homes.size() > 1) {
+      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
+    return j8Homes.get(0).getHome();
   }
 
   public int spawnClient(InstanceId instanceId, String subNodeName) {

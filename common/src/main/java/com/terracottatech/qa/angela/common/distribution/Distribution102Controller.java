@@ -100,15 +100,11 @@ public class Distribution102Controller extends DistributionController {
   private Map<String, String> buildEnv() {
     Map<String, String> env = new HashMap<>();
     List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
-    if (!j8Homes.isEmpty()) {
-      if (j8Homes.size() > 1) {
-        logger.info("Multiple JDK 8 homes found: {}", j8Homes);
-      }
-      env.put("JAVA_HOME", j8Homes.get(0).getHome());
-      logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
-    } else {
-      throw new RuntimeException("Missing JDK 8 config in toolchains.xml");
+    if (j8Homes.size() > 1) {
+      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
+    env.put("JAVA_HOME", j8Homes.get(0).getHome());
+    logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
     return env;
   }
 
