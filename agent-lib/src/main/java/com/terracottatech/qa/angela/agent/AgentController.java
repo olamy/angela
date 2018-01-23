@@ -7,6 +7,7 @@ import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.util.JDK;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.slf4j.Logger;
@@ -32,17 +33,24 @@ import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author Aurelien Broszniowski
@@ -83,6 +91,15 @@ public class AgentController {
 
       kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
     }
+  }
+
+  public String getInstallPath(InstanceId instanceId, TerracottaServer terracottaServer) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    TerracottaServerInstance terracottaServerInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
+    if (terracottaServerInstance == null) {
+      throw new IllegalStateException("Server " + terracottaServer + " has not been installed");
+    }
+    return terracottaInstall.getInstallLocation().getPath();
   }
 
   private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
@@ -366,4 +383,62 @@ public class AgentController {
       throw new RuntimeException("Error cleaning up instance root directory : " + instanceRootDir(instanceId), ioe);
     }
   }
+
+  public List<String> listFiles(String folder) {
+    File[] files = new File(folder).listFiles(pathname -> !pathname.isDirectory());
+    if (files == null) {
+      return Collections.emptyList();
+    }
+    return Arrays.stream(files).map(File::getName).collect(toList());
+  }
+
+  public List<String> listFolders(String folder) {
+    File[] files = new File(folder).listFiles(pathname -> pathname.isDirectory());
+    if (files == null) {
+      return Collections.emptyList();
+    }
+    return Arrays.stream(files).map(File::getName).collect(toList());
+  }
+
+  public byte[] downloadFile(String file) {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (FileInputStream fis = new FileInputStream(file)) {
+      IOUtils.copy(fis, baos);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error downloading file " + file, ioe);
+    }
+    return baos.toByteArray();
+  }
+
+  public byte[] downloadFolder(String file)  {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+      File root = new File(file);
+      zipFolder(zos, "", root);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error downloading folder " + file, ioe);
+    }
+    return baos.toByteArray();
+  }
+
+  private void zipFolder(ZipOutputStream zos, String parent, File folder) throws IOException {
+    File[] files = folder.listFiles();
+    if (files == null) {
+      return;
+    }
+    for (File file : files) {
+      if (file.isDirectory()) {
+        zipFolder(zos, parent + file.getName() + "/", file);
+      } else {
+        ZipEntry zipEntry = new ZipEntry(parent + file.getName());
+        zipEntry.setTime(file.lastModified());
+        zos.putNextEntry(zipEntry);
+        try (FileInputStream fis = new FileInputStream(file)) {
+          IOUtils.copy(fis, zos);
+        }
+        zos.closeEntry();
+      }
+    }
+  }
+
 }

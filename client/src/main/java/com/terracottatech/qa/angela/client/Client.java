@@ -16,6 +16,7 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.client.Context;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
@@ -144,6 +145,10 @@ public class Client implements Closeable {
       return null;
     });
     return new ClientJobFuture(igniteFuture);
+  }
+
+  public RemoteFolder browse(String root) {
+    return new RemoteFolder(ignite, subNodeName, null, root);
   }
 
   @Override
