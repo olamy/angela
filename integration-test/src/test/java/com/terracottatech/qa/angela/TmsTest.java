@@ -39,9 +39,9 @@ public class TmsTest {
 
   @Test
   public void testConnection() throws Exception {
-    Distribution distribution = distribution(version("10.2.0.0.144"), PackageType.KIT, LicenseType.TC_DB);
+    Distribution distribution = distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB);
     Topology topology = new Topology(distribution,
-        tcConfig(version("10.2.0.0.144"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TmsTest::testConnection")) {
@@ -59,7 +59,7 @@ public class TmsTest {
         try (DatasetManager datasetManager = DatasetManager.clustered(context.tsaURI()).build()) {
           DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
               .offheap("primary-server-resource");
-          boolean datasetCreated = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+          boolean datasetCreated = datasetManager.newDataset("MyDataset", Type.STRING, builder.build());
           if (datasetCreated) {
             logger.info("created dataset");
           }
