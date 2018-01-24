@@ -6,6 +6,7 @@ import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
@@ -15,6 +16,9 @@ import java.util.Collection;
 import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
+import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
+import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
+import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 
@@ -40,6 +44,25 @@ public class GettingStarted {
 
     factory.close(); // <9>
     // end::configureCluster[]
+  }
+
+  @Test
+  public void configureClusterWithSecurity() throws Exception {
+    // tag::configureClusterWithSecurity[]
+    Topology topology =
+        new Topology(distribution(version("10.2.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), // <2>
+                     secureTcConfig(version("10.2.0-SNAPSHOT"), getClass().getResource("/tc-config-a-with-security.xml"), // <3>
+                                    withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(getClass().getResource("/security"))))); // <4>
+
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")); // <5>
+    ClusterFactory factory = new ClusterFactory("GettingStarted::configureClusterWithSecurity"); // <5>
+    Tsa tsa = factory.tsa(topology, license); // <6>
+    tsa.installAll(); // <7>
+    tsa.startAll(); // <8>
+    tsa.licenseAll(securityRootDirectory(getClass().getResource("/security"))); // <9>
+
+    factory.close(); // <10>
+    // end::configureClusterWithSecurity[]
   }
 
   @Test

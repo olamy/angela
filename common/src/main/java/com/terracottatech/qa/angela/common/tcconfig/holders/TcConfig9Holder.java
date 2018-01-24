@@ -29,6 +29,11 @@ public class TcConfig9Holder extends TcConfigHolder {
   }
 
   @Override
+  public void updateSecurityRootDirectoryLocation(String securityRootDirectory) {
+    throw new UnsupportedOperationException("security-root-directory configuration is not available in TcConfig9");
+  }
+
+  @Override
   public void updateDataDirectory(final String rootId, final String newlocation) {
     throw new UnsupportedOperationException("Unimplemented");
   }

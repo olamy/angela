@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.common;
 
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
@@ -36,8 +37,8 @@ public class TerracottaServerInstance  {
     this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
   }
 
-  public void configureLicense(final InstanceId instanceId, final License license, final TcConfig[] tcConfigs) {
-    this.distributionController.configureLicense(instanceId, location, license, tcConfigs);
+  public void configureLicense(final InstanceId instanceId, final License license, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
+    this.distributionController.configureLicense(instanceId, location, license, tcConfigs, securityRootDirectory);
   }
 
   public TerracottaServerState getTerracottaServerState() {
