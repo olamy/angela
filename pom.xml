@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent</artifactId>
-    <version>3.23</version>
+    <version>3.24</version>
   </parent>
 
   <groupId>com.terracottatech.qa</groupId>
@@ -63,7 +63,7 @@
       <dependency>
         <groupId>com.terracottatech.store</groupId>
         <artifactId>terracotta-store-client</artifactId>
-        <version>10.2.0.0.144</version>
+        <version>10.2.0.0.224</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>

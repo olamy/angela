@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.util.JDK;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
@@ -34,6 +35,7 @@ import com.terracottatech.qa.angela.common.util.OS;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -60,16 +62,18 @@ public class AgentController {
     this.ignite = ignite;
   }
 
-  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex) {
+  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall != null) {
       logger.info("Kit for " + terracottaServer + " already installed");
       terracottaInstall.addServer(terracottaServer);
+      installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
     } else {
       logger.info("Installing kit for " + terracottaServer);
       KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
       File kitDir = kitManager.installKit(license, offline);
 
+      installSecurityRootDirectory(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
       logger.info("Installing the tc-configs");
       for (TcConfig tcConfig : topology.getTcConfigs()) {
         tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
@@ -78,6 +82,18 @@ public class AgentController {
       }
 
       kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
+    }
+  }
+
+  private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
+                                            TerracottaServer terracottaServer,
+                                            Topology topology, int tcConfigIndex) {
+    if (securityRootDirectory != null) {
+      final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
+      Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory").resolve(serverName);
+      logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
+      securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
+      topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.getParent().resolve("${SERVER_NAME_TEMPLATE}").toString());
     }
   }
 
@@ -194,10 +210,10 @@ public class AgentController {
     return serverInstance.getTerracottaServerState();
   }
 
-  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs) {
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
-    serverInstance.configureLicense(instanceId, license, tcConfigs);
+    serverInstance.configureLicense(instanceId, license, tcConfigs, securityRootDirectory);
 
   }
 

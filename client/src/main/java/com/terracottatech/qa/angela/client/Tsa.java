@@ -3,6 +3,8 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -62,13 +64,17 @@ public class Tsa implements AutoCloseable {
       final TcConfig tcConfig = tcConfigs[tcConfigIndex];
       for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
-
-        install(tcConfigIndex, terracottaServer);
+        if (tcConfig instanceof SecureTcConfig) {
+          SecureTcConfig secureTcConfig = (SecureTcConfig)tcConfig;
+          install(tcConfigIndex, terracottaServer, secureTcConfig.securityRootDirectoryFor(serverSymbolicName));
+        } else {
+          install(tcConfigIndex, terracottaServer, null);
+        }
       }
     }
   }
 
-  private void install(int tcConfigIndex, TerracottaServer terracottaServer) {
+  private void install(int tcConfigIndex, TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
@@ -79,7 +85,8 @@ public class Tsa implements AutoCloseable {
 
     logger.info("installing on {}", terracottaServer.getHostname());
     executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() ->
-        Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex));
+        Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex,
+          securityRootDirectory));
   }
 
   public void uninstallAll() {
@@ -156,6 +163,10 @@ public class Tsa implements AutoCloseable {
   }
 
   public void licenseAll() {
+    licenseAll(null);
+  }
+
+  public void licenseAll(final SecurityRootDirectory securityRootDirectory) {
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
     for (Map.Entry<ServerSymbolicName, TerracottaServer> entry : topology.getServers().entrySet()) {
       TerracottaServerState terracottaServerState = getState(entry.getValue());
@@ -170,7 +181,8 @@ public class Tsa implements AutoCloseable {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs));
+    executeRemotely(terracottaServer.getHostname(), (IgniteRunnable) () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs,
+      securityRootDirectory));
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
