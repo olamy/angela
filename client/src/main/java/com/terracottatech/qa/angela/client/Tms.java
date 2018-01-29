@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import io.restassured.path.json.JsonPath;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteCallable;
@@ -49,7 +50,15 @@ public class Tms implements AutoCloseable {
 
   }
 
-  public void connectToCluster(URI uri) {
+  /**
+   *
+   * Create a TMS connection to the cluster
+   *
+   * @param uri of the cluster to connect to
+   * @return connectionName
+   */
+  public String connectToCluster(URI uri) {
+    String connectionName;
     logger.info("connecting TMS to {}", uri.toString());
     // probe
     String url;
@@ -69,6 +78,10 @@ public class Tms implements AutoCloseable {
     headers.put("content-type", "application/json");
     response = sendPostRequest(url, response, headers);
     logger.info("tms connect result :" + response.toString());
+
+    connectionName = JsonPath.from(response).get("connectionName");
+
+    return connectionName;
   }
 
   @Override
