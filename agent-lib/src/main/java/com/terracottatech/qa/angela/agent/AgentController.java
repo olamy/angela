@@ -294,13 +294,13 @@ public class AgentController {
     // else
     //   /work/terracotta/irepo/lorban/angela/agent/target/classes/com/terracottatech/qa/angela/agent/Agent.class
 
-    String agentClassPath = Agent.class.getResource('/' + Agent.class.getName().replace('.', '/') + ".class").getPath();
+    String agentClassName = Agent.class.getName().replace('.', '/');
+    String agentClassPath = Agent.class.getResource("/" + agentClassName + ".class").getPath();
 
     if (agentClassPath.startsWith("file:")) {
       sb.append(agentClassPath.substring("file:".length(), agentClassPath.lastIndexOf('!')));
     } else {
-      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(Agent.class.getName()
-          .replace('.', File.separatorChar))));
+      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(agentClassName)));
     }
 
     return sb.toString();
