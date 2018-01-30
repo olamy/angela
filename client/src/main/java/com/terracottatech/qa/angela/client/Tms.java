@@ -79,7 +79,7 @@ public class Tms implements AutoCloseable {
     response = sendPostRequest(url, response, headers);
     logger.info("tms connect result :" + response.toString());
 
-    connectionName = JsonPath.from(response).get("connectionName");
+    connectionName = JsonPath.from(response).get("config.connectionName");
 
     return connectionName;
   }
