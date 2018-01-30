@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,7 +24,15 @@ public class SecurityRootDirectory implements Serializable {
   private final Map<String, byte[]> trustedAuthorityMap;
 
   public static SecurityRootDirectory securityRootDirectory(URL securityRootDirectoryUrl) {
-    return new SecurityRootDirectory(Paths.get(securityRootDirectoryUrl.getFile()));
+    try {
+      return new SecurityRootDirectory(Paths.get(securityRootDirectoryUrl.toURI()));
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  public static SecurityRootDirectory securityRootDirectory(Path securityRootDirectoryPath) {
+    return new SecurityRootDirectory(securityRootDirectoryPath);
   }
 
   private SecurityRootDirectory(Path securityRootDirectory) {

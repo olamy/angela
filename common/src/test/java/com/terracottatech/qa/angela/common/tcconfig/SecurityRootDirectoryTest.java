@@ -101,7 +101,7 @@ public class SecurityRootDirectoryTest {
 
   @Test
   public void testSerializationWithKeyStoreFiles() throws Exception {
-    Path securityRootDirectory = Paths.get(getClass().getResource("/terracotta/10/security").getFile());
+    Path securityRootDirectory = Paths.get(getClass().getResource("/terracotta/10/security").toURI());
     serializeAndVerify(securityRootDirectory);
   }
 
