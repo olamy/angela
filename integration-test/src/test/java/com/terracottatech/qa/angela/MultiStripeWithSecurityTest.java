@@ -20,15 +20,17 @@ import static com.terracottatech.qa.angela.common.topology.Version.version;
 
 public class MultiStripeWithSecurityTest {
 
+  private static final String VERSION = "10.2.0.0.365";
+
   @Test
   public void test2StripesWithSecurity() throws Exception {
     Topology topology =
-        new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
-                     secureTcConfig(version("10.2.0.0.224"),
+        new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
+                     secureTcConfig(version(VERSION),
                                     getClass().getResource("/terracotta/10/tc-config-multistripes1-with-security.xml"),
                                     withSecurityFor(new ServerSymbolicName("Server1-1"),
                                                     securityRootDirectory(getClass().getResource("/terracotta/10/security")))),
-                     secureTcConfig(version("10.2.0.0.224"),
+                     secureTcConfig(version(VERSION),
                                     getClass().getResource("/terracotta/10/tc-config-multistripes2-with-security.xml"),
                                     withSecurityFor(new ServerSymbolicName("Server1-2"),
                                                     securityRootDirectory(getClass().getResource("/terracotta/10/security")))));

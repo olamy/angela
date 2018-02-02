@@ -26,10 +26,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InstallTest {
 
+  private static final String VERSION = "10.2.0.0.365";
+
   @Test
   public void testLocallInstall() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.283"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.283"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
@@ -42,8 +44,8 @@ public class InstallTest {
 
   @Test
   public void testStopPassive() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
+    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 

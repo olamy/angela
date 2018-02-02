@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
@@ -134,10 +135,14 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tms tms(Distribution distribution, License license, String hostname) {
+    return tms(distribution, license, hostname, null);
+  }
+
+  public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
     init(Arrays.asList(hostname));
     nodesToCleanup.add(hostname);
 
-    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution);
+    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig);
     controllers.add(tms);
     return tms;
   }

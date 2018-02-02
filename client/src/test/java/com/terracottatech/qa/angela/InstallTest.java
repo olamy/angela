@@ -21,10 +21,12 @@ import static com.terracottatech.qa.angela.common.topology.Version.version;
 
 public class InstallTest {
 
+  private static final String VERSION = "10.2.0.0.365";
+
   @Test
   public void testRemoteInstall() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteInstall")) {

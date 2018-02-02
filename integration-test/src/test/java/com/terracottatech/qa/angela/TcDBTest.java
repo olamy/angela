@@ -37,11 +37,12 @@ import static org.hamcrest.core.Is.is;
 public class TcDBTest {
 
   private final static Logger logger = LoggerFactory.getLogger(TcDBTest.class);
+  private static final String VERSION = "10.2.0.0.365";
 
   @Test
   public void testConnection() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {

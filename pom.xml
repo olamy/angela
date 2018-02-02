@@ -68,7 +68,7 @@
       <dependency>
         <groupId>com.terracottatech.store</groupId>
         <artifactId>terracotta-store-client</artifactId>
-        <version>10.2.0.0.224</version>
+        <version>10.2.0.0.365</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>

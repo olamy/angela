@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import org.apache.commons.io.FileUtils;
@@ -34,11 +35,16 @@ import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 
 import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -115,7 +121,7 @@ public class AgentController {
     }
   }
 
-  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, String kitInstallationPath, License license) {
+  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, String kitInstallationPath, License license, TmsServerSecurityConfig tmsServerSecurityConfig) {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       logger.info("Kit for " + tmsHostname + " already installed");
@@ -124,8 +130,39 @@ public class AgentController {
       logger.info("Installing kit for " + tmsHostname);
       KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationPath);
       File kitDir = kitManager.installKit(license, false);
+      File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
+      enableSecurity(tmcProperties, tmsServerSecurityConfig);
 
       tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir));
+    }
+  }
+
+  private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
+    String securityRootDirectory = tmsServerSecurityConfig != null ? tmsServerSecurityConfig.getSecurityRootDirectory() : "";
+    String securityLevel = tmsServerSecurityConfig != null ? tmsServerSecurityConfig.getSecurityLevel() : "";
+
+    List<String> lines = new ArrayList<String>();
+    String line = null;
+    try (BufferedReader br = new BufferedReader(new FileReader(tmcProperties))) {
+
+      while ((line = br.readLine()) != null) {
+        if (line.startsWith("security.root.directory=")) {
+          line = line.replace("security.root.directory=", "security.root.directory=" + securityRootDirectory);
+        } else if(line.startsWith("security.level=")) {
+          line = line.replace("security.level=", "security.level=" + securityLevel);
+        }
+        lines.add(line);
+      }
+
+      try (BufferedWriter out = new BufferedWriter(new FileWriter(tmcProperties))) {
+        for(String s : lines) {
+          out.write(s);
+          out.newLine();
+        }
+        out.flush();
+      }
+    } catch (Exception ex) {
+      throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
   }
 

@@ -39,7 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class TmsTest {
 
   private final static Logger logger = LoggerFactory.getLogger(TmsTest.class);
-  private static final String VERSION = "10.2.0.0.224";
+  private static final String VERSION = "10.2.0.0.365";
   private static String connectionName;
   private static ClusterFactory factory;
   private static final String TMS_HOSTNAME = "localhost";
@@ -48,7 +48,7 @@ public class TmsTest {
   public static void setUp() throws Exception {
     Distribution distribution = distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB);
     Topology topology = new Topology(distribution,
-        tcConfig(version("10.2.0.0.224"), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml")));
+        tcConfig(version(VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(TmsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     factory = new ClusterFactory("TmsTest::testConnection");
@@ -63,7 +63,7 @@ public class TmsTest {
   }
 
   @Test
-  public void testConnectionName() {
+  public void testConnectionName() throws Exception {
     assertThat(connectionName, startsWith("TmsTest"));
   }
 
