@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.ClusterFactory;
@@ -23,6 +24,7 @@ import static com.terracottatech.qa.angela.common.topology.Version.version;
 public class InstallWithSecurityTest {
 
   @Test
+  @Ignore
   public void testLocalInstallWithSecurity() throws Exception {
     Topology topology =
         new Topology(distribution(version("10.2.0.0.224"),
@@ -43,6 +45,7 @@ public class InstallWithSecurityTest {
   }
 
   @Test
+  @Ignore
   public void testLocalInstallAPWithSecurity() throws Exception {
     Topology topology =
         new Topology(distribution(version("10.2.0.0.224"),
