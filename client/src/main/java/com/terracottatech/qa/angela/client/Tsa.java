@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig;
@@ -248,6 +249,12 @@ public class Tsa implements AutoCloseable {
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
+    String hostname = terracottaServer.getHostname();
+    String path = executeRemotely(hostname, (IgniteCallable<String>) () -> Agent.CONTROLLER.getInstallPath(instanceId, terracottaServer));
+    return new RemoteFolder(ignite, hostname, path, root);
   }
 
   @Override
