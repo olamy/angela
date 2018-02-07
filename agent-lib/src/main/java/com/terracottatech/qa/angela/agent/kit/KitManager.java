@@ -192,13 +192,14 @@ public class KitManager implements Serializable {
   /**
    */
   public File installKit(License license, final boolean offline) {
+    File localInstallPath;
     if (kitInstallationPath != null) {
       logger.info("Using kitInstallationPath: \"{}\"", kitInstallationPath);
       if (!new File(kitInstallationPath).isDirectory()) {
         throw new IllegalArgumentException("You set the kitIntallationPath property to ["
                                            + kitInstallationPath + "] but the location ins't a directory");
       }
-      return new File(kitInstallationPath);
+      localInstallPath = new File(kitInstallationPath);
     } else {
       logger.info("getting install from the kit/installer");
       File localInstallerFilename = new File(resolveLocalInstallerFilename());
@@ -206,8 +207,8 @@ public class KitManager implements Serializable {
         downloadLocalInstaller(localInstallerFilename);
       }
 
-      File localInstallPath = new File(this.localInstallationPath
-                                       + File.separatorChar + getDirFromArchive(localInstallerFilename));
+      localInstallPath = new File(this.localInstallationPath
+                                  + File.separatorChar + getDirFromArchive(localInstallerFilename));
 
       if (!isValidLocalInstallPath(offline, localInstallPath)) {
         logger.debug("Local install not available");
@@ -218,10 +219,10 @@ public class KitManager implements Serializable {
         }
         createLocalInstallFromInstaller(license, localInstallerFilename);
       }
-      File workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(localInstallPath);
-      logger.info("Working install is located in {}", workingCopyFromLocalInstall);
-      return workingCopyFromLocalInstall;
     }
+    File workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(localInstallPath);
+    logger.info("Working install is located in {}", workingCopyFromLocalInstall);
+    return workingCopyFromLocalInstall;
   }
 
   /**
@@ -403,10 +404,7 @@ public class KitManager implements Serializable {
   }
 
   public void deleteInstall(final File installLocation) throws IOException {
-    if (kitInstallationPath == null) {
-      // only delete when not in galvan mode
       logger.info("deleting installation in {}", installLocation.getAbsolutePath());
       FileUtils.deleteDirectory(installLocation);
-    }
   }
 }

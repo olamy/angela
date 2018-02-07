@@ -28,8 +28,8 @@ public class InstallTest {
 
   @Test
   public void testLocallInstall() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.144"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.127"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version("10.2.0.0.283"), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version("10.2.0.0.283"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
