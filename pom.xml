@@ -7,12 +7,12 @@
   <parent>
     <groupId>org.terracotta.forge</groupId>
     <artifactId>forge-parent</artifactId>
-    <version>3.23</version>
+    <version>3.24</version>
   </parent>
 
   <groupId>com.terracottatech.qa</groupId>
   <artifactId>angela</artifactId>
-  <version>1.0.2-SNAPSHOT</version>
+  <version>1.0.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
@@ -61,9 +61,14 @@
         <version>4.12</version>
       </dependency>
       <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>json-path</artifactId>
+        <version>3.0.6</version>
+      </dependency>
+      <dependency>
         <groupId>com.terracottatech.store</groupId>
         <artifactId>terracotta-store-client</artifactId>
-        <version>10.2.0.0.144</version>
+        <version>10.2.0.0.224</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>

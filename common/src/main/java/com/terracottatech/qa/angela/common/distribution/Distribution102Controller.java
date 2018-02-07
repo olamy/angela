@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.TerracottaManagementServerLogOutputStream;
 import org.apache.commons.io.FileUtils;
@@ -29,6 +30,7 @@ import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -100,15 +102,11 @@ public class Distribution102Controller extends DistributionController {
   private Map<String, String> buildEnv() {
     Map<String, String> env = new HashMap<>();
     List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
-    if (!j8Homes.isEmpty()) {
-      if (j8Homes.size() > 1) {
-        logger.info("Multiple JDK 8 homes found: {}", j8Homes);
-      }
-      env.put("JAVA_HOME", j8Homes.get(0).getHome());
-      logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
-    } else {
-      throw new RuntimeException("Missing JDK 8 config in toolchains.xml");
+    if (j8Homes.size() > 1) {
+      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
+    env.put("JAVA_HOME", j8Homes.get(0).getHome());
+    logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
     return env;
   }
 
@@ -126,10 +124,10 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs) {
+  public void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
     Map<String, String> env = buildEnv();
 
-    String[] commands = configureCommand(instanceId, location, license, tcConfigs);
+    String[] commands = configureCommand(instanceId, location, license, tcConfigs, securityRootDirectory);
 
     ProcessExecutor executor = new ProcessExecutor()
         .command(commands).directory(location).environment(env);
@@ -148,7 +146,7 @@ public class Distribution102Controller extends DistributionController {
     }
   }
 
-  private synchronized String[] configureCommand(final InstanceId instanceId, final File location, final License licenseConfig, final TcConfig[] tcConfigs) {
+  private synchronized String[] configureCommand(final InstanceId instanceId, final File location, final License licenseConfig, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
     List<String> command = new ArrayList<>();
 
     StringBuilder sb = null;
@@ -161,6 +159,13 @@ public class Distribution102Controller extends DistributionController {
           .append(os.getShellExtension());
     }
     command.add(sb.toString());
+    if (securityRootDirectory != null) {
+      Path securityRootDirectoryPath = location.toPath().resolve("security-root-directory");
+      securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
+      logger.info("Using SecurityRootDirectory " + securityRootDirectoryPath);
+      command.add("-srd");
+      command.add(securityRootDirectoryPath.toString());
+    }
     command.add("configure");
     command.add("-n");
     command.add(instanceId.toString());
@@ -210,7 +215,8 @@ public class Distribution102Controller extends DistributionController {
                                    .substring(0, tcConfig.getPath()
                                                      .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
         String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
-            replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName));
+            replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName)).
+            replaceAll(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
         FileUtils.write(new File(modifiedTcConfigPath), modifiedConfig);
       } catch (IOException e) {
         throw new RuntimeException("Error when modifying tc config", e);

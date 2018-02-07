@@ -34,6 +34,26 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
+  public void updateSecurityRootDirectoryLocation(final String securityRootDirectory) {
+    try {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      if (securityRootDirectoryNode != null) {
+        securityRootDirectoryNode.setTextContent(securityRootDirectory);
+      } else {
+        throw new RuntimeException("security-root-directory tag is not found");
+      }
+
+      this.tcConfigContent = domToString(tcConfigXml);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
+  @Override
   public void updateDataDirectory(final String rootId, final String newlocation) {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();
@@ -80,6 +100,19 @@ public class TcConfig10Holder extends TcConfigHolder {
 
         this.tcConfigContent = domToString(tcConfigXml);
       }
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
+  String getSecurityRootDirectory() {
+    try {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      return securityRootDirectoryNode != null ? securityRootDirectoryNode.getTextContent() : null;
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);
     }

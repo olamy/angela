@@ -43,15 +43,29 @@ public class JavaLocationResolver {
     jdks = findJDKs();
   }
 
+  public List<JDK> resolveJavaLocation() {
+    return resolveJavaLocation(null, null);
+  }
+
   public List<JDK> resolveJavaLocation(String version) {
     return resolveJavaLocation(version, null);
   }
 
   public List<JDK> resolveJavaLocation(String version, Vendor vendor) {
-    return jdks.stream()
-        .filter(jdk -> jdk.getVersion().equals(version))
-        .filter(jdk -> vendor == null || jdk.getVendor().equals(vendor.getName()))
+    List<JDK> list = jdks.stream()
+        .filter(JDK::isValid)
+        .filter(jdk -> version == null || version.equals(jdk.getVersion()))
+        .filter(jdk -> vendor == null || vendor.getName().equalsIgnoreCase(jdk.getVendor()))
         .collect(Collectors.toList());
+    if (list.isEmpty()) {
+      String message = "Missing JDK with version [" + version + "]";
+      if (vendor != null) {
+        message += " and vendor [" + vendor.getName() + "]";
+      }
+      message += " config in toolchains.xml. Available JDKs: " + jdks;
+      throw new RuntimeException(message);
+    }
+    return list;
   }
 
   private static List<JDK> findJDKs() {
@@ -80,14 +94,12 @@ public class JavaLocationResolver {
         Element configurationElement = (Element) toolchainElement.getElementsByTagName("configuration").item(0);
 
         String home = configurationElement.getElementsByTagName("jdkHome").item(0).getTextContent();
-        if (!new File(home).isDirectory()) {
-          continue;
-        }
+        boolean valid = new File(home).isDirectory();
 
-        String version = providesElement.getElementsByTagName("version").item(0).getTextContent();
-        String vendor = providesElement.getElementsByTagName("vendor").item(0).getTextContent();
+        String version = textContentOf(providesElement, "version");
+        String vendor = textContentOf(providesElement, "vendor");
 
-        jdks.add(new JDK(home, version, vendor));
+        jdks.add(new JDK(home, version, vendor, valid));
       }
 
       return jdks;
@@ -95,4 +107,13 @@ public class JavaLocationResolver {
       throw new RuntimeException(e);
     }
   }
+
+  private static String textContentOf(Element element, String subElementName) {
+    NodeList nodeList = element.getElementsByTagName(subElementName);
+    if (nodeList.getLength() > 0) {
+      return nodeList.item(0).getTextContent();
+    }
+    return null;
+  }
+
 }

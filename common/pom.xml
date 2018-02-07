@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.terracottatech.qa</groupId>
     <artifactId>angela</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>angela-common</artifactId>
@@ -40,6 +40,11 @@
     <dependency>
       <groupId>org.zeroturnaround</groupId>
       <artifactId>zt-zip</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 

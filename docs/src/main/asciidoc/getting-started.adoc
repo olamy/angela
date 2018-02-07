@@ -41,6 +41,33 @@ include::../java/GettingStarted.java[tags=configureCluster]
 <8> Install the license with the cluster tool
 <9> Stops all Terracotta servers and cleans up the installation
 
+== Tsa Cluster with Security example
+
+Given the following cluster configuration:
+
+[source,xml]
+----
+include::../resources/tc-config-a-with-security.xml[tags=security]
+----
+
+We expect the TSA to contain one Terracotta server running on localhost, and this will be automatically resolved by Angela.
+We can ask now Angela to setup such a cluster:
+
+[source,java]
+----
+include::../java/GettingStarted.java[tags=configureClusterWithSecurity]
+----
+<1> Creates the TSA cluster topology
+<2> Defines the Terracotta distribution : version, package type (KIT) and License (TC DB)
+<3> Defines the Terracotta cluster config with security
+<4> Defines the SecurityRootDirectory for "Server1"
+<5> The license in case the distribution is enterprise
+<6> Creates a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
+<7> Installs the Tsa from the distribution on the appropriate server(s) (localhost in this case)
+<8> Starts all servers from the Tsa
+<9> Install the license with the cluster tool using SecurityRootDirectory
+<10> Stops all Terracotta servers and cleans up the installation
+
 === Tsa API
 
 [source,java]

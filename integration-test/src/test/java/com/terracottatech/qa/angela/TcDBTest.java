@@ -40,8 +40,8 @@ public class TcDBTest {
 
   @Test
   public void testConnection() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.144"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.144"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
@@ -63,7 +63,7 @@ public class TcDBTest {
           Dataset<String> dataset = null;
 
           if (rank == 0) {
-            boolean datasetCreated = datasetManager.createDataset("MyDataset", Type.STRING, builder.build());
+            boolean datasetCreated = datasetManager.newDataset("MyDataset", Type.STRING, builder.build());
             if (datasetCreated) {
               logger.info("created dataset");
             }

@@ -30,7 +30,7 @@ public class TcConfig implements Serializable {
     return new TcConfig(version, tcConfigPath);
   }
 
-  private TcConfig(Version version, URL tcConfigPath) {
+  TcConfig(Version version, URL tcConfigPath) {
     this.tcConfigName = new File(tcConfigPath.getPath()).getName();
     this.tcConfigHolder = initTcConfigHolder(version, tcConfigPath);
   }
@@ -91,6 +91,10 @@ public class TcConfig implements Serializable {
 
   public void updateLogsLocation(final File kitDir, final int tcConfigIndex) {
     tcConfigHolder.updateLogsLocation(kitDir, tcConfigIndex);
+  }
+
+  public void updateSecurityRootDirectoryLocation(final String securityRootDirectory) {
+    tcConfigHolder.updateSecurityRootDirectoryLocation(securityRootDirectory);
   }
 
   public void updateDataDirectory(final String rootId, final String newlocation) {

@@ -4,9 +4,11 @@ import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.slf4j.Logger;
@@ -31,16 +33,24 @@ import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author Aurelien Broszniowski
@@ -60,16 +70,18 @@ public class AgentController {
     this.ignite = ignite;
   }
 
-  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex) {
+  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall != null) {
       logger.info("Kit for " + terracottaServer + " already installed");
       terracottaInstall.addServer(terracottaServer);
+      installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
     } else {
       logger.info("Installing kit for " + terracottaServer);
       KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
       File kitDir = kitManager.installKit(license, offline);
 
+      installSecurityRootDirectory(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
       logger.info("Installing the tc-configs");
       for (TcConfig tcConfig : topology.getTcConfigs()) {
         tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
@@ -78,6 +90,27 @@ public class AgentController {
       }
 
       kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
+    }
+  }
+
+  public String getInstallPath(InstanceId instanceId, TerracottaServer terracottaServer) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    TerracottaServerInstance terracottaServerInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
+    if (terracottaServerInstance == null) {
+      throw new IllegalStateException("Server " + terracottaServer + " has not been installed");
+    }
+    return terracottaInstall.getInstallLocation().getPath();
+  }
+
+  private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
+                                            TerracottaServer terracottaServer,
+                                            Topology topology, int tcConfigIndex) {
+    if (securityRootDirectory != null) {
+      final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
+      Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory").resolve(serverName);
+      logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
+      securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
+      topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.getParent().resolve("${SERVER_NAME_TEMPLATE}").toString());
     }
   }
 
@@ -194,10 +227,10 @@ public class AgentController {
     return serverInstance.getTerracottaServerState();
   }
 
-  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs) {
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
-    serverInstance.configureLicense(instanceId, license, tcConfigs);
+    serverInstance.configureLicense(instanceId, license, tcConfigs, securityRootDirectory);
 
   }
 
@@ -217,14 +250,10 @@ public class AgentController {
 
   private String findJdk8Home() {
     List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
-    if (!j8Homes.isEmpty()) {
-      if (j8Homes.size() > 1) {
-        logger.info("Multiple JDK 8 homes found: {}", j8Homes);
-      }
-      return j8Homes.get(0).getHome();
-    } else {
-      throw new RuntimeException("Missing JDK 8 config in toolchains.xml");
+    if (j8Homes.size() > 1) {
+      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
+    return j8Homes.get(0).getHome();
   }
 
   public int spawnClient(InstanceId instanceId, String subNodeName) {
@@ -282,13 +311,13 @@ public class AgentController {
     // else
     //   /work/terracotta/irepo/lorban/angela/agent/target/classes/com/terracottatech/qa/angela/agent/Agent.class
 
-    String agentClassPath = Agent.class.getResource('/' + Agent.class.getName().replace('.', '/') + ".class").getPath();
+    String agentClassName = Agent.class.getName().replace('.', '/');
+    String agentClassPath = Agent.class.getResource("/" + agentClassName + ".class").getPath();
 
     if (agentClassPath.startsWith("file:")) {
       sb.append(agentClassPath.substring("file:".length(), agentClassPath.lastIndexOf('!')));
     } else {
-      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(Agent.class.getName()
-          .replace('.', File.separatorChar))));
+      sb.append(agentClassPath.substring(0, agentClassPath.lastIndexOf(agentClassName)));
     }
 
     return sb.toString();
@@ -354,4 +383,62 @@ public class AgentController {
       throw new RuntimeException("Error cleaning up instance root directory : " + instanceRootDir(instanceId), ioe);
     }
   }
+
+  public List<String> listFiles(String folder) {
+    File[] files = new File(folder).listFiles(pathname -> !pathname.isDirectory());
+    if (files == null) {
+      return Collections.emptyList();
+    }
+    return Arrays.stream(files).map(File::getName).collect(toList());
+  }
+
+  public List<String> listFolders(String folder) {
+    File[] files = new File(folder).listFiles(pathname -> pathname.isDirectory());
+    if (files == null) {
+      return Collections.emptyList();
+    }
+    return Arrays.stream(files).map(File::getName).collect(toList());
+  }
+
+  public byte[] downloadFile(String file) {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (FileInputStream fis = new FileInputStream(file)) {
+      IOUtils.copy(fis, baos);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error downloading file " + file, ioe);
+    }
+    return baos.toByteArray();
+  }
+
+  public byte[] downloadFolder(String file)  {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+      File root = new File(file);
+      zipFolder(zos, "", root);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error downloading folder " + file, ioe);
+    }
+    return baos.toByteArray();
+  }
+
+  private void zipFolder(ZipOutputStream zos, String parent, File folder) throws IOException {
+    File[] files = folder.listFiles();
+    if (files == null) {
+      return;
+    }
+    for (File file : files) {
+      if (file.isDirectory()) {
+        zipFolder(zos, parent + file.getName() + "/", file);
+      } else {
+        ZipEntry zipEntry = new ZipEntry(parent + file.getName());
+        zipEntry.setTime(file.lastModified());
+        zos.putNextEntry(zipEntry);
+        try (FileInputStream fis = new FileInputStream(file)) {
+          IOUtils.copy(fis, zos);
+        }
+        zos.closeEntry();
+      }
+    }
+  }
+
 }

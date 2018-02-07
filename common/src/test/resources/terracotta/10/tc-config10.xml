@@ -1,0 +1,11 @@
+<tc-config xmlns="http://www.terracotta.org/config">
+  <plugins>
+    <service xmlns:sec="http://www.terracottatech.com/config/security">
+      <sec:security>
+        <sec:security-root-directory>initial_path</sec:security-root-directory>
+        <sec:ssl-tls/>
+      </sec:security>
+    </service>
+  </plugins>
+  <tc-properties/>
+</tc-config>

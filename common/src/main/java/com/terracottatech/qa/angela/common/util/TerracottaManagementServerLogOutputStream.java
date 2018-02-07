@@ -4,8 +4,6 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import org.zeroturnaround.exec.StartedProcess;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.terracottatech.qa.angela.common.TerracottaManagementServerState.STARTED;
 
@@ -14,7 +12,7 @@ import static com.terracottatech.qa.angela.common.TerracottaManagementServerStat
  */
 
 public class TerracottaManagementServerLogOutputStream extends LogOutputStream {
-  private final Pattern pattern = Pattern.compile("PID=(\\d*)");
+  private final boolean fullLogs = Boolean.getBoolean("angela.tms.log.full");
   private final AtomicReference<TerracottaManagementServerState> stateRef;
   private volatile int pid = -1;
 
@@ -24,16 +22,17 @@ public class TerracottaManagementServerLogOutputStream extends LogOutputStream {
 
   @Override
   protected void processLine(final String line) {
-    if (line.contains("WARN") || line.contains("ERROR") || Boolean.getBoolean("angela.tms.log.full")) {
+    if (fullLogs || line.contains("WARN") || line.contains("ERROR")) {
       System.out.println("[TMS] " + line);
     }
-    if (line.contains("Started TmsApplication")) {
+    if (line.contains("started on port")) {
       stateRef.set(STARTED);
-//    } else if (line.contains("PID=")) {
-//      Matcher matcher = pattern.matcher(line);
-//      if (matcher.find()) {
-//        this.pid = Integer.parseInt(matcher.group(1));
-//      }
+    }
+    if (line.contains("Starting TmsApplication")) {
+      int startIdx = line.indexOf(" with PID ");
+      int endIdx = line.indexOf(" (", startIdx + 1);
+      String pidString = line.substring(startIdx + " with PID ".length(), endIdx);
+      this.pid = Integer.parseInt(pidString);
     }
   }
 

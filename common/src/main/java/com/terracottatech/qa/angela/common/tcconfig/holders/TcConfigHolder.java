@@ -180,6 +180,8 @@ public abstract class TcConfigHolder {
     return this.logsPathList;
   }
 
+  public abstract void updateSecurityRootDirectoryLocation(final String securityRootDirectory);
+
   public abstract void updateDataDirectory(final String rootId, final String newlocation);
 
   public abstract void updateHostname(final String serverName, final String hostname);
