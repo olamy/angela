@@ -22,12 +22,14 @@ import static com.terracottatech.qa.angela.common.topology.Version.version;
 
 public class InstallWithSecurityTest {
 
+  private static final String VERSION = "10.2.0.0.365";
+
   @Test
   public void testLocalInstallWithSecurity() throws Exception {
     Topology topology =
-        new Topology(distribution(version("10.2.0.0.224"),
+        new Topology(distribution(version(VERSION),
                                   PackageType.KIT, LicenseType.TC_DB),
-                     secureTcConfig(version("10.2.0.0.224"),
+                     secureTcConfig(version(VERSION),
                                     getClass().getResource("/terracotta/10/tc-config-a-with-security.xml"),
                                     withSecurityFor(new ServerSymbolicName("Server1"),
                                                     securityRootDirectory(getClass().getResource("/terracotta/10/security")))));
@@ -45,9 +47,9 @@ public class InstallWithSecurityTest {
   @Test
   public void testLocalInstallAPWithSecurity() throws Exception {
     Topology topology =
-        new Topology(distribution(version("10.2.0.0.224"),
+        new Topology(distribution(version(VERSION),
                                   PackageType.KIT, LicenseType.TC_DB),
-                     secureTcConfig(version("10.2.0.0.224"),
+                     secureTcConfig(version(VERSION),
                                     getClass().getResource("/terracotta/10/tc-config-ap-with-security.xml"),
                                     withSecurityFor(new ServerSymbolicName("Server1"),
                                                     securityRootDirectory(getClass().getResource("/terracotta/10/security"))
