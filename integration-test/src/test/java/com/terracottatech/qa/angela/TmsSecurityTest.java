@@ -40,7 +40,6 @@ public class TmsSecurityTest {
   private static final URL CLUSTER_CLIENT_SECURITY_ROOT_DIRECTORY = TmsSecurityTest.class.getResource("/terracotta/10/security-client");
   private static final URL CLIENT_TRUSTSTORE_URL = TmsSecurityTest.class.getResource("/terracotta/10/security-client/trusted-authority/trusted-authority-20180214T205001.jks");
   private static final TmsClientSecurityConfig TMS_CLIENT_SECURITY_CONFIG =  new TmsClientSecurityConfig("terracotta_security_password", CLIENT_TRUSTSTORE_URL);
-  private static final OS os = new OS();
   private static Tms TMS;
   private static Tsa TSA;
 
@@ -97,7 +96,7 @@ public class TmsSecurityTest {
   }
 
   private static String convertSecurityRootDirectoryPath(URL url) {
-    if(os.isWindows()) {
+    if(OS.INSTANCE.isWindows()) {
       String srt = url.getFile();
       srt = srt.replaceFirst("/","");
       srt = srt.replaceAll("/","\\\\\\\\");

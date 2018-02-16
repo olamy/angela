@@ -66,7 +66,6 @@ public class AgentController {
 
   private final static Logger logger = LoggerFactory.getLogger(AgentController.class);
 
-  private final OS os = new OS();
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
@@ -306,7 +305,7 @@ public class AgentController {
 
       final AtomicBoolean started = new AtomicBoolean(false);
       List<String> cmdLine;
-      if (os.isWindows()) {
+      if (OS.INSTANCE.isWindows()) {
         cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
             .getName());
       } else {

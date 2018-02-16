@@ -19,9 +19,7 @@ package com.terracottatech.qa.angela.common.util;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,40 +38,87 @@ import java.util.Map;
  * - Mac OS
  * - Solaris
  * <p/>
- * TODO : AIX
+ * TODO : AIX / HP-UX / ZOS / BSD
  *
  * @author Aurelien Broszniowski
  * http://www.jsoft.biz
  */
 
-public class OS implements Serializable {
+public class OS {
 
-  private OsInfo osInfo;
+  public static final OS INSTANCE;
 
-  public OS() {
+  private static final Map<String, String> MAC_OS = new HashMap<>();
+  private static final Map<Integer, String> DARWIN = new HashMap<Integer, String>();
+  private static final List<String> UNIX = new ArrayList<String>();
+
+  static {
+    MAC_OS.put("10.0", "Puma");
+    MAC_OS.put("10.1", "Cheetah");
+    MAC_OS.put("10.2", "Jaguar");
+    MAC_OS.put("10.3", "Panther");
+    MAC_OS.put("10.4", "Tiger");
+    MAC_OS.put("10.5", "Leopard");
+    MAC_OS.put("10.6", "Snow Leopard");
+    MAC_OS.put("10.7", "Lion");
+    MAC_OS.put("10.8", "Mountain Lion");
+    MAC_OS.put("10.9", "Mavericks");
+    MAC_OS.put("10.10", "Yosemite");
+    MAC_OS.put("10.11", "El Captain");
+    MAC_OS.put("10.12", "Sierra");
+    MAC_OS.put("10.13", "High Sierra");
+
+    DARWIN.put(5, "Puma");
+    DARWIN.put(6, "Jaguar");
+    DARWIN.put(7, "Panther");
+    DARWIN.put(8, "Tiger");
+    DARWIN.put(9, "Leopard");
+    DARWIN.put(10, "Snow Leopard");
+    DARWIN.put(11, "Lion");
+    DARWIN.put(12, "Mountain Lion");
+    DARWIN.put(13, "Mavericks");
+    DARWIN.put(14, "Yosemite");
+    DARWIN.put(15, "El Captain");
+    DARWIN.put(16, "Sierra");
+    DARWIN.put(17, "High Sierra");
+
+    UNIX.addAll(Arrays.asList("Linux", "SunOS"));
+
+    INSTANCE = new OS();
+  }
+
+
+  private final OsInfo osInfo;
+
+  private OS() {
     String name = System.getProperty("os.name");
     String version = System.getProperty("os.version");
     String arch = System.getProperty("os.arch");
+    OsInfo osInfo = null;
     if (name != null) {
       // Windows is quite easy to tackle with
       if (name.startsWith("Windows")) {
-        this.osInfo = new OsInfo(name, version, arch, name);
+        osInfo = new OsInfo(name, version, arch, name);
       }
       // Mac requires a bit of work, but at least it's consistent
       else if (name.startsWith("Mac")) {
-        initMacOsInfo(name, version, arch);
+        osInfo = initMacOsInfo(name, version, arch);
       } else if (name.startsWith("Darwin")) {
-        initDarwinOsInfo(name, version, arch);
+        osInfo = initDarwinOsInfo(name, version, arch);
       }
       // Try to detect other POSIX compliant platforms, now the fun begins
-      else for (String linuxName : linux) {
-          if (name.startsWith(linuxName)) {
-            initLinuxOsInfo(name, version, arch);
+      else {
+        for (String unixName : UNIX) {
+          if (name.startsWith(unixName)) {
+            osInfo = initUnixOsInfo(name, version, arch);
           }
         }
+      }
     }
-    if (this.osInfo == null)
-      this.osInfo = new OsInfo(name, version, arch, name);
+    if (osInfo == null) {
+      osInfo = new OsInfo(name, version, arch, name);
+    }
+    this.osInfo = osInfo;
   }
 
   public String getName() {
@@ -92,113 +137,85 @@ public class OS implements Serializable {
     return osInfo.getPlatformName();
   }
 
-  private static final Map<String, String> macOs = new HashMap<String, String>();
-  private static final Map<Integer, String> darwin = new HashMap<Integer, String>();
-  private static final List<String> linux = new ArrayList<String>();
-
-  static {
-    macOs.put("10.0", "Puma");
-    macOs.put("10.1", "Cheetah");
-    macOs.put("10.2", "Jaguar");
-    macOs.put("10.3", "Panther");
-    macOs.put("10.4", "Tiger");
-    macOs.put("10.5", "Leopard");
-    macOs.put("10.6", "Snow Leopard");
-    macOs.put("10.7", "Snow Lion");
-    macOs.put("10.8", "Mountain Lion");
-    macOs.put("10.9", "Mavericks");
-    macOs.put("10.10", "Yosemite");
-    macOs.put("10.11", "El Captain");
-    macOs.put("10.12", "Sierra");
-
-    darwin.put(5, "Puma");
-    darwin.put(6, "Jaguar");
-    darwin.put(7, "Panther");
-    darwin.put(8, "Tiger");
-    darwin.put(9, "Leopard");
-    darwin.put(10, "Snow Leopard");
-    darwin.put(11, "Lion");
-    darwin.put(12, "Mountain Lion");
-    darwin.put(13, "Mavericks");
-    darwin.put(14, "Yosemite");
-
-    linux.addAll(Arrays.asList("Linux", "SunOS"));
-  }
-
-  private void initMacOsInfo(final String name, final String version, final String arch) {
+  private OsInfo initMacOsInfo(final String name, final String version, final String arch) {
     String[] versions = version.split("\\.");
     String majorMinorVersion = versions[0] + "." + versions[1];
     double numericVersion = Double.parseDouble(majorMinorVersion);
-    if (numericVersion < 10)
-      this.osInfo = new OsInfo(name, version, arch, "Mac OS " + version);
-    else
-      this.osInfo = new OsInfo(name, version, arch, "OS X " + macOs.get(majorMinorVersion) + " (" + version + ")");
+    if (numericVersion < 10) {
+      return new OsInfo(name, version, arch, "Mac OS " + version);
+    } else {
+      return new OsInfo(name, version, arch, "OS X " + MAC_OS.get(majorMinorVersion) + " (" + version + ")");
+    }
   }
 
-  private void initDarwinOsInfo(final String name, final String version, final String arch) {
+  private OsInfo initDarwinOsInfo(final String name, final String version, final String arch) {
     String[] versions = version.split("\\.");
     int numericVersion = Integer.parseInt(versions[0]);
-    this.osInfo = new OsInfo(name, version, arch, "OS X " + darwin.get(numericVersion) + " (" + version + ")");
+    return new OsInfo(name, version, arch, "OS X " + DARWIN.get(numericVersion) + " (" + version + ")");
   }
 
-  private void initLinuxOsInfo(final String name, final String version, final String arch) {
+  private OsInfo initUnixOsInfo(final String name, final String version, final String arch) {
     OsInfo osInfo;
     // The most likely is to have a LSB compliant distro
     osInfo = getPlatformNameFromLsbRelease(name, version, arch);
 
     // Try new /etc/os-release file from systemd
-    if (osInfo == null)
+    if (osInfo == null) {
       osInfo = getPlatformNameFromOsRelease(name, version, arch);
+    }
 
     // Generic Linux platform name
-    if (osInfo == null)
+    if (osInfo == null) {
       osInfo = getPlatformNameFromFile(name, version, arch, "/etc/system-release");
+    }
 
     File dir = new File("/etc/");
     if (dir.exists()) {
       // if generic 'system-release' file is not present, then try to find another one
-      if (osInfo == null)
+      if (osInfo == null) {
         osInfo = getPlatformNameFromFile(name, version, arch, getFileEndingWith(dir, "-release"));
+      }
 
       // if generic 'system-release' file is not present, then try to find '_version'
-      if (osInfo == null)
+      if (osInfo == null) {
         osInfo = getPlatformNameFromFile(name, version, arch, getFileEndingWith(dir, "_version"));
+      }
 
       // try with /etc/issue file
-      if (osInfo == null)
+      if (osInfo == null) {
         osInfo = getPlatformNameFromFile(name, version, arch, "/etc/issue");
-
+      }
     }
 
     // if nothing found yet, looks for the version info
     File fileVersion = new File("/proc/version");
     if (fileVersion.exists()) {
-      if (osInfo == null)
+      if (osInfo == null) {
         osInfo = getPlatformNameFromFile(name, version, arch, fileVersion.getAbsolutePath());
+      }
     }
 
     // if nothing found, well...
-    if (osInfo == null)
+    if (osInfo == null) {
       osInfo = new OsInfo(name, version, arch, name);
+    }
 
-    this.osInfo = osInfo;
+    return osInfo;
   }
 
   private String getFileEndingWith(final File dir, final String fileEndingWith) {
-    File[] fileList = dir.listFiles(new FilenameFilter() {
-      public boolean accept(File dir, String filename) {
-        return filename.endsWith(fileEndingWith);
-      }
-    });
-    if (fileList.length > 0)
+    File[] fileList = dir.listFiles((dir1, filename) -> filename.endsWith(fileEndingWith));
+    if (fileList != null && fileList.length > 0) {
       return fileList[0].getAbsolutePath();
-    else
+    } else {
       return null;
+    }
   }
 
   private OsInfo getPlatformNameFromFile(final String name, final String version, final String arch, final String filename) {
-    if (filename == null)
+    if (filename == null) {
       return null;
+    }
     File f = new File(filename);
     if (f.exists()) {
       try {
@@ -211,7 +228,7 @@ public class OS implements Serializable {
     return null;
   }
 
-  OsInfo readPlatformName(final String name, final String version, final String arch, final BufferedReader br) throws IOException {
+  private OsInfo readPlatformName(final String name, final String version, final String arch, final BufferedReader br) throws IOException {
     String line;
     String lineToReturn = null;
     int lineNb = 0;
@@ -238,7 +255,7 @@ public class OS implements Serializable {
     return null;
   }
 
-  OsInfo readPlatformNameFromOsRelease(final String name, final String version, final String arch, final BufferedReader br) throws IOException {
+  private OsInfo readPlatformNameFromOsRelease(final String name, final String version, final String arch, final BufferedReader br) throws IOException {
     String distribName = "Linux";
     String distribVersion = "";
     String distribId = null;
@@ -272,7 +289,7 @@ public class OS implements Serializable {
     return null;
   }
 
-  OsInfo readPlatformNameFromLsb(final String name, final String version, final String arch, final BufferedReader br) throws IOException {
+  private OsInfo readPlatformNameFromLsb(final String name, final String version, final String arch, final BufferedReader br) throws IOException {
     String distribDescription = null;
     String distribCodename = null;
 
@@ -314,7 +331,7 @@ public class OS implements Serializable {
     return osInfo.isMac() || osInfo.isUnix();
   }
 
-  class OsInfo implements Serializable {
+  static class OsInfo {
     private String name;
     private String arch;
     private String version;
