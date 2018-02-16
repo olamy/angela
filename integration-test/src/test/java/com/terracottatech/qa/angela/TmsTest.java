@@ -10,6 +10,7 @@ import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.test.Versions;
 import com.terracottatech.store.Dataset;
 import com.terracottatech.store.DatasetWriterReader;
 import com.terracottatech.store.Type;
@@ -38,17 +39,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TmsTest {
 
-  private final static Logger logger = LoggerFactory.getLogger(TmsTest.class);
-  private static final String VERSION = "10.2.0.0.365";
+  private final static Logger LOGGER = LoggerFactory.getLogger(TmsTest.class);
+
   private static String connectionName;
   private static ClusterFactory factory;
   private static final String TMS_HOSTNAME = "localhost";
 
   @BeforeClass
   public static void setUp() throws Exception {
-    Distribution distribution = distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB);
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
     Topology topology = new Topology(distribution,
-        tcConfig(version(VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml")));
+        tcConfig(version(Versions.TERRACOTTA_VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(TmsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     factory = new ClusterFactory("TmsTest::testConnection");
@@ -76,24 +77,24 @@ public class TmsTest {
             .offheap("primary-server-resource");
         boolean datasetCreated = datasetManager.newDataset("MyDataset", Type.STRING, builder.build());
         if (datasetCreated) {
-          logger.info("created dataset");
+          LOGGER.info("created dataset");
         }
         try (Dataset<String> dataset = datasetManager.getDataset("MyDataset", Type.STRING)) {
           DatasetWriterReader<String> writerReader = dataset.writerReader();
           writerReader.add("ONE", CellDefinition.defineLong("val").newCell(1L));
-          logger.info("Value created for key ONE");
+          LOGGER.info("Value created for key ONE");
           dataset.close();
         }
 
       }
-      logger.info("client done");
+      LOGGER.info("client done");
     };
 
 
     ClientJob clientJobTms = (context) -> {
       String url = "http://" + TMS_HOSTNAME + ":9480/api/connections";
       String response = sendGetRequest(url);
-      logger.info("tms list connections result :" + response.toString());
+      LOGGER.info("tms list connections result :" + response.toString());
       assertThat(response.toString(), Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
     };
 
@@ -101,7 +102,7 @@ public class TmsTest {
     f1.get();
     Future<Void> fTms = client.submit(clientJobTms);
     fTms.get();
-    logger.info("---> Stop");
+    LOGGER.info("---> Stop");
   }
 
   @AfterClass

@@ -11,6 +11,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
@@ -60,6 +61,7 @@ public class ClusterFactory implements AutoCloseable {
     cfg.setDiscoverySpi(spi);
     cfg.setClientMode(true);
     cfg.setPeerClassLoadingEnabled(true);
+    cfg.setGridLogger(new NullLogger());
     cfg.setIgniteInstanceName("Instance@" + instanceId);
 
     this.ignite = Ignition.start(cfg);

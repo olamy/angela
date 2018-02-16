@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,6 @@ public class Distribution102Controller extends DistributionController {
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
-  private final OS os = new OS();
 
 
   public Distribution102Controller(final Distribution distribution, final Topology topology) {
@@ -101,9 +101,9 @@ public class Distribution102Controller extends DistributionController {
 
   private Map<String, String> buildEnv() {
     Map<String, String> env = new HashMap<>();
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
     if (j8Homes.size() > 1) {
-      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
+      logger.info("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
     env.put("JAVA_HOME", j8Homes.get(0).getHome());
     logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
@@ -152,11 +152,11 @@ public class Distribution102Controller extends DistributionController {
     StringBuilder sb = null;
     if (distribution.getPackageType() == KIT) {
       sb = new StringBuilder(location.getAbsolutePath() + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
-          .append(os.getShellExtension());
+          .append(OS.INSTANCE.getShellExtension());
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
       sb = new StringBuilder(location.getAbsolutePath() + File.separator + "TerracottaDB"
                              + File.separator + "tools" + File.separator + "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool")
-          .append(os.getShellExtension());
+          .append(OS.INSTANCE.getShellExtension());
     }
     command.add(sb.toString());
     if (securityRootDirectory != null) {
@@ -240,12 +240,12 @@ public class Distribution102Controller extends DistributionController {
     if (version.getMajor() == 4 || version.getMajor() == 5 || version.getMajor() == 10) {
       if (distribution.getPackageType() == KIT) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
                                              + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
       }
     }
@@ -330,12 +330,12 @@ public class Distribution102Controller extends DistributionController {
     if (version.getMajor() == 4 || version.getMajor() == 5 || version.getMajor() == 10) {
       if (distribution.getPackageType() == KIT) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "tools" + File.separator + "management" + File.separator + "bin" + File.separator + "start")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
             + File.separator + "tools" + File.separator + "management" + File.separator + "bin" + File.separator + "start")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
       }
     }

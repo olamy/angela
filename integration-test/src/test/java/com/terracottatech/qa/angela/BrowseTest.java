@@ -10,6 +10,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -33,8 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 public class BrowseTest {
 
-  private static final String VERSION = "10.2.0.0.365";
-
   @Test
   public void testClient() throws Exception {
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testClient")) {
@@ -57,8 +56,8 @@ public class BrowseTest {
 
   @Test
   public void testTsa() throws Exception {
-    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTsa")) {
@@ -81,7 +80,7 @@ public class BrowseTest {
   public void testTms() throws Exception {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTms")) {
-      Tms tms = factory.tms(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB), license, "localhost");
+      Tms tms = factory.tms(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), license, "localhost");
       tms.install();
       tms.start();
       tms.browse("tools/management/logs").downloadTo(new File("target/logs-tmc"));

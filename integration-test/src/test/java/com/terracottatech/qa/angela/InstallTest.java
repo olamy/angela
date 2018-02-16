@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.ClusterFactory;
@@ -26,12 +27,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InstallTest {
 
-  private static final String VERSION = "10.2.0.0.365";
-
   @Test
   public void testLocallInstall() throws Exception {
-    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
@@ -44,8 +43,8 @@ public class InstallTest {
 
   @Test
   public void testStopPassive() throws Exception {
-    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 

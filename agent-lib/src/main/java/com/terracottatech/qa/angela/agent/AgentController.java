@@ -66,7 +66,6 @@ public class AgentController {
 
   private final static Logger logger = LoggerFactory.getLogger(AgentController.class);
 
-  private final OS os = new OS();
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
@@ -293,9 +292,9 @@ public class AgentController {
   }
 
   private String findJdk8Home() {
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
     if (j8Homes.size() > 1) {
-      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
+      logger.info("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
     return j8Homes.get(0).getHome();
   }
@@ -306,7 +305,7 @@ public class AgentController {
 
       final AtomicBoolean started = new AtomicBoolean(false);
       List<String> cmdLine;
-      if (os.isWindows()) {
+      if (OS.INSTANCE.isWindows()) {
         cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
             .getName());
       } else {
