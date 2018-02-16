@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.http.HttpUtils;
@@ -118,6 +119,12 @@ public class Tms implements AutoCloseable {
     connectionName = JsonPath.from(response).get("config.connectionName");
 
     return connectionName;
+  }
+
+  public RemoteFolder browse(String root) {
+    String path =
+        executeRemotely(tmsHostname, (IgniteCallable<String>) () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId));
+    return new RemoteFolder(ignite, tmsHostname, path, root);
   }
 
   @Override
