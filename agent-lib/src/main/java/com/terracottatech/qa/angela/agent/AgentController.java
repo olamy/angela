@@ -178,6 +178,11 @@ public class AgentController {
     serverInstance.stop();
   }
 
+  public String getTmsInstallationPath(final InstanceId instanceId) {
+    TmsInstall serverInstance = tmsInstalls.get(instanceId);
+    return serverInstance.getInstallLocation().getPath();
+  }
+
   public TerracottaManagementServerState getTerracottaManagementServerState(final InstanceId instanceId) {
     TmsInstall terracottaInstall = tmsInstalls.get(instanceId);
     if (terracottaInstall == null) {
