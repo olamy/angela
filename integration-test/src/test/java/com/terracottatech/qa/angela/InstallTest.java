@@ -2,16 +2,19 @@ package com.terracottatech.qa.angela;
 
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.net.InetAddress;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -30,6 +33,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 
 public class InstallTest {
+
+  @Test
+  public void testSsh() throws Exception {
+    TcConfig tcConfig = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"));
+    tcConfig.updateServerHost(0, InetAddress.getLocalHost().getHostName());
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig);
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testSsh", new SshRemoteAgentLauncher())) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+      tsa.startAll();
+      tsa.licenseAll();
+    } finally {
+      System.clearProperty("tc.qa.angela.ssh.strictHostKeyChecking");
+    }
+  }
 
   @Test
   public void testLocalInstall4x() throws Exception {

@@ -79,6 +79,11 @@
         <version>3.0.6</version>
       </dependency>
       <dependency>
+        <groupId>com.hierynomus</groupId>
+        <artifactId>sshj</artifactId>
+        <version>0.24.0</version>
+      </dependency>
+      <dependency>
         <groupId>com.terracottatech.internal</groupId>
         <artifactId>terracotta-common-client</artifactId>
         <version>${terracotta.version}</version>

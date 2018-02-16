@@ -1,6 +1,8 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
+import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
@@ -33,6 +35,7 @@ public class ClusterFactory implements AutoCloseable {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
 
+  private transient final RemoteAgentLauncher remoteAgentLauncher;
   private final List<AutoCloseable> controllers = new ArrayList<>();
   private final String idPrefix;
   private final Map<String, InstanceId> nodeToInstanceId = new HashMap<>();
@@ -41,7 +44,12 @@ public class ClusterFactory implements AutoCloseable {
   private Agent.Node localhostAgent;
 
   public ClusterFactory(String idPrefix) {
+    this(idPrefix, new NoRemoteAgentLauncher());
+  }
+
+  public ClusterFactory(String idPrefix, RemoteAgentLauncher remoteAgentLauncher) {
     this.idPrefix = idPrefix;
+    this.remoteAgentLauncher = remoteAgentLauncher;
   }
 
   private InstanceId init(Collection<String> targetServerNames) {
@@ -53,6 +61,9 @@ public class ClusterFactory implements AutoCloseable {
     for (String targetServerName : targetServerNames) {
       if (targetServerName == null) {
         throw new IllegalArgumentException("Cannot initialize with a null server name");
+      }
+      if (!targetServerName.equals("localhost")) {
+        remoteAgentLauncher.remoteStartAgentOn(targetServerName);
       }
       nodeToInstanceId.put(targetServerName, instanceId);
     }
@@ -164,6 +175,8 @@ public class ClusterFactory implements AutoCloseable {
       ignite.close();
       ignite = null;
     }
+
+    remoteAgentLauncher.close();
 
     if (localhostAgent != null) {
       LOGGER.info("shutting down localhost agent");

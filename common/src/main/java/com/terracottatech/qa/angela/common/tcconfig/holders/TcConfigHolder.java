@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.common.tcconfig.holders;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -183,6 +184,28 @@ public abstract class TcConfigHolder {
 
         this.tcConfigContent = domToString(tcConfigXml);
       }
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
+  public void updateServerHost(int serverIndex, String newServerHost) {
+    try {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+      if (serverIndex > serversList.getLength()) {
+        throw new ArrayIndexOutOfBoundsException("Server index " + serverIndex + " out of bounds: " + serversList.getLength());
+      }
+      Node server = serversList.item(serverIndex);
+
+      Attr attribute = tcConfigXml.createAttribute("host");
+      attribute.setValue(newServerHost);
+      server.getAttributes().setNamedItem(attribute);
+
+      this.tcConfigContent = domToString(tcConfigXml);
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);
     }
