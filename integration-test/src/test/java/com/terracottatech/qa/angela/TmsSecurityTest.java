@@ -11,6 +11,7 @@ import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.test.Versions;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,8 +32,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class TmsSecurityTest {
 
-  private final static Logger logger = LoggerFactory.getLogger(TmsSecurityTest.class);
-  private static final String VERSION = "10.2.0.0.365";
+  private final static Logger LOGGER = LoggerFactory.getLogger(TmsSecurityTest.class);
+
   private static ClusterFactory factory;
   private static TmsServerSecurityConfig TMS_SECURITY_CONFIG;
   private static final String TMS_HOSTNAME = "localhost";
@@ -46,9 +47,9 @@ public class TmsSecurityTest {
   @BeforeClass
   public static void setUp() throws Exception {
 
-    Distribution distribution = distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB);
-    Topology topology = new Topology(distribution(version(VERSION), PackageType.KIT, LicenseType.TC_DB),
-                                     secureTcConfig(version(VERSION),
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                                     secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                                                     TmsSecurityTest.class.getResource("/terracotta/10/tc-config-a-with-security.xml"),
                                                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(TmsSecurityTest.class.getResource("/terracotta/10/security-server")))));
 
@@ -79,13 +80,13 @@ public class TmsSecurityTest {
     ClientJob clientJobTms = (context) -> {
       String url = "https://" + TMS_HOSTNAME + ":9480/api/connections";
       String response = HttpsUtils.sendGetRequest(url, TMS_CLIENT_SECURITY_CONFIG);
-      logger.info("tms list connections result :" + response.toString());
+      LOGGER.info("tms list connections result :" + response.toString());
       assertThat(response.toString(), Matchers.containsString("{}"));
     };
 
     Future<Void> fTms = client.submit(clientJobTms);
     fTms.get();
-    logger.info("---> Stop");
+    LOGGER.info("---> Stop");
   }
 
   @AfterClass
