@@ -292,9 +292,9 @@ public class AgentController {
   }
 
   private String findJdk8Home() {
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
     if (j8Homes.size() > 1) {
-      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
+      logger.info("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
     return j8Homes.get(0).getHome();
   }

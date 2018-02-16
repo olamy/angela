@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,9 +101,9 @@ public class Distribution102Controller extends DistributionController {
 
   private Map<String, String> buildEnv() {
     Map<String, String> env = new HashMap<>();
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
     if (j8Homes.size() > 1) {
-      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
+      logger.info("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
     env.put("JAVA_HOME", j8Homes.get(0).getHome());
     logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
