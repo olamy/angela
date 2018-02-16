@@ -225,7 +225,8 @@ public class AgentController {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       tmsInstall.removeServer();
-      int numberOfTerracottaInstances = kitsInstalls.get(instanceId).numberOfTerracottaInstances();
+      TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+      int numberOfTerracottaInstances = (terracottaInstall != null ? terracottaInstall.numberOfTerracottaInstances() : 0);
       if (numberOfTerracottaInstances == 0) {
         try {
           logger.info("Uninstalling kit for " + tmsHostname);
