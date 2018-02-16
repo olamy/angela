@@ -85,7 +85,7 @@ public class Agent {
       }
 
       IgniteConfiguration cfg = new IgniteConfiguration();
-
+      cfg.setIgniteHome(new File(workDirFile, "ignite").getPath());
       cfg.setUserAttributes(Collections.singletonMap("nodename", nodeName));
       cfg.setIgniteInstanceName(nodeName);
       cfg.setPeerClassLoadingEnabled(true);
