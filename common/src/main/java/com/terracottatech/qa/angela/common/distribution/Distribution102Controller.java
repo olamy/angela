@@ -166,6 +166,7 @@ public class Distribution102Controller extends DistributionController {
       command.add("-srd");
       command.add(securityRootDirectoryPath.toString());
     }
+    command.add("-v");
     command.add("configure");
     command.add("-n");
     command.add(instanceId.toString());
