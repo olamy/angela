@@ -23,8 +23,12 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
@@ -116,13 +120,11 @@ public class Tsa implements AutoCloseable {
   }
 
   public void startAll() {
-    TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (final TcConfig tcConfig : tcConfigs) {
-      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
-        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
-        start(terracottaServer);
-      }
-    }
+    List<CompletableFuture<Void>> futures = Stream.of(topology.getTcConfigs())
+        .flatMap(tcConfig -> tcConfig.getServers().values().stream())
+        .map(server -> CompletableFuture.runAsync(() -> start(server)))
+        .collect(Collectors.toList());
+    futures.stream().reduce((f1, f2) -> CompletableFuture.allOf(f1, f2)).get().join();
   }
 
   public void start(final TerracottaServer terracottaServer) {
