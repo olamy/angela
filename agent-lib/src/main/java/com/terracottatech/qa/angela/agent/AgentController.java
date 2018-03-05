@@ -81,6 +81,7 @@ public class AgentController {
       logger.info("Kit for " + terracottaServer + " already installed");
       terracottaInstall.addServer(terracottaServer);
       installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      topology.get(tcConfigIndex).updateLogsLocation(terracottaInstall.getInstallLocation(),tcConfigIndex);
       topology.get(tcConfigIndex).writeTcConfigFile(terracottaInstall.getInstallLocation());
     } else {
       logger.info("Installing kit for " + terracottaServer);
