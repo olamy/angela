@@ -122,8 +122,7 @@ public class Tms implements AutoCloseable {
   }
 
   public RemoteFolder browse(String root) {
-    String path =
-        executeRemotely(tmsHostname, (IgniteCallable<String>) () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId));
+    String path = executeRemotely(tmsHostname, () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId));
     return new RemoteFolder(ignite, tmsHostname, path, root);
   }
 
@@ -152,8 +151,7 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT, (IgniteRunnable) () ->
-        Agent.CONTROLLER.uninstallTms(instanceId, distribution, kitInstallationPath, tmsHostname));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.uninstallTms(instanceId, distribution, kitInstallationPath, tmsHostname));
   }
 
   private void stop() {
@@ -177,8 +175,7 @@ public class Tms implements AutoCloseable {
   public void install() {
     logger.info("starting TMS on {}", tmsHostname);
 
-    executeRemotely(tmsHostname, TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, kitInstallationPath, license, securityConfig));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, kitInstallationPath, license, securityConfig));
   }
 
   public void stopTms(final String tmsHostname) {
@@ -191,19 +188,16 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("stopping on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.stopTms(instanceId));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.stopTms(instanceId));
   }
 
   public TerracottaManagementServerState getTmsState(final String tmsHostname) {
-    return executeRemotely(tmsHostname, () ->
-        Agent.CONTROLLER.getTerracottaManagementServerState(instanceId));
+    return executeRemotely(tmsHostname, () -> Agent.CONTROLLER.getTerracottaManagementServerState(instanceId));
   }
 
   public void start() {
     logger.info("starting TMS on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.startTms(instanceId));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.startTms(instanceId));
   }
 
 }

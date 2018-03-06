@@ -12,6 +12,9 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -28,7 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class InstallTest {
 
   @Test
-  public void testLocallInstall() throws Exception {
+  public void testLocalInstall() throws Exception {
     Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
@@ -40,6 +43,46 @@ public class InstallTest {
       tsa.licenseAll();
     }
   }
+
+  @Test
+  public void testStopStalledServer() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap-consistent.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+
+      TerracottaServer server = topology.get(0).getTerracottaServer(0);
+      tsa.create(server);
+
+      assertThat(tsa.getState(server), is(STARTING));
+
+      tsa.stop(server);
+      assertThat(tsa.getState(server), is(STOPPED));
+    }
+  }
+
+  @Test
+  public void testStartCreatedServer() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+
+      TerracottaServer server = topology.get(0).getTerracottaServer(0);
+      tsa.create(server);
+      tsa.start(server);
+      assertThat(tsa.getState(server), is(STARTED_AS_ACTIVE));
+    }
+  }
+
 
   @Test
   public void testStopPassive() throws Exception {
