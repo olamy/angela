@@ -16,7 +16,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <terracotta.version>10.2.0.0.365</terracotta.version>
+    <terracotta.version>10.2.0.0.475</terracotta.version>
     <java.build.version>1.8</java.build.version>
   </properties>
 

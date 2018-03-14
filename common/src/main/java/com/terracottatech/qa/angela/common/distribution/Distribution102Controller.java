@@ -4,7 +4,6 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.util.JDK;
-import com.terracottatech.qa.angela.common.util.TerracottaManagementServerLogOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,30 +25,39 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
-import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
+import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
+import static com.terracottatech.qa.angela.common.TerracottaManagementServerState.STARTED;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import static java.lang.Integer.parseInt;
+import static java.util.regex.Pattern.compile;
+import static java.util.regex.Pattern.quote;
 
 /**
  * @author Aurelien Broszniowski
  */
 
 public class Distribution102Controller extends DistributionController {
+
+  private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
+  private final boolean tmsFullLogs = Boolean.getBoolean("angela.tms.log.full");
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
@@ -61,12 +69,24 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, final File installLocation) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation) {
     Map<String, String> env = buildEnv();
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
-    ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream(serverSymbolicName, stateRef);
+    AtomicInteger javaPid = new AtomicInteger(-1);
 
+    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream.triggerOn(
+        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> stateRef.set(STARTED_AS_ACTIVE)
+    ).andTriggerOn(
+        compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"), mr -> stateRef.set(STARTED_AS_PASSIVE)
+    ).andTriggerOn(
+        compile("^.*PID is (\\d+).*$"), mr -> {
+          javaPid.set(parseInt(mr.group(1)));
+          stateRef.compareAndSet(STOPPED, STARTING);
+        }
+    ).andTriggerOn(
+        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + mr.group())
+    );
     ProcessExecutor executor = new ProcessExecutor()
         .command(startCommand(serverSymbolicName, topology, installLocation))
         .directory(installLocation)
@@ -91,12 +111,15 @@ public class Distribution102Controller extends DistributionController {
       throw new RuntimeException("Can not start Terracotta server process " + serverSymbolicName, e);
     }
 
-
-    serverLogOutputStream.waitForStartedState(startedProcess);
-
+    while (javaPid.get() == -1) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
     int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
-    int javaProcessPid = serverLogOutputStream.getPid();
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
+    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
   }
 
   private Map<String, String> buildEnv() {
@@ -216,8 +239,8 @@ public class Distribution102Controller extends DistributionController {
                                    .substring(0, tcConfig.getPath()
                                                      .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
         String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
-            replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName)).
-            replaceAll(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
+            replaceAll(quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName)).
+            replaceAll(quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
         FileUtils.write(new File(modifiedTcConfigPath), modifiedConfig);
       } catch (IOException e) {
         throw new RuntimeException("Error when modifying tc config", e);
@@ -259,15 +282,22 @@ public class Distribution102Controller extends DistributionController {
     Map<String, String> env = buildEnv();
 
     AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
-    ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
-    TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
+    AtomicInteger javaPid = new AtomicInteger(-1);
 
+    ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
+    TriggeringOutputStream outputStream = TriggeringOutputStream.triggerOn(
+        compile("^.*\\Qstarted on port\\E.*$"), mr -> stateRef.set(TerracottaManagementServerState.STARTED)
+    ).andTriggerOn(
+        compile("^.*\\QStarting TmsApplication\\E.*with PID (\\d+).*$"), mr -> javaPid.set(parseInt(mr.group(1)))
+    ).andTriggerOn(
+        tmsFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[TMS] " + mr.group())
+    );
     ProcessExecutor executor = new ProcessExecutor()
         .command(startTMSCommand(installLocation))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
-        .redirectOutput(terracottaManagementServerLogOutputStream);
+        .redirectOutput(outputStream);
     StartedProcess startedProcess;
     try {
       startedProcess = executor.start();
@@ -286,10 +316,15 @@ public class Distribution102Controller extends DistributionController {
       throw new RuntimeException("Can not start Terracotta server process " + tmsSymbolicName, e);
     }
 
-    terracottaManagementServerLogOutputStream.waitForStartedState(startedProcess);
-
+    while (javaPid.get() == -1 || !TerracottaManagementServerState.STARTED.equals(stateRef.get())) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
     int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
-    int javaProcessPid = terracottaManagementServerLogOutputStream.getPid();
+    int javaProcessPid = javaPid.get();
     return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
   }
 

@@ -25,7 +25,7 @@ public abstract class DistributionController {
     this.topology = topology;
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, File installLocation);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation);
 

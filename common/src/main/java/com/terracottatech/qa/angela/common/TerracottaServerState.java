@@ -6,6 +6,7 @@ package com.terracottatech.qa.angela.common;
 public enum TerracottaServerState {
   NOT_INSTALLED,
   STOPPED,
+  STARTING,
   STARTED_AS_ACTIVE,
   STARTED_AS_PASSIVE,
   PAUSED,

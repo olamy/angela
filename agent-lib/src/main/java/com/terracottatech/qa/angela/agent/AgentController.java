@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -247,16 +248,20 @@ public class AgentController {
     }
   }
 
-  public void start(final InstanceId instanceId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
-        .getTerracottaServerInstance(terracottaServer);
-    serverInstance.start();
+  public TerracottaServerInstance create(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
+    serverInstance.create();
+    return serverInstance;
   }
 
   public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
-        .getTerracottaServerInstance(terracottaServer);
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.stop();
+  }
+
+  public void waitForState(final InstanceId instanceId, final TerracottaServer terracottaServer, Set<TerracottaServerState> wanted) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
+    serverInstance.waitForState(wanted::contains);
   }
 
   public TerracottaServerState getTerracottaServerState(final InstanceId instanceId, final TerracottaServer terracottaServer) {
