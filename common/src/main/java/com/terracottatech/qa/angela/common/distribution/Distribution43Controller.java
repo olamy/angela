@@ -10,7 +10,6 @@ import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
@@ -20,29 +19,34 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
-import com.terracottatech.qa.angela.common.util.ServerLogOutputStream;
-import com.terracottatech.qa.angela.common.util.TerracottaManagementServerLogOutputStream;
+import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import static java.util.regex.Pattern.compile;
 
 /**
  * @author Aurelien Broszniowski
  */
 
 public class Distribution43Controller extends DistributionController {
+
+  private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
+  private final boolean tmsFullLogs = Boolean.getBoolean("angela.tms.log.full");
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution43Controller.class);
   public static final long L2_STOP_TIMEOUT = 60000L;
@@ -52,9 +56,20 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, final File installLocation) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
-    ServerLogOutputStream serverLogOutputStream = new ServerLogOutputStream(serverSymbolicName, stateRef);
+    AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
+
+    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream.triggerOn(
+        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> tempStateRef.set(STARTED_AS_ACTIVE)
+    ).andTriggerOn(
+        compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"), mr -> tempStateRef.set(STARTED_AS_PASSIVE)
+    ).andTriggerOn(
+        compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
+    ).andTriggerOn(
+        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName
+            .getSymbolicName() + "] " + mr.group())
+    );
 
     ProcessExecutor executor = new ProcessExecutor()
         .command(startCommand(serverSymbolicName, topology, installLocation))
@@ -79,9 +94,6 @@ public class Distribution43Controller extends DistributionController {
     } catch (IOException e) {
       throw new RuntimeException("Can not start Terracotta server process " + serverSymbolicName, e);
     }
-
-
-    serverLogOutputStream.waitForStartedState(startedProcess);
 
     int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
     return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid);
@@ -165,7 +177,7 @@ public class Distribution43Controller extends DistributionController {
     if (version.getMajor() == 4 || version.getMajor() == 5 || version.getMajor() == 10) {
       if (distribution.getPackageType() == KIT) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" + File.separator + "stop-tc-server")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
 //      } else if (distribution.getPackageType() == SAG_INSTALLER) {
 //        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
@@ -238,12 +250,12 @@ public class Distribution43Controller extends DistributionController {
     if (version.getMajor() == 4 || version.getMajor() == 5 || version.getMajor() == 10) {
       if (distribution.getPackageType() == KIT) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
         StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
                                              + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server")
-            .append(os.getShellExtension());
+            .append(OS.INSTANCE.getShellExtension());
         return sb.toString();
       }
     }
@@ -253,90 +265,13 @@ public class Distribution43Controller extends DistributionController {
 
   @Override
   public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation) {
-    Map<String, String> env = buildEnv();
-
-    AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
-    ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
-    TerracottaManagementServerLogOutputStream terracottaManagementServerLogOutputStream = new TerracottaManagementServerLogOutputStream(stateRef);
-
-    ProcessExecutor executor = new ProcessExecutor()
-        .command(startTMSCommand(installLocation))
-        .directory(installLocation)
-        .environment(env)
-        .redirectError(System.err)
-        .redirectOutput(terracottaManagementServerLogOutputStream);
-    StartedProcess startedProcess;
-    try {
-      startedProcess = executor.start();
-      // spawn a thread that resets stateRef to STOPPED when the TC server process dies
-      Thread processWatcher = new Thread(() -> {
-        try {
-          startedProcess.getFuture().get();
-          stateRef.set(TerracottaManagementServerState.STOPPED);
-        } catch (InterruptedException | ExecutionException e) {
-          throw new RuntimeException(e);
-        }
-      });
-      processWatcher.setDaemon(true);
-      processWatcher.start();
-    } catch (IOException e) {
-      throw new RuntimeException("Can not start Terracotta server process " + tmsSymbolicName, e);
-    }
-
-    terracottaManagementServerLogOutputStream.waitForStartedState(startedProcess);
-
-    int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
-    int javaProcessPid = terracottaManagementServerLogOutputStream.getPid();
-    return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
+    throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
   }
 
   @Override
   public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess) {
-    int[] pids = terracottaServerInstanceProcess.getPids();
-    logger.info("Destroying TMS process");
-    for (int pid : pids) {
-      try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
-      } catch (Exception e) {
-        logger.warn("Could not destroy process {}", pid, e);
-      }
-    }
+    throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
   }
 
-  /**
-   * Construct the Start Command with the Version
-   *
-   * @return String[] representing the start command and its parameters
-   */
-  private String[] startTMSCommand(final File installLocation) {
-    List<String> options = new ArrayList<String>();
-    // start command
-    options.add(getStartTMSCmd(installLocation));
 
-    StringBuilder sb = new StringBuilder();
-    for (String option : options) {
-      sb.append(option).append(" ");
-    }
-    logger.info(" Start command = {}", sb.toString());
-
-    return options.toArray(new String[options.size()]);
-  }
-
-  private String getStartTMSCmd(File installLocation) {
-    Version version = distribution.getVersion();
-
-    if (version.getMajor() == 4 || version.getMajor() == 5 || version.getMajor() == 10) {
-      if (distribution.getPackageType() == KIT) {
-        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "tools" + File.separator + "management" + File.separator + "bin" + File.separator + "start")
-            .append(os.getShellExtension());
-        return sb.toString();
-      } else if (distribution.getPackageType() == SAG_INSTALLER) {
-        StringBuilder sb = new StringBuilder(installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
-                                             + File.separator + "tools" + File.separator + "management" + File.separator + "bin" + File.separator + "start")
-            .append(os.getShellExtension());
-        return sb.toString();
-      }
-    }
-    throw new IllegalStateException("Can not define TMS Start Command for distribution: " + distribution);
-  }
 }

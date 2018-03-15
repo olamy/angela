@@ -41,7 +41,7 @@ public abstract class DistributionController {
 
   protected Map<String, String> buildEnv() {
     Map<String, String> env = new HashMap<>();
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
     if (j8Homes.size() > 1) {
       logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
@@ -49,8 +49,6 @@ public abstract class DistributionController {
     logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
     return env;
   }
-
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, File installLocation);
 
   public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation);
 
