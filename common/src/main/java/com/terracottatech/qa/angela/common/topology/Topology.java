@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common.topology;
 
+import com.terracottatech.qa.angela.common.distribution.Distribution43Controller;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -42,6 +43,10 @@ public class Topology {
     if (distribution.getVersion().getMajor() == 10) {
       if (distribution.getVersion().getMinor() > 0) {
         return new Distribution102Controller(distribution, this);
+      }
+    } else if (distribution.getVersion().getMajor() == 4) {
+      if (distribution.getVersion().getMinor() >= 3 ) {
+        return new Distribution43Controller(distribution, this);
       }
     }
     throw new IllegalArgumentException("Version not supported : " + distribution.getVersion());

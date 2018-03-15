@@ -31,12 +31,26 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class InstallTest {
 
   @Test
+  public void testLocallInstall4x() throws Exception {
+    Topology topology = new Topology(distribution(version("4.3.5.0.34"), PackageType.KIT, LicenseType.MAX),
+        tcConfig(version("4.3.5.0.34"), getClass().getResource("/terracotta/4/tc-config-a.xml")));
+    License license = new License(getClass().getResource("/terracotta/4/terracotta-license.key"));
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocallInstall4x")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+      tsa.startAll();
+      tsa.licenseAll();
+    }
+  }
+
+  @Test
   public void testLocalInstall() throws Exception {
     Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocallInstall")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();

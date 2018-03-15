@@ -61,9 +61,6 @@ public class Distribution102Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
-  private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
-
-
   public Distribution102Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
   }
@@ -120,17 +117,6 @@ public class Distribution102Controller extends DistributionController {
     }
     int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
     return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
-  }
-
-  private Map<String, String> buildEnv() {
-    Map<String, String> env = new HashMap<>();
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
-    if (j8Homes.size() > 1) {
-      logger.info("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
-    }
-    env.put("JAVA_HOME", j8Homes.get(0).getHome());
-    logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
-    return env;
   }
 
   @Override
@@ -194,9 +180,8 @@ public class Distribution102Controller extends DistributionController {
     command.add("-n");
     command.add(instanceId.toString());
 
-    File tmpLicenseFile = new File(location + File.separator + "license.xml");
-    licenseConfig.WriteToFile(tmpLicenseFile);
     command.add("-l");
+    File tmpLicenseFile = licenseConfig.WriteToFile(location);
     command.add(tmpLicenseFile.getAbsolutePath());
 
     File tmpConfigDir = new File(location + File.separator + "tc-configs");
