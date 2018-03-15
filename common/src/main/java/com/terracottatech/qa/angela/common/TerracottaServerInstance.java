@@ -49,7 +49,7 @@ public class TerracottaServerInstance  {
     private final int[] pids;
     private final AtomicReference<TerracottaServerState> state;
 
-    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, int... pids) {
+    public  TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, int... pids) {
       this.pids = pids;
       this.state = state;
     }

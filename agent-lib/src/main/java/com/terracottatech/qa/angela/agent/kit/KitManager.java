@@ -220,7 +220,7 @@ public class KitManager implements Serializable {
         createLocalInstallFromInstaller(license, localInstallerFilename);
       }
     }
-    File workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(localInstallPath);
+    File workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(license, localInstallPath);
     logger.info("Working install is located in {}", workingCopyFromLocalInstall);
     return workingCopyFromLocalInstall;
   }
@@ -368,13 +368,14 @@ public class KitManager implements Serializable {
     }
   }
 
-  private File createWorkingCopyFromLocalInstall(final File localInstall) {
+  private File createWorkingCopyFromLocalInstall(final License license, final File localInstall) {
     try {
       logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstall);
       File workingInstallPath = new File(workingInstall);
       boolean res = workingInstallPath.mkdirs();
       logger.info("Directories created? {}", res);
       FileUtils.copyDirectory(localInstall, workingInstallPath);
+      license.WriteToFile(workingInstallPath);
 
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
