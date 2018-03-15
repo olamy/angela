@@ -13,7 +13,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
-import com.terracottatech.qa.angela.common.util.OS;
+
 
 import java.io.File;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ public abstract class DistributionController {
   protected final Topology topology;
 
   protected final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
-  protected final OS os = new OS();
+
 
   public DistributionController(final Distribution distribution, final Topology topology) {
     this.distribution = distribution;
@@ -51,6 +51,8 @@ public abstract class DistributionController {
   }
 
   public abstract TerracottaServerInstance.TerracottaServerInstanceProcess start(final ServerSymbolicName serverSymbolicName, File installLocation);
+
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation);
 

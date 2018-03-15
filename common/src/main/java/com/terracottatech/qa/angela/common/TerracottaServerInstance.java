@@ -7,9 +7,16 @@ import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
+
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
+import static java.util.Arrays.stream;
 
 /**
  * Terracotta server instance
@@ -29,8 +36,8 @@ public class TerracottaServerInstance  {
     this.location = location;
   }
 
-  public void start() {
-    this.terracottaServerInstanceProcess = this.distributionController.start(serverSymbolicName, location);
+  public void create() {
+    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location);
   }
 
   public void stop() {
@@ -41,15 +48,25 @@ public class TerracottaServerInstance  {
     this.distributionController.configureLicense(instanceId, location, license, tcConfigs, securityRootDirectory);
   }
 
+  public void waitForState(Predicate<TerracottaServerState> condition) {
+    while (!condition.test(getTerracottaServerState())) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   public TerracottaServerState getTerracottaServerState() {
     return this.terracottaServerInstanceProcess.getState();
   }
 
   public static class TerracottaServerInstanceProcess {
-    private final int[] pids;
+    private final Number[] pids;
     private final AtomicReference<TerracottaServerState> state;
 
-    public  TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, int... pids) {
+    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, Number ... pids) {
       this.pids = pids;
       this.state = state;
     }
@@ -59,7 +76,7 @@ public class TerracottaServerInstance  {
     }
 
     public int[] getPids() {
-      return pids;
+      return stream(pids).mapToInt(Number::intValue).toArray();
     }
   }
 }

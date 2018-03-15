@@ -43,8 +43,6 @@ public class CompressionUtils implements Serializable {
 
   private static final Logger logger = LoggerFactory.getLogger(CompressionUtils.class);
 
-  private OS os = new OS();
-
   public CompressionUtils() {
   }
 
@@ -64,7 +62,7 @@ public class CompressionUtils implements Serializable {
   }
 
   private void extractTarGz(File kitInstaller, File kitDest) throws IOException, TimeoutException, InterruptedException {
-    if (os.isWindows()) {
+    if (OS.INSTANCE.isWindows()) {
       extractTarGzJava(kitInstaller, kitDest);
     } else {
       extractTarGzCmd(kitInstaller, kitDest);
@@ -149,7 +147,7 @@ public class CompressionUtils implements Serializable {
 
 
   private void extractZip(final File kitInstaller, final File kitDest) throws IOException, ArchiveException, TimeoutException, InterruptedException {
-    if (os.isWindows()) {
+    if (OS.INSTANCE.isWindows()) {
       extractZipJava(kitInstaller, kitDest);
     } else {
       extractZipCmd(kitInstaller, kitDest);

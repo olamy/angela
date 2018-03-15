@@ -16,6 +16,7 @@
   <packaging>pom</packaging>
 
   <properties>
+    <terracotta.version>10.2.0.0.475</terracotta.version>
     <java.build.version>1.8</java.build.version>
   </properties>
 
@@ -26,6 +27,7 @@
     <module>agent</module>
     <module>integration-test</module>
     <module>docs</module>
+    <module>test-utils</module>
   </modules>
 
   <dependencyManagement>
@@ -43,6 +45,11 @@
       <dependency>
         <groupId>com.terracottatech.qa</groupId>
         <artifactId>angela-agent-lib</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.terracottatech.qa</groupId>
+        <artifactId>test-utils</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -68,7 +75,7 @@
       <dependency>
         <groupId>com.terracottatech.store</groupId>
         <artifactId>terracotta-store-client</artifactId>
-        <version>10.2.0.0.224</version>
+        <version>${terracotta.version}</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>

@@ -4,12 +4,14 @@ import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
@@ -59,6 +61,7 @@ public class ClusterFactory implements AutoCloseable {
     cfg.setDiscoverySpi(spi);
     cfg.setClientMode(true);
     cfg.setPeerClassLoadingEnabled(true);
+    cfg.setGridLogger(new NullLogger());
     cfg.setIgniteInstanceName("Instance@" + instanceId);
 
     this.ignite = Ignition.start(cfg);
@@ -134,10 +137,14 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tms tms(Distribution distribution, License license, String hostname) {
+    return tms(distribution, license, hostname, null);
+  }
+
+  public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
     init(Arrays.asList(hostname));
     nodesToCleanup.add(hostname);
 
-    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution);
+    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig);
     controllers.add(tms);
     return tms;
   }

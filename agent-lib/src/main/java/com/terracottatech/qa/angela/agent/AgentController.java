@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import org.apache.commons.io.FileUtils;
@@ -34,16 +35,22 @@ import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 
 import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,7 +67,6 @@ public class AgentController {
 
   private final static Logger logger = LoggerFactory.getLogger(AgentController.class);
 
-  private final OS os = new OS();
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
@@ -76,6 +82,8 @@ public class AgentController {
       logger.info("Kit for " + terracottaServer + " already installed");
       terracottaInstall.addServer(terracottaServer);
       installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      topology.get(tcConfigIndex).updateLogsLocation(terracottaInstall.getInstallLocation(),tcConfigIndex);
+      topology.get(tcConfigIndex).writeTcConfigFile(terracottaInstall.getInstallLocation());
     } else {
       logger.info("Installing kit for " + terracottaServer);
       KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
@@ -114,7 +122,7 @@ public class AgentController {
     }
   }
 
-  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, String kitInstallationPath, License license) {
+  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, String kitInstallationPath, License license, TmsServerSecurityConfig tmsServerSecurityConfig) {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       logger.info("Kit for " + tmsHostname + " already installed");
@@ -123,8 +131,39 @@ public class AgentController {
       logger.info("Installing kit for " + tmsHostname);
       KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationPath);
       File kitDir = kitManager.installKit(license, false);
+      File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
+      enableSecurity(tmcProperties, tmsServerSecurityConfig);
 
       tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir));
+    }
+  }
+
+  private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
+    String securityRootDirectory = tmsServerSecurityConfig != null ? tmsServerSecurityConfig.getSecurityRootDirectory() : "";
+    String securityLevel = tmsServerSecurityConfig != null ? tmsServerSecurityConfig.getSecurityLevel() : "";
+
+    List<String> lines = new ArrayList<String>();
+    String line = null;
+    try (BufferedReader br = new BufferedReader(new FileReader(tmcProperties))) {
+
+      while ((line = br.readLine()) != null) {
+        if (line.startsWith("security.root.directory=")) {
+          line = line.replace("security.root.directory=", "security.root.directory=" + securityRootDirectory);
+        } else if(line.startsWith("security.level=")) {
+          line = line.replace("security.level=", "security.level=" + securityLevel);
+        }
+        lines.add(line);
+      }
+
+      try (BufferedWriter out = new BufferedWriter(new FileWriter(tmcProperties))) {
+        for(String s : lines) {
+          out.write(s);
+          out.newLine();
+        }
+        out.flush();
+      }
+    } catch (Exception ex) {
+      throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
   }
 
@@ -138,6 +177,11 @@ public class AgentController {
     TerracottaManagementServerInstance serverInstance = tmsInstalls.get(instanceId)
         .getTerracottaManagementServerInstance();
     serverInstance.stop();
+  }
+
+  public String getTmsInstallationPath(final InstanceId instanceId) {
+    TmsInstall serverInstance = tmsInstalls.get(instanceId);
+    return serverInstance.getInstallLocation().getPath();
   }
 
   public TerracottaManagementServerState getTerracottaManagementServerState(final InstanceId instanceId) {
@@ -182,7 +226,8 @@ public class AgentController {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       tmsInstall.removeServer();
-      int numberOfTerracottaInstances = kitsInstalls.get(instanceId).numberOfTerracottaInstances();
+      TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+      int numberOfTerracottaInstances = (terracottaInstall != null ? terracottaInstall.numberOfTerracottaInstances() : 0);
       if (numberOfTerracottaInstances == 0) {
         try {
           logger.info("Uninstalling kit for " + tmsHostname);
@@ -203,16 +248,20 @@ public class AgentController {
     }
   }
 
-  public void start(final InstanceId instanceId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
-        .getTerracottaServerInstance(terracottaServer);
-    serverInstance.start();
+  public TerracottaServerInstance create(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
+    serverInstance.create();
+    return serverInstance;
   }
 
   public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
-        .getTerracottaServerInstance(terracottaServer);
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.stop();
+  }
+
+  public void waitForState(final InstanceId instanceId, final TerracottaServer terracottaServer, Set<TerracottaServerState> wanted) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
+    serverInstance.waitForState(wanted::contains);
   }
 
   public TerracottaServerState getTerracottaServerState(final InstanceId instanceId, final TerracottaServer terracottaServer) {
@@ -249,9 +298,9 @@ public class AgentController {
   }
 
   private String findJdk8Home() {
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8", JavaLocationResolver.Vendor.ORACLE);
+    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
     if (j8Homes.size() > 1) {
-      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
+      logger.info("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
     }
     return j8Homes.get(0).getHome();
   }
@@ -262,7 +311,7 @@ public class AgentController {
 
       final AtomicBoolean started = new AtomicBoolean(false);
       List<String> cmdLine;
-      if (os.isWindows()) {
+      if (OS.INSTANCE.isWindows()) {
         cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
             .getName());
       } else {

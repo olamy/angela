@@ -6,6 +6,7 @@ import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -20,9 +21,9 @@ public class MultistripesTest {
 
   @Test
   public void test2Stripes() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
-        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes")) {

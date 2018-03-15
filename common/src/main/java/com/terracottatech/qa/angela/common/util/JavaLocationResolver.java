@@ -7,8 +7,13 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -18,6 +23,8 @@ import java.util.stream.Collectors;
  */
 
 public class JavaLocationResolver {
+
+  public static final EnumSet<Vendor> DEFAULT_ALLOWED_VENDORS = EnumSet.of(Vendor.ORACLE, Vendor.SUN, Vendor.OPENJDK);
 
   public enum Vendor {
     SUN("sun"),
@@ -38,29 +45,51 @@ public class JavaLocationResolver {
   }
 
   private final List<JDK> jdks;
+  private final EnumSet<Vendor> allowedVendors;
+
+  public JavaLocationResolver(URL url, EnumSet<Vendor> allowedVendors) {
+    this.allowedVendors = allowedVendors;
+    Objects.requireNonNull(url, "Toolchains URL must not be null");
+    jdks = findJDKs(url);
+  }
 
   public JavaLocationResolver() {
+    this(DEFAULT_ALLOWED_VENDORS);
+  }
+
+  public JavaLocationResolver(EnumSet<Vendor> allowedVendors) {
+    this.allowedVendors = allowedVendors;
     jdks = findJDKs();
   }
 
-  public List<JDK> resolveJavaLocation() {
-    return resolveJavaLocation(null, null);
+   List<JDK> resolveJavaLocation() {
+    return resolveJavaLocation(null, allowedVendors);
   }
 
   public List<JDK> resolveJavaLocation(String version) {
-    return resolveJavaLocation(version, null);
+    return resolveJavaLocation(version, allowedVendors);
   }
 
-  public List<JDK> resolveJavaLocation(String version, Vendor vendor) {
+   List<JDK> resolveJavaLocation(String version, EnumSet<Vendor> vendors) {
     List<JDK> list = jdks.stream()
         .filter(JDK::isValid)
         .filter(jdk -> version == null || version.equals(jdk.getVersion()))
-        .filter(jdk -> vendor == null || vendor.getName().equalsIgnoreCase(jdk.getVendor()))
+        .filter(jdk -> {
+          if (vendors == null) {
+            return true;
+          }
+          for (Vendor vendor : vendors) {
+            if (vendor.getName().equalsIgnoreCase(jdk.getVendor())) {
+              return true;
+            }
+          }
+          return false;
+        })
         .collect(Collectors.toList());
     if (list.isEmpty()) {
       String message = "Missing JDK with version [" + version + "]";
-      if (vendor != null) {
-        message += " and vendor [" + vendor.getName() + "]";
+      if (vendors != null) {
+        message += " and one vendor in [" + vendors + "]";
       }
       message += " config in toolchains.xml. Available JDKs: " + jdks;
       throw new RuntimeException(message);
@@ -69,20 +98,24 @@ public class JavaLocationResolver {
   }
 
   private static List<JDK> findJDKs() {
-    List<JDK> jdks = findJDKs(System.getProperty("user.home") + File.separator + ".m2" + File.separator + "toolchains.xml");
-    if (jdks.isEmpty()) {
-      jdks = findJDKs("/data/jenkins-slave" + File.separator + ".m2" + File.separator + "toolchains.xml");
+    try {
+      List<JDK> jdks = findJDKs(new URL("file://" + System.getProperty("user.home") + File.separator + ".m2" + File.separator + "toolchains.xml"));
+      if (jdks.isEmpty()) {
+        jdks = findJDKs(new URL("file:///data/jenkins-slave" + File.separator + ".m2" + File.separator + "toolchains.xml"));
+      }
+      return jdks;
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
     }
-    return jdks;
   }
 
-  private static List<JDK> findJDKs(String toolchainsLocation) {
-    try {
+  private static List<JDK> findJDKs(URL toolchainsLocation) {
+    try (InputStream is = toolchainsLocation.openStream()) {
       List<JDK> jdks = new ArrayList<>();
 
       DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
       DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-      Document doc = dBuilder.parse(new File(toolchainsLocation));
+      Document doc = dBuilder.parse(is);
       doc.getDocumentElement().normalize();
 
 

@@ -3,12 +3,14 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
+import com.terracottatech.qa.angela.client.Tms;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -18,6 +20,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -52,8 +56,8 @@ public class BrowseTest {
 
   @Test
   public void testTsa() throws Exception {
-    Topology topology = new Topology(distribution(version("10.2.0.0.224"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.2.0.0.224"), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTsa")) {
@@ -69,6 +73,19 @@ public class BrowseTest {
         String line = br.readLine();
         assertThat(line.contains("TCServerMain - Terracotta"), is(true));
       }
+    }
+  }
+
+  @Test
+  public void testTms() throws Exception {
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTms")) {
+      Tms tms = factory.tms(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), license, "localhost");
+      tms.install();
+      tms.start();
+      tms.browse("tools/management/logs").downloadTo(new File("target/logs-tmc"));
+      assertThat(Files.lines(Paths.get("target/logs-tmc/tmc.log"))
+                      .anyMatch((l) -> l.contains("Starting TmsApplication")), is(true));
     }
   }
 

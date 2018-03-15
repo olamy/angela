@@ -1,10 +1,15 @@
 package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.http.HttpUtils;
+import com.terracottatech.qa.angela.common.http.HttpsUtils;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import io.restassured.path.json.JsonPath;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -20,9 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.terracottatech.qa.angela.common.http.HttpUtils.sendGetRequest;
-import static com.terracottatech.qa.angela.common.http.HttpUtils.sendPostRequest;
-
 public class Tms implements AutoCloseable {
 
   private final static Logger logger = LoggerFactory.getLogger(Tsa.class);
@@ -34,9 +36,9 @@ public class Tms implements AutoCloseable {
   private final Ignite ignite;
   private final License license;
   private final InstanceId instanceId;
+  private final TmsServerSecurityConfig securityConfig;
 
-
-  public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution) {
+  public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution, TmsServerSecurityConfig securityConfig) {
     this.distribution = distribution;
     if (license == null) {
       throw new IllegalArgumentException("TMS requires a license.");
@@ -46,13 +48,13 @@ public class Tms implements AutoCloseable {
     this.ignite = ignite;
     this.tmsHostname = hostname;
     this.kitInstallationPath = System.getProperty("kitInstallationPath");
-
-
+    this.securityConfig = securityConfig;
   }
 
   /**
    *
-   * Create a TMS connection to the cluster
+   * This method connects to the TMS via HTTP (insecurely) REST calls.  It also creates a TMS connection to the cluster.
+   * If cluster security is enabled it will connect to the cluster via SSL/TLS, otherwise if connects via plain text.
    *
    * @param uri of the cluster to connect to
    * @return connectionName
@@ -68,7 +70,7 @@ public class Tms implements AutoCloseable {
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("Could not encode terracotta connection url", e);
     }
-    String response = sendGetRequest(url);
+    String response = HttpUtils.sendGetRequest(url);
     logger.info("tms probe result :" + response.toString());
 
     // create connection
@@ -76,12 +78,52 @@ public class Tms implements AutoCloseable {
     Map<String, String> headers =  new HashMap<>();
     headers.put("Accept", "application/json");
     headers.put("content-type", "application/json");
-    response = sendPostRequest(url, response, headers);
+    response = HttpUtils.sendPostRequest(url, response, headers);
     logger.info("tms connect result :" + response.toString());
 
     connectionName = JsonPath.from(response).get("config.connectionName");
 
     return connectionName;
+  }
+
+  /**
+   *
+   * This method connects to the TMS via HTTPS (securely) REST calls.  It also creates a TMS connection to the cluster.
+   * If cluster security is enabled it will connect to the cluster via SSL/TLS, otherwise if connects via plain text.
+   *
+   * @param uri of the cluster to connect to
+   * @return connectionName
+   */
+  public String connectToCluster(URI uri, TmsClientSecurityConfig tmsClientSecurityConfig) throws Exception {
+    String connectionName;
+    logger.info("connecting TMS to {}", uri.toString());
+    // probe
+    String url;
+    try {
+      url = "https://" + tmsHostname + ":9480/api/connections/probe/" +
+          URLEncoder.encode(uri.toString(), "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException("Could not encode terracotta connection url", e);
+    }
+    String response = HttpsUtils.sendGetRequest(url, tmsClientSecurityConfig);
+    logger.info("tms probe result :" + response.toString());
+
+    // create connection
+    url = "https://" + tmsHostname + ":9480/api/connections";
+    Map<String, String> headers =  new HashMap<>();
+    headers.put("Accept", "application/json");
+    headers.put("content-type", "application/json");
+    response = HttpsUtils.sendPostRequest(url, response, headers, tmsClientSecurityConfig);
+    logger.info("tms connect result :" + response.toString());
+
+    connectionName = JsonPath.from(response).get("config.connectionName");
+
+    return connectionName;
+  }
+
+  public RemoteFolder browse(String root) {
+    String path = executeRemotely(tmsHostname, () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId));
+    return new RemoteFolder(ignite, tmsHostname, path, root);
   }
 
   @Override
@@ -109,8 +151,7 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT, (IgniteRunnable) () ->
-        Agent.CONTROLLER.uninstallTms(instanceId, distribution, kitInstallationPath, tmsHostname));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.uninstallTms(instanceId, distribution, kitInstallationPath, tmsHostname));
   }
 
   private void stop() {
@@ -133,8 +174,8 @@ public class Tms implements AutoCloseable {
 
   public void install() {
     logger.info("starting TMS on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, kitInstallationPath, license));
+
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, kitInstallationPath, license, securityConfig));
   }
 
   public void stopTms(final String tmsHostname) {
@@ -147,19 +188,16 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("stopping on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.stopTms(instanceId));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.stopTms(instanceId));
   }
 
   public TerracottaManagementServerState getTmsState(final String tmsHostname) {
-    return executeRemotely(tmsHostname, () ->
-        Agent.CONTROLLER.getTerracottaManagementServerState(instanceId));
+    return executeRemotely(tmsHostname, () -> Agent.CONTROLLER.getTerracottaManagementServerState(instanceId));
   }
 
   public void start() {
     logger.info("starting TMS on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT,
-        (IgniteRunnable) () -> Agent.CONTROLLER.startTms(instanceId));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.startTms(instanceId));
   }
 
 }
