@@ -305,19 +305,26 @@ public class AgentController {
     return j8Homes.get(0).getHome();
   }
 
-  public int spawnClient(InstanceId instanceId, String subNodeName) {
+  public int spawnClient(InstanceId instanceId, String subNodeName, boolean localhostOnly) {
     try {
       String j8Home = findJdk8Home();
 
       final AtomicBoolean started = new AtomicBoolean(false);
-      List<String> cmdLine;
+      List<String> cmdLine = new ArrayList<>();
       if (OS.INSTANCE.isWindows()) {
-        cmdLine = Arrays.asList(j8Home + "\\bin\\java.exe", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
-            .getName());
+        cmdLine.add(j8Home + "\\bin\\java.exe");
       } else {
-        cmdLine = Arrays.asList(j8Home + "/bin/java", "-classpath", buildClasspath(instanceId, subNodeName), "-Dtc.qa.nodeName=" + subNodeName, "-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR, Agent.class
-            .getName());
+        cmdLine.add(j8Home + "/bin/java");
       }
+      cmdLine.add("-classpath");
+      cmdLine.add(buildClasspath(instanceId, subNodeName));
+      if (localhostOnly) {
+        cmdLine.add("-Dtc.qa.directjoin=localhost:40000");
+      }
+      cmdLine.add("-Dtc.qa.nodeName=" + subNodeName);
+      cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
+      cmdLine.add(Agent.class.getName());
+
       logger.info("Spawning client {}", cmdLine);
       ProcessExecutor processExecutor = new ProcessExecutor().command(cmdLine)
           .redirectOutput(new LogOutputStream() {

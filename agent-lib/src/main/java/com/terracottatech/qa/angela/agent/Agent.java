@@ -19,12 +19,16 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Ludovic Orban
@@ -54,7 +58,16 @@ public class Agent {
 
   public static void main(String[] args) throws Exception {
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
-    final Node node = new Node(nodeName);
+    String directjoin = System.getProperty("tc.qa.directjoin");
+
+    final Node node;
+    if (directjoin != null) {
+      String[] split = directjoin.split(",");
+      node = new Node(nodeName, Arrays.asList(split));
+    } else {
+      node = new Node(nodeName);
+    }
+
     node.init();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
@@ -66,10 +79,16 @@ public class Agent {
   public static class Node {
 
     private final String nodeName;
+    private final List<String> nodesToJoin;
     private volatile Ignite ignite;
 
     public Node(String nodeName) {
+      this(nodeName, null);
+    }
+
+    public Node(String nodeName, List<String> nodesToJoin) {
       this.nodeName = nodeName;
+      this.nodesToJoin = nodesToJoin;
     }
 
     public void init() {
@@ -91,6 +110,25 @@ public class Agent {
       cfg.setIgniteInstanceName(nodeName);
       cfg.setGridLogger(new NullLogger());
       cfg.setPeerClassLoadingEnabled(true);
+
+      if (nodesToJoin != null) {
+        LOGGER.info("Joining isolated cluster : " + nodesToJoin);
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        spi.setLocalPort(40000);
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+        ipFinder.setShared(true);
+        ipFinder.setAddresses(nodesToJoin);
+        spi.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(spi);
+      } else if (nodeName.equals("localhost")) {
+        LOGGER.info("Isolating cluster to localhost");
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(Collections.singleton("localhost")));
+        spi.setLocalPort(40000);
+        cfg.setDiscoverySpi(spi);
+      } else {
+        LOGGER.info("Joining multicast cluster");
+      }
 
       ignite = Ignition.start(cfg);
       CONTROLLER = new AgentController(ignite);
