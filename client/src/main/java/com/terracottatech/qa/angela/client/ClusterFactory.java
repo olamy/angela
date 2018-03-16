@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
   private final static Logger logger = LoggerFactory.getLogger(ClusterFactory.class);
@@ -34,6 +35,7 @@ public class ClusterFactory implements AutoCloseable {
   private final List<AutoCloseable> controllers = new ArrayList<>();
   private final Set<String> nodesToCleanup = new HashSet<>();
   private Ignite ignite;
+  private boolean localhostOnly;
   private Agent.Node localhostAgent;
   private Optional<URI> tsaURI;
 
@@ -50,11 +52,14 @@ public class ClusterFactory implements AutoCloseable {
       logger.info("spawning localhost agent");
       localhostAgent = new Agent.Node("localhost");
       localhostAgent.init();
+      localhostOnly = true;
     }
 
     TcpDiscoverySpi spi = new TcpDiscoverySpi();
     TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-    ipFinder.setAddresses(targetServerNames);
+    if (localhostOnly) {
+      ipFinder.setAddresses(targetServerNames.stream().map(targetServerName -> targetServerName + ":40000").collect(Collectors.toList()));
+    }
     spi.setIpFinder(ipFinder);
 
     IgniteConfiguration cfg = new IgniteConfiguration();
@@ -104,7 +109,7 @@ public class ClusterFactory implements AutoCloseable {
     init(Collections.singleton(nodeName));
     nodesToCleanup.add(nodeName);
 
-    Client client = new Client(ignite, instanceId, nodeName, tsaURI == null ? null : tsaURI.orElse(null));
+    Client client = new Client(ignite, instanceId, nodeName, tsaURI == null ? null : tsaURI.orElse(null), localhostOnly);
     controllers.add(client);
     return client;
   }

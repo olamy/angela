@@ -54,15 +54,17 @@ public class Client implements Closeable {
   private final Ignite ignite;
   private final String subNodeName;
   private final URI tsaUri;
+  private final boolean localhostOnly;
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, URI tsaUri) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, URI tsaUri, boolean localhostOnly) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
     this.tsaUri = tsaUri;
+    this.localhostOnly = localhostOnly;
     this.subClientPid = spawnSubClient();
   }
 
@@ -77,7 +79,7 @@ public class Client implements Closeable {
       uploadClasspath(queue);
       remoteDownloadFuture.get();
 
-      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, subNodeName));
+      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, subNodeName, localhostOnly));
       int pid = results.iterator().next();
       logger.info("client '{}' on {} started with PID {}", subNodeName, nodeName, pid);
 
