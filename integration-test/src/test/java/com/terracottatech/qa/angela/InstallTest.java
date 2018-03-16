@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
@@ -11,6 +12,8 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+
+import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -135,5 +138,14 @@ public class InstallTest {
     }
   }
 
+  @Test
+  public void testRemoteClient() throws Exception {
+    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteInstall")) {
+      try (Client client = instance.client("localhost")) {
+        Future<Void> f = client.submit((context) -> System.out.println("hello world"));
+        f.get();
+      }
+    }
+  }
 
 }
