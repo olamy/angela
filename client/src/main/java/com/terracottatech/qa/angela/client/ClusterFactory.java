@@ -11,7 +11,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
@@ -59,6 +59,8 @@ public class ClusterFactory implements AutoCloseable {
     TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
     if (localhostOnly) {
       ipFinder.setAddresses(targetServerNames.stream().map(targetServerName -> targetServerName + ":40000").collect(Collectors.toList()));
+    } else {
+      ipFinder.setAddresses(targetServerNames);
     }
     spi.setIpFinder(ipFinder);
 
@@ -66,7 +68,7 @@ public class ClusterFactory implements AutoCloseable {
     cfg.setDiscoverySpi(spi);
     cfg.setClientMode(true);
     cfg.setPeerClassLoadingEnabled(true);
-    cfg.setGridLogger(new NullLogger());
+    cfg.setGridLogger(new Slf4jLogger());
     cfg.setIgniteInstanceName("Instance@" + instanceId);
 
     this.ignite = Ignition.start(cfg);

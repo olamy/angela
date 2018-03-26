@@ -18,7 +18,7 @@ package com.terracottatech.qa.angela.agent;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
@@ -108,7 +108,7 @@ public class Agent {
       cfg.setIgniteHome(new File(workDirFile, "ignite").getPath());
       cfg.setUserAttributes(Collections.singletonMap("nodename", nodeName));
       cfg.setIgniteInstanceName(nodeName);
-      cfg.setGridLogger(new NullLogger());
+      cfg.setGridLogger(new Slf4jLogger());
       cfg.setPeerClassLoadingEnabled(true);
 
       if (nodesToJoin != null) {
