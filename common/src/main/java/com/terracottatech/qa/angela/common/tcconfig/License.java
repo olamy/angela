@@ -29,7 +29,7 @@ public class License implements Serializable {
     }
   }
 
-  public File WriteToFile(File dest) {
+  public File writeToFile(File dest) {
     File licenseFile = new File(dest, this.filename);
     try {
       Files.write(licenseFile.toPath(), licenseContent.getBytes());
@@ -37,5 +37,9 @@ public class License implements Serializable {
       throw new RuntimeException(ioe);
     }
     return licenseFile;
+  }
+
+  public String getFilename() {
+    return filename;
   }
 }

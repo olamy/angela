@@ -35,8 +35,8 @@ public class InstallTest {
 
   @Test
   public void testLocalInstall4x() throws Exception {
-    Topology topology = new Topology(distribution(version("4.3.5.0.34"), PackageType.KIT, LicenseType.MAX),
-        tcConfig(version("4.3.5.0.34"), getClass().getResource("/terracotta/4/tc-config-a.xml")));
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
+        tcConfig(version(Versions.TERRACOTTA_VERSION_4X), getClass().getResource("/terracotta/4/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/4/terracotta-license.key"));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall4x")) {
@@ -92,7 +92,7 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
 
@@ -113,7 +113,7 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
 
@@ -132,7 +132,7 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopPassive")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
@@ -164,7 +164,7 @@ public class InstallTest {
 
   @Test
   public void testRemoteClient() throws Exception {
-    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteInstall")) {
+    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteClient")) {
       try (Client client = instance.client("localhost")) {
         Future<Void> f = client.submit((context) -> System.out.println("hello world"));
         f.get();
