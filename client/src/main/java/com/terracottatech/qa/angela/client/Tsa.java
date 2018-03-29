@@ -218,6 +218,10 @@ public class Tsa implements AutoCloseable {
     }
   }
 
+  public Collection<TerracottaServer> getServers() {
+    return topology.getServers().values();
+  }
+
   public Collection<TerracottaServer> getActives() {
     Collection<TerracottaServer> result = new ArrayList<>();
     for (TerracottaServer terracottaServer : topology.getServers().values()) {

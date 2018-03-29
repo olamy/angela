@@ -203,7 +203,7 @@ public class AgentController {
       TmsInstall tmsInstall = tmsInstalls.get(instanceId);
       if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null)) {
         try {
-          logger.info("Uninstalling kit for " + topology);
+          logger.info("Uninstalling kit for {}", terracottaServer);
           KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
           // TODO : get log files
 
