@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -44,6 +45,7 @@ public class TmsTest {
   private static String connectionName;
   private static ClusterFactory factory;
   private static final String TMS_HOSTNAME = "localhost";
+  private static URI tsaUri;
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -57,10 +59,11 @@ public class TmsTest {
     tsa.installAll();
     tsa.startAll();
     tsa.licenseAll();
+    tsaUri = tsa.uri();
     Tms tms = factory.tms(distribution, license, TMS_HOSTNAME);
     tms.install();
     tms.start();
-    connectionName = tms.connectToCluster(tsa.uri());
+    connectionName = tms.connectToCluster(tsaUri);
   }
 
   @Test
@@ -70,9 +73,10 @@ public class TmsTest {
 
   @Test
   public void testTmsConnection() throws Exception {
+    URI tsaUri = TmsTest.tsaUri;
     Client client = factory.client("localhost");
     ClientJob clientJob = (context) -> {
-      try (DatasetManager datasetManager = DatasetManager.clustered(context.tsaURI()).build()) {
+      try (DatasetManager datasetManager = DatasetManager.clustered(tsaUri).build()) {
         DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
             .offheap("primary-server-resource");
         boolean datasetCreated = datasetManager.newDataset("MyDataset", Type.STRING, builder.build());

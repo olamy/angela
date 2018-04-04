@@ -110,6 +110,7 @@ public class Agent {
       cfg.setIgniteInstanceName(nodeName);
       cfg.setGridLogger(new Slf4jLogger());
       cfg.setPeerClassLoadingEnabled(true);
+      cfg.setMetricsLogFrequency(0);
 
       if (nodesToJoin != null) {
         LOGGER.info("Joining isolated cluster : " + nodesToJoin);
