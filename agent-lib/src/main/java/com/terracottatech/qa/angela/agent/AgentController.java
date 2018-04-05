@@ -479,9 +479,12 @@ public class AgentController {
   }
 
   private void zipFolder(ZipOutputStream zos, String parent, File folder) throws IOException {
+    if (!folder.canRead()) {
+      throw new RuntimeException("Folder does not exist or is not readable : " + folder);
+    }
     File[] files = folder.listFiles();
     if (files == null) {
-      return;
+      throw new RuntimeException("Error listing folder " + folder);
     }
     for (File file : files) {
       if (file.isDirectory()) {
