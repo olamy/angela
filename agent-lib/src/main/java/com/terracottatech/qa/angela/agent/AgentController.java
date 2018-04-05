@@ -403,15 +403,16 @@ public class AgentController {
           file.getParentFile().mkdirs();
           try (FileOutputStream fos = new FileOutputStream(file)) {
             while (true) {
-              byte[] buffer = (byte[])queue.take();
-              fos.write(buffer);
-              readFileLength += buffer.length;
               if (readFileLength == fileMetadata.getLength()) {
                 break;
               }
               if (readFileLength > fileMetadata.getLength()) {
                 throw new RuntimeException("Error creating client classpath on " + subNodeName);
               }
+
+              byte[] buffer = (byte[])queue.take();
+              fos.write(buffer);
+              readFileLength += buffer.length;
             }
           }
           logger.debug("downloaded " + fileMetadata);
