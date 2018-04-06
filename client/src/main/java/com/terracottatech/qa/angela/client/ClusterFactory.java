@@ -111,6 +111,10 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Client client(String nodeName) {
+    if (!"localhost".equals(nodeName) && localhostOnly) {
+      throw new IllegalArgumentException("localhost agent started, connection to remote agent '" + nodeName + "' is not possible");
+    }
+
     InstanceId instanceId = init(Collections.singleton(nodeName));
 
     Client client = new Client(ignite, instanceId, nodeName, localhostOnly);
