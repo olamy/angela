@@ -7,10 +7,12 @@ import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurity
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -77,11 +79,16 @@ public class ClusterFactory implements AutoCloseable {
     cfg.setDiscoverySpi(spi);
     cfg.setClientMode(true);
     cfg.setPeerClassLoadingEnabled(true);
-    cfg.setGridLogger(new Slf4jLogger());
+    boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
+    cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
     cfg.setIgniteInstanceName("Instance@" + instanceId);
     cfg.setMetricsLogFrequency(0);
 
-    this.ignite = Ignition.start(cfg);
+    try {
+      this.ignite = Ignition.start(cfg);
+    } catch (IgniteException e) {
+      throw new RuntimeException("Cannot start angela; error connecting to agents : " + targetServerNames, e);
+    }
 
     return instanceId;
   }

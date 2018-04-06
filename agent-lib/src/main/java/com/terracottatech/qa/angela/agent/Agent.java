@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -49,6 +50,7 @@ public class Agent {
   public static final String ROOT_DIR;
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
   public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
+  public static final String IGNITE_LOGGING_SYSPROP_NAME = "tc.qa.angela.logging";
 
   static {
     final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
@@ -120,7 +122,8 @@ public class Agent {
       userAttributes.put("nodename", nodeName);
       cfg.setUserAttributes(userAttributes);
       cfg.setIgniteInstanceName(nodeName);
-      cfg.setGridLogger(new Slf4jLogger());
+      boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING_SYSPROP_NAME);
+      cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setPeerClassLoadingEnabled(true);
       cfg.setMetricsLogFrequency(0);
 
@@ -145,7 +148,11 @@ public class Agent {
         LOGGER.info("Joining multicast cluster");
       }
 
-      ignite = Ignition.start(cfg);
+      try {
+        ignite = Ignition.start(cfg);
+      } catch (IgniteException e) {
+        throw new RuntimeException("Error starting agent " + nodeName, e);
+      }
 
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
       IgniteFuture<Collection<Object>> future = ignite.compute(location).broadcastAsync((IgniteCallable<Object>) () -> 0);
