@@ -15,6 +15,7 @@
  */
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.util.AngelaVersion;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -33,7 +34,9 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -112,7 +115,10 @@ public class Agent {
 
       IgniteConfiguration cfg = new IgniteConfiguration();
       cfg.setIgniteHome(new File(workDirFile, "ignite").getPath());
-      cfg.setUserAttributes(Collections.singletonMap("nodename", nodeName));
+      Map<String, String> userAttributes = new HashMap<>();
+      userAttributes.put("angela.version", AngelaVersion.getAngelaVersion());
+      userAttributes.put("nodename", nodeName);
+      cfg.setUserAttributes(userAttributes);
       cfg.setIgniteInstanceName(nodeName);
       cfg.setGridLogger(new Slf4jLogger());
       cfg.setPeerClassLoadingEnabled(true);
