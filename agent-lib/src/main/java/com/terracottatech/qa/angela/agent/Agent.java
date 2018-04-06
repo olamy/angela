@@ -17,7 +17,9 @@ package com.terracottatech.qa.angela.agent;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -27,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -132,6 +135,14 @@ public class Agent {
       }
 
       ignite = Ignition.start(cfg);
+
+      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+      Collection<Object> results = ignite.compute(location).broadcast((IgniteCallable<Object>) () -> 0);
+      if (results.size() != 1) {
+        ignite.close();
+        throw new IllegalStateException("Node with name [" + nodeName + "] already exists on the network, refusing to duplicate it.");
+      }
+
       CONTROLLER = new AgentController(ignite);
       LOGGER.info("Registered node '" + nodeName + "'");
     }

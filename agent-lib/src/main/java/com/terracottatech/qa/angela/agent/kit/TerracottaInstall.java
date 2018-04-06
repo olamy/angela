@@ -28,7 +28,9 @@ public class TerracottaInstall {
   }
 
   public TerracottaServerInstance getTerracottaServerInstance(TerracottaServer terracottaServer) {
-    return terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+    synchronized (terracottaServerInstances) {
+      return terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+    }
   }
 
   public File getInstallLocation() {
@@ -49,7 +51,9 @@ public class TerracottaInstall {
   }
 
   public synchronized int numberOfTerracottaInstances() {
-    return terracottaServerInstances.size();
+    synchronized (terracottaServerInstances) {
+      return terracottaServerInstances.size();
+    }
   }
 
 }

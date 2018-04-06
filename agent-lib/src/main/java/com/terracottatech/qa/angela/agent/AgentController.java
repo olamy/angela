@@ -403,15 +403,16 @@ public class AgentController {
           file.getParentFile().mkdirs();
           try (FileOutputStream fos = new FileOutputStream(file)) {
             while (true) {
-              byte[] buffer = (byte[])queue.take();
-              fos.write(buffer);
-              readFileLength += buffer.length;
               if (readFileLength == fileMetadata.getLength()) {
                 break;
               }
               if (readFileLength > fileMetadata.getLength()) {
                 throw new RuntimeException("Error creating client classpath on " + subNodeName);
               }
+
+              byte[] buffer = (byte[])queue.take();
+              fos.write(buffer);
+              readFileLength += buffer.length;
             }
           }
           logger.debug("downloaded " + fileMetadata);
@@ -478,9 +479,12 @@ public class AgentController {
   }
 
   private void zipFolder(ZipOutputStream zos, String parent, File folder) throws IOException {
+    if (!folder.canRead()) {
+      throw new RuntimeException("Folder does not exist or is not readable : " + folder);
+    }
     File[] files = folder.listFiles();
     if (files == null) {
-      return;
+      throw new RuntimeException("Error listing folder " + folder);
     }
     for (File file : files) {
       if (file.isDirectory()) {
