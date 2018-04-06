@@ -16,10 +16,12 @@
 package com.terracottatech.qa.angela.agent;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -32,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Ludovic Orban
@@ -123,12 +126,14 @@ public class Agent {
         ipFinder.setShared(true);
         ipFinder.setAddresses(nodesToJoin);
         spi.setIpFinder(ipFinder);
+        spi.setJoinTimeout(10000);
         cfg.setDiscoverySpi(spi);
       } else if (nodeName.equals("localhost")) {
         LOGGER.info("Isolating cluster to localhost");
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(Collections.singleton("localhost")));
         spi.setLocalPort(40000);
+        spi.setJoinTimeout(10000);
         cfg.setDiscoverySpi(spi);
       } else {
         LOGGER.info("Joining multicast cluster");
@@ -137,10 +142,15 @@ public class Agent {
       ignite = Ignition.start(cfg);
 
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      Collection<Object> results = ignite.compute(location).broadcast((IgniteCallable<Object>) () -> 0);
-      if (results.size() != 1) {
-        ignite.close();
-        throw new IllegalStateException("Node with name [" + nodeName + "] already exists on the network, refusing to duplicate it.");
+      IgniteFuture<Collection<Object>> future = ignite.compute(location).broadcastAsync((IgniteCallable<Object>) () -> 0);
+      try {
+        Collection<Object> results = future.get(10, TimeUnit.SECONDS);
+        if (results.size() != 1) {
+          ignite.close();
+          throw new IllegalStateException("Node with name [" + nodeName + "] already exists on the network, refusing to duplicate it.");
+        }
+      } catch (IgniteException e) {
+        // expected
       }
 
       CONTROLLER = new AgentController(ignite);

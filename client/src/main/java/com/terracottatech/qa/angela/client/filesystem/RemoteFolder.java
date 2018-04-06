@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.client.filesystem;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.IgniteHelper;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -24,6 +25,7 @@ public class RemoteFolder extends RemoteFile {
   }
 
   public List<RemoteFile> list() {
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     List<String> remoteFiles = ignite.compute(location).applyAsync((IgniteClosure<String, List<String>>) aName -> Agent.CONTROLLER.listFiles(aName), getAbsoluteName()).get();
     List<String> remoteFolders = ignite.compute(location).applyAsync((IgniteClosure<String, List<String>>) aName -> Agent.CONTROLLER.listFolders(aName), getAbsoluteName()).get();
@@ -36,6 +38,7 @@ public class RemoteFolder extends RemoteFile {
 
   @Override
   public void downloadTo(File path) throws IOException {
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     byte[] bytes;
     try {

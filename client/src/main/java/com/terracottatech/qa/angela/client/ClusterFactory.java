@@ -70,6 +70,7 @@ public class ClusterFactory implements AutoCloseable {
     } else {
       ipFinder.setAddresses(targetServerNames);
     }
+    spi.setJoinTimeout(10000);
     spi.setIpFinder(ipFinder);
 
     IgniteConfiguration cfg = new IgniteConfiguration();
@@ -142,6 +143,7 @@ public class ClusterFactory implements AutoCloseable {
     controllers.clear();
 
     for (String nodeName : nodeToInstanceId.keySet()) {
+      IgniteHelper.checkAgentHealth(ignite, nodeName);
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
       InstanceId instanceId = nodeToInstanceId.get(nodeName);
       ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));

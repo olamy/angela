@@ -501,4 +501,8 @@ public class AgentController {
     }
   }
 
+  public String getNodeName() {
+    Object nodename = ignite.configuration().getUserAttributes().get("nodename");
+    return nodename == null ? null : nodename.toString();
+  }
 }
