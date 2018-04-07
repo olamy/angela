@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +13,9 @@ import org.zeroturnaround.process.Processes;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -46,10 +45,8 @@ import static java.util.regex.Pattern.compile;
 public class Distribution43Controller extends DistributionController {
 
   private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
-  private final boolean tmsFullLogs = Boolean.getBoolean("angela.tms.log.full");
 
-  private final static Logger logger = LoggerFactory.getLogger(Distribution43Controller.class);
-  public static final long L2_STOP_TIMEOUT = 60000L;
+  private final static Logger LOGGER = LoggerFactory.getLogger(Distribution43Controller.class);
 
   public Distribution43Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
@@ -109,7 +106,7 @@ public class Distribution43Controller extends DistributionController {
         .redirectOutput(System.out);  // TODO
 
     try {
-      logger.info("Calling stop command for server {}", serverSymbolicName);
+      LOGGER.info("Calling stop command for server {}", serverSymbolicName);
       executor.start();
 
       for (int i = 0; i < 100; i++) {
@@ -124,7 +121,7 @@ public class Distribution43Controller extends DistributionController {
     }
 
     int[] pids = terracottaServerInstanceProcess.getPids();
-    logger.info("Destroying L2 process for {}", serverSymbolicName);
+    LOGGER.info("Destroying L2 process for {}", serverSymbolicName);
     for (int pid : pids) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
@@ -136,7 +133,7 @@ public class Distribution43Controller extends DistributionController {
           Thread.sleep(100);
         }
       } catch (Exception e) {
-        logger.warn("Could not destroy process {}", pid, e);
+        LOGGER.warn("Could not destroy process {}", pid, e);
       }
     }
 
@@ -190,10 +187,14 @@ public class Distribution43Controller extends DistributionController {
 
   }
 
+  @Override
+  public void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
+    LOGGER.info("There is no licensing step in 4.x");
+  }
 
   @Override
-  public void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
-    logger.info("There is licensing for 4.x");
+  public ClusterToolExecutionResult invokeClusterTool(File installLocation, String... arguments) {
+    throw new UnsupportedOperationException("4.x does not have a cluster tool");
   }
 
   /**
@@ -239,7 +240,7 @@ public class Distribution43Controller extends DistributionController {
     for (String option : options) {
       sb.append(option).append(" ");
     }
-    logger.info(" Start command = {}", sb.toString());
+    LOGGER.info(" Start command = {}", sb.toString());
 
     return options.toArray(new String[options.size()]);
   }
@@ -272,6 +273,5 @@ public class Distribution43Controller extends DistributionController {
   public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess) {
     throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
   }
-
 
 }

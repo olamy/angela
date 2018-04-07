@@ -282,7 +282,7 @@ public class CompressionUtils implements Serializable {
     scriptFile.delete();
 
     File licenseFile = new File(dest.getPath() + File.separatorChar + "license.xml");
-    license.WriteToFile(licenseFile);
+    license.writeToFile(licenseFile);
 
     try {
       PrintWriter writer = new PrintWriter(scriptFile, "UTF-8");

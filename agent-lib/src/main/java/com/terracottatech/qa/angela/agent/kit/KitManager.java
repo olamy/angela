@@ -273,9 +273,9 @@ public class KitManager implements Serializable {
         }
       }
     } catch (Exception e) {
-      throw new RuntimeException("Can not resolve the local kit distribution package", e);
+      throw new RuntimeException("Can not resolve the local kit distribution package: " + distribution + " from: " + localInstaller, e);
     }
-    throw new RuntimeException("Can not resolve the local kit distribution package");
+    throw new RuntimeException("Can not resolve the local kit distribution package: " + distribution + " from: " + localInstaller);
   }
 
   /**
@@ -375,7 +375,7 @@ public class KitManager implements Serializable {
       boolean res = workingInstallPath.mkdirs();
       logger.info("Directories created? {}", res);
       FileUtils.copyDirectory(localInstall, workingInstallPath);
-      license.WriteToFile(workingInstallPath);
+      license.writeToFile(workingInstallPath);
 
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
@@ -387,10 +387,10 @@ public class KitManager implements Serializable {
         }
       }
       compressionUtils.cleanupPermissions(workingInstallPath);
+      return workingInstallPath;
     } catch (IOException e) {
       throw new RuntimeException("Can not create working install", e);
     }
-    return new File(workingInstall);
   }
 
   private static void createParentDirs(File file) throws IOException {
@@ -405,7 +405,7 @@ public class KitManager implements Serializable {
   }
 
   public void deleteInstall(final File installLocation) throws IOException {
-      logger.info("deleting installation in {}", installLocation.getAbsolutePath());
-      FileUtils.deleteDirectory(installLocation);
+    logger.info("deleting installation in {}", installLocation.getAbsolutePath());
+    FileUtils.deleteDirectory(installLocation);
   }
 }
