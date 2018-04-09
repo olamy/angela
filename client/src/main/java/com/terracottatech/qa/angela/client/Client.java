@@ -68,6 +68,7 @@ public class Client implements Closeable {
 
   private int spawnSubClient() {
     logger.info("Spawning client '{}' on {}", subNodeName, nodeName);
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     try {
       final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
 
@@ -139,6 +140,7 @@ public class Client implements Closeable {
   }
 
   public Future<Void> submit(ClientJob clientJob) {
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
       clientJob.run(new Context(nodeName, ignite, instanceId));
@@ -159,6 +161,7 @@ public class Client implements Closeable {
     closed = true;
 
     logger.info("Wiping up client '{}' on {}", subNodeName, nodeName);
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     ignite.compute(location).broadcast((IgniteRunnable) () -> {
       Agent.CONTROLLER.destroyClient(instanceId, subNodeName, subClientPid);

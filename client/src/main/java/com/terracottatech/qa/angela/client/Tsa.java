@@ -313,11 +313,13 @@ public class Tsa implements AutoCloseable {
 
 
   private IgniteFuture<Void> executeRemotely(final TerracottaServer hostname, final IgniteRunnable runnable) {
+    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
     return ignite.compute(location).runAsync(runnable);
   }
 
   private <R> IgniteFuture<R> executeRemotely(final TerracottaServer hostname, final IgniteCallable<R> callable) {
+    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
     return ignite.compute(location).callAsync(callable);
   }

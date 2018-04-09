@@ -523,4 +523,7 @@ public class AgentController {
     }
   }
 
+  public Map<String, ?> getNodeAttributes() {
+    return ignite.configuration().getUserAttributes();
+  }
 }

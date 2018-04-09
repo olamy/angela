@@ -159,11 +159,13 @@ public class Tms implements AutoCloseable {
   }
 
   private void executeRemotely(final String hostname, final long timeout, final IgniteRunnable runnable) {
+    IgniteHelper.checkAgentHealth(ignite, hostname);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
     ignite.compute(location).withTimeout(timeout).broadcast(runnable);
   }
 
   private <R> R executeRemotely(final String hostname, final IgniteCallable<R> callable) {
+    IgniteHelper.checkAgentHealth(ignite, hostname);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
     Collection<R> results = ignite.compute(location).broadcast(callable);
     if (results.size() != 1) {
