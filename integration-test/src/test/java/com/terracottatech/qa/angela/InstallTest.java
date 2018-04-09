@@ -1,9 +1,6 @@
 package com.terracottatech.qa.angela;
 
 import com.terracottatech.qa.angela.client.Client;
-import com.terracottatech.qa.angela.test.Versions;
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
@@ -12,6 +9,8 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.test.Versions;
+import org.junit.Test;
 
 import java.util.concurrent.Future;
 
@@ -26,6 +25,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Aurelien Broszniowski
@@ -34,12 +34,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class InstallTest {
 
   @Test
-  public void testLocallInstall4x() throws Exception {
-    Topology topology = new Topology(distribution(version("4.3.5.1.13"), PackageType.KIT, LicenseType.MAX),
-        tcConfig(version("4.3.5.1.13"), getClass().getResource("/terracotta/4/tc-config-a.xml")));
+  public void testLocalInstall4x() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
+        tcConfig(version(Versions.TERRACOTTA_VERSION_4X), getClass().getResource("/terracotta/4/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/4/terracotta-license.key"));
 
-    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocallInstall4x")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall4x")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
@@ -53,11 +53,35 @@ public class InstallTest {
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocallInstall")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
       tsa.licenseAll();
+    }
+  }
+
+  @Test
+  public void testTwoTsaInstalls() throws Exception {
+    Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    Topology topology2 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
+
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testTwoTsaInstalls")) {
+      Tsa tsa1 = factory.tsa(topology1, license);
+      tsa1.installAll();
+      tsa1.startAll();
+      tsa1.licenseAll();
+      assertThat(tsa1.getServers().size(), is(1));
+
+      Tsa tsa2 = factory.tsa(topology2, license);
+      tsa2.installAll();
+      tsa2.startAll();
+      tsa2.licenseAll();
+      assertThat(tsa2.getServers().size(), is(2));
     }
   }
 
@@ -68,7 +92,7 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
 
@@ -89,7 +113,7 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
 
@@ -108,7 +132,7 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopPassive")) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
@@ -140,10 +164,29 @@ public class InstallTest {
 
   @Test
   public void testRemoteClient() throws Exception {
-    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteInstall")) {
+    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteClient")) {
       try (Client client = instance.client("localhost")) {
         Future<Void> f = client.submit((context) -> System.out.println("hello world"));
         f.get();
+      }
+    }
+  }
+
+  @Test
+  public void testMixingLocalhostWithRemote() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testMixingLocalhostWithRemote")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+
+      try {
+        factory.client("remote-server");
+        fail("expected exception");
+      } catch (Exception e) {
+        // expected
       }
     }
   }

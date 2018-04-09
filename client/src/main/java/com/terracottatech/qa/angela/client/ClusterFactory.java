@@ -3,53 +3,63 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
-  private final static Logger logger = LoggerFactory.getLogger(ClusterFactory.class);
+  private final static Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
 
-  private final InstanceId instanceId;
   private final List<AutoCloseable> controllers = new ArrayList<>();
-  private final Set<String> nodesToCleanup = new HashSet<>();
+  private final String idPrefix;
+  private final Map<String, InstanceId> nodeToInstanceId = new HashMap<>();
   private Ignite ignite;
   private boolean localhostOnly;
   private Agent.Node localhostAgent;
-  private Optional<URI> tsaURI;
 
   public ClusterFactory(String idPrefix) {
-    this.instanceId = new InstanceId(idPrefix);
+    this.idPrefix = idPrefix;
   }
 
-  private void init(Collection<String> targetServerNames) {
+  private InstanceId init(Collection<String> targetServerNames) {
+    if (targetServerNames.isEmpty()) {
+      throw new IllegalArgumentException("Cannot initialize with 0 server");
+    }
+
+    InstanceId instanceId = new InstanceId(idPrefix);
+    for (String targetServerName : targetServerNames) {
+      if (targetServerName == null) {
+        throw new IllegalArgumentException("Cannot initialize with a null server name");
+      }
+      nodeToInstanceId.put(targetServerName, instanceId);
+    }
+
     if (ignite != null) {
-      return;
+      return instanceId;
     }
 
     if (isLocalhostOnly(targetServerNames)) {
-      logger.info("spawning localhost agent");
+      LOGGER.info("spawning localhost agent");
       localhostAgent = new Agent.Node("localhost");
       localhostAgent.init();
       localhostOnly = true;
@@ -62,16 +72,25 @@ public class ClusterFactory implements AutoCloseable {
     } else {
       ipFinder.setAddresses(targetServerNames);
     }
+    spi.setJoinTimeout(10000);
     spi.setIpFinder(ipFinder);
 
     IgniteConfiguration cfg = new IgniteConfiguration();
     cfg.setDiscoverySpi(spi);
     cfg.setClientMode(true);
     cfg.setPeerClassLoadingEnabled(true);
-    cfg.setGridLogger(new Slf4jLogger());
+    boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
+    cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
     cfg.setIgniteInstanceName("Instance@" + instanceId);
+    cfg.setMetricsLogFrequency(0);
 
-    this.ignite = Ignition.start(cfg);
+    try {
+      this.ignite = Ignition.start(cfg);
+    } catch (IgniteException e) {
+      throw new RuntimeException("Cannot start angela; error connecting to agents : " + targetServerNames, e);
+    }
+
+    return instanceId;
   }
 
   private static boolean isLocalhostOnly(Collection<String> targetServerNames) {
@@ -84,8 +103,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tsa tsa(Topology topology) {
-    init(topology.getServersHostnames());
-    nodesToCleanup.addAll(topology.getServersHostnames());
+    InstanceId instanceId = init(topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology);
     controllers.add(tsa);
@@ -93,27 +111,35 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tsa tsa(Topology topology, License license) {
-    init(topology.getServersHostnames());
-    nodesToCleanup.addAll(topology.getServersHostnames());
+    InstanceId instanceId = init(topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, license);
-    // only keep the cluster URI if a single Tsa was created
-    if (tsaURI == null) {
-      tsaURI = Optional.of(tsa.uri());
-    } else {
-      tsaURI = Optional.empty();
-    }
     controllers.add(tsa);
     return tsa;
   }
 
   public Client client(String nodeName) {
-    init(Collections.singleton(nodeName));
-    nodesToCleanup.add(nodeName);
+    if (!"localhost".equals(nodeName) && localhostOnly) {
+      throw new IllegalArgumentException("localhost agent started, connection to remote agent '" + nodeName + "' is not possible");
+    }
 
-    Client client = new Client(ignite, instanceId, nodeName, tsaURI == null ? null : tsaURI.orElse(null), localhostOnly);
+    InstanceId instanceId = init(Collections.singleton(nodeName));
+
+    Client client = new Client(ignite, instanceId, nodeName, localhostOnly);
     controllers.add(client);
     return client;
+  }
+
+  public Tms tms(Distribution distribution, License license, String hostname) {
+    return tms(distribution, license, hostname, null);
+  }
+
+  public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
+    InstanceId instanceId = init(Collections.singletonList(hostname));
+
+    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig);
+    controllers.add(tms);
+    return tms;
   }
 
   @Override
@@ -123,11 +149,13 @@ public class ClusterFactory implements AutoCloseable {
     }
     controllers.clear();
 
-    for (String nodeName : nodesToCleanup) {
+    for (String nodeName : nodeToInstanceId.keySet()) {
+      IgniteHelper.checkAgentHealth(ignite, nodeName);
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+      InstanceId instanceId = nodeToInstanceId.get(nodeName);
       ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
     }
-    nodesToCleanup.clear();
+    nodeToInstanceId.clear();
 
     if (ignite != null) {
       ignite.close();
@@ -135,24 +163,10 @@ public class ClusterFactory implements AutoCloseable {
     }
 
     if (localhostAgent != null) {
-      logger.info("shutting down localhost agent");
+      LOGGER.info("shutting down localhost agent");
       localhostAgent.shutdown();
       localhostAgent = null;
     }
-
-    tsaURI = null;
   }
 
-  public Tms tms(Distribution distribution, License license, String hostname) {
-    return tms(distribution, license, hostname, null);
-  }
-
-  public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
-    init(Arrays.asList(hostname));
-    nodesToCleanup.add(hostname);
-
-    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig);
-    controllers.add(tms);
-    return tms;
-  }
 }

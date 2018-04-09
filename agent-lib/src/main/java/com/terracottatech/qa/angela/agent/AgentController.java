@@ -1,13 +1,26 @@
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.agent.kit.KitManager;
+import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
+import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JDK;
+import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
+import com.terracottatech.qa.angela.common.util.OS;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
@@ -21,26 +34,13 @@ import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
-import com.terracottatech.qa.angela.agent.kit.KitManager;
-import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
-import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
-import com.terracottatech.qa.angela.common.util.OS;
-
-import java.io.ByteArrayOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -97,7 +97,7 @@ public class AgentController {
         logger.info("Tc Config installed config path : {}", tcConfig.getPath());
       }
 
-      kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir));
+      kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir, license.getFilename()));
     }
   }
 
@@ -108,6 +108,14 @@ public class AgentController {
       throw new IllegalStateException("Server " + terracottaServer + " has not been installed");
     }
     return terracottaInstall.getInstallLocation().getPath();
+  }
+
+  public String getLicensePath(InstanceId instanceId) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      throw new IllegalStateException("Server has not been installed");
+    }
+    return terracottaInstall.getLicenseFileLocation().getPath();
   }
 
   private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
@@ -203,7 +211,7 @@ public class AgentController {
       TmsInstall tmsInstall = tmsInstalls.get(instanceId);
       if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null)) {
         try {
-          logger.info("Uninstalling kit for " + topology);
+          logger.info("Uninstalling kit for {}", terracottaServer);
           KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
           // TODO : get log files
 
@@ -255,7 +263,11 @@ public class AgentController {
   }
 
   public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      return;
+    }
+    TerracottaServerInstance serverInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
     serverInstance.stop();
   }
 
@@ -276,11 +288,21 @@ public class AgentController {
     return serverInstance.getTerracottaServerState();
   }
 
-  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final License license, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
-    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
-        .getTerracottaServerInstance(terracottaServer);
-    serverInstance.configureLicense(instanceId, license, tcConfigs, securityRootDirectory);
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
+    String licensePath = getLicensePath(instanceId);
+    if (clusterName == null) {
+      clusterName = instanceId.toString();
+    }
+    serverInstance.configureLicense(clusterName, licensePath, tcConfigs, securityRootDirectory);
+  }
 
+  public ClusterToolExecutionResult clusterTool(InstanceId instanceId, TerracottaServer terracottaServer, String... arguments) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      throw new IllegalStateException("Cannot control cluster tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
+    }
+    return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(arguments);
   }
 
   public void destroyClient(InstanceId instanceId, String subNodeName, int pid) {
@@ -403,15 +425,16 @@ public class AgentController {
           file.getParentFile().mkdirs();
           try (FileOutputStream fos = new FileOutputStream(file)) {
             while (true) {
-              byte[] buffer = (byte[])queue.take();
-              fos.write(buffer);
-              readFileLength += buffer.length;
               if (readFileLength == fileMetadata.getLength()) {
                 break;
               }
               if (readFileLength > fileMetadata.getLength()) {
                 throw new RuntimeException("Error creating client classpath on " + subNodeName);
               }
+
+              byte[] buffer = (byte[])queue.take();
+              fos.write(buffer);
+              readFileLength += buffer.length;
             }
           }
           logger.debug("downloaded " + fileMetadata);
@@ -478,9 +501,12 @@ public class AgentController {
   }
 
   private void zipFolder(ZipOutputStream zos, String parent, File folder) throws IOException {
+    if (!folder.canRead()) {
+      throw new RuntimeException("Folder does not exist or is not readable : " + folder);
+    }
     File[] files = folder.listFiles();
     if (files == null) {
-      return;
+      throw new RuntimeException("Error listing folder " + folder);
     }
     for (File file : files) {
       if (file.isDirectory()) {
@@ -497,4 +523,7 @@ public class AgentController {
     }
   }
 
+  public Map<String, ?> getNodeAttributes() {
+    return ignite.configuration().getUserAttributes();
+  }
 }

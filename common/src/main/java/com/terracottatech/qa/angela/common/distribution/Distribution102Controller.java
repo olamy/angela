@@ -1,9 +1,9 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.util.JDK;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,21 +17,20 @@ import org.zeroturnaround.process.Processes;
 import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
-import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -39,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.terracottatech.qa.angela.common.TerracottaManagementServerState.STARTED;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -49,6 +47,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
 import static java.util.regex.Pattern.quote;
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author Aurelien Broszniowski
@@ -133,10 +132,40 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(final InstanceId instanceId, final File location, final License license, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
+  public ClusterToolExecutionResult invokeClusterTool(File installLocation, String... arguments) {
+    List<String> args = new ArrayList<>();
+    args.add(installLocation
+        + File.separator + "tools"
+        + File.separator + "cluster-tool"
+        + File.separator + "bin"
+        + File.separator + "cluster-tool" + OS.INSTANCE.getShellExtension());
+
+    args.addAll(Arrays.asList(arguments));
+
+    try {
+      ProcessBuilder builder = new ProcessBuilder(args);
+      builder.environment().putAll(buildEnv());
+      builder.inheritIO();
+      builder.redirectErrorStream(true);
+      File out_log = File.createTempFile("cluster-tool-output", ".tmp");
+      builder.redirectOutput(ProcessBuilder.Redirect.appendTo(out_log));
+
+      Process process = builder.start();
+      int result = process.waitFor();
+
+      List<String> stdout = Files.lines(out_log.toPath()).collect(toList());
+      out_log.delete();
+      return new ClusterToolExecutionResult(result, stdout);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
     Map<String, String> env = buildEnv();
 
-    String[] commands = configureCommand(instanceId, location, license, tcConfigs, securityRootDirectory);
+    String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory);
 
     ProcessExecutor executor = new ProcessExecutor()
         .command(commands).directory(location).environment(env);
@@ -155,7 +184,7 @@ public class Distribution102Controller extends DistributionController {
     }
   }
 
-  private synchronized String[] configureCommand(final InstanceId instanceId, final File location, final License licenseConfig, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
+  private synchronized String[] configureCommand(final File location, String licensePath, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory) {
     List<String> command = new ArrayList<>();
 
     StringBuilder sb = null;
@@ -178,11 +207,9 @@ public class Distribution102Controller extends DistributionController {
     command.add("-v");
     command.add("configure");
     command.add("-n");
-    command.add(instanceId.toString());
-
+    command.add(clusterName);
     command.add("-l");
-    File tmpLicenseFile = licenseConfig.WriteToFile(location);
-    command.add(tmpLicenseFile.getAbsolutePath());
+    command.add(licensePath);
 
     File tmpConfigDir = new File(location + File.separator + "tc-configs");
     tmpConfigDir.mkdir();

@@ -19,6 +19,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -28,6 +29,7 @@ import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * @author Ludovic Orban
@@ -86,6 +88,19 @@ public class BrowseTest {
       tms.browse("tools/management/logs").downloadTo(new File("target/logs-tmc"));
       assertThat(Files.lines(Paths.get("target/logs-tmc/tmc.log"))
                       .anyMatch((l) -> l.contains("Starting TmsApplication")), is(true));
+    }
+  }
+
+  @Test
+  public void testNonExistentFolder() throws Exception {
+    try (ClusterFactory factory = new ClusterFactory("BrowseTest::testNonExistentFolder")) {
+      Client localhost = factory.client("localhost");
+      try {
+        localhost.browse("/does/not/exist").downloadTo(new File("target/destination"));
+        fail("expected IOException");
+      } catch (IOException e) {
+        // expected
+      }
     }
   }
 

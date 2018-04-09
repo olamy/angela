@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.terracottatech.qa</groupId>
     <artifactId>angela</artifactId>
-    <version>1.0.7-SNAPSHOT</version>
+    <version>1.0.8-SNAPSHOT</version>
   </parent>
 
   <artifactId>angela-common</artifactId>
@@ -51,5 +51,15 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <!-- This is required to pass the 'project.version' from the pom -->
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
 
 </project>

@@ -17,22 +17,30 @@ public class TerracottaInstall {
 
   private final Topology topology;
   private final File installLocation;
+  private final File licenseFile;
   //  private final NetworkController networkController;
   private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
 
-  public TerracottaInstall(final Topology topology, TerracottaServer terracottaServer, File location) {
+  public TerracottaInstall(final Topology topology, TerracottaServer terracottaServer, File location, String licenseFilename) {
     this.topology = topology;
     this.installLocation = location;
+    this.licenseFile = new File(location, licenseFilename);
     addServer(terracottaServer);
 //    this.networkController = networkController;
   }
 
   public TerracottaServerInstance getTerracottaServerInstance(TerracottaServer terracottaServer) {
-    return terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+    synchronized (terracottaServerInstances) {
+      return terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+    }
   }
 
   public File getInstallLocation() {
     return installLocation;
+  }
+
+  public File getLicenseFileLocation() {
+    return licenseFile;
   }
 
   public void addServer(TerracottaServer terracottaServer) {
@@ -49,7 +57,9 @@ public class TerracottaInstall {
   }
 
   public synchronized int numberOfTerracottaInstances() {
-    return terracottaServerInstances.size();
+    synchronized (terracottaServerInstances) {
+      return terracottaServerInstances.size();
+    }
   }
 
 }

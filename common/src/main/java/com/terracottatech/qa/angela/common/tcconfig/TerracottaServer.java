@@ -37,4 +37,12 @@ public class TerracottaServer {
     return serverSymbolicName;
   }
 
+  @Override
+  public String toString() {
+    return "TerracottaServer{" +
+        "serverSymbolicName=" + serverSymbolicName +
+        ", hostname='" + hostname + '\'' +
+        ", ports=" + ports +
+        '}';
+  }
 }

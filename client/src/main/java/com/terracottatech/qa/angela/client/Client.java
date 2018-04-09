@@ -53,23 +53,22 @@ public class Client implements Closeable {
   private final String nodeName;
   private final Ignite ignite;
   private final String subNodeName;
-  private final URI tsaUri;
   private final boolean localhostOnly;
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, URI tsaUri, boolean localhostOnly) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, boolean localhostOnly) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
-    this.tsaUri = tsaUri;
     this.localhostOnly = localhostOnly;
     this.subClientPid = spawnSubClient();
   }
 
   private int spawnSubClient() {
     logger.info("Spawning client '{}' on {}", subNodeName, nodeName);
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     try {
       final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
 
@@ -141,9 +140,10 @@ public class Client implements Closeable {
   }
 
   public Future<Void> submit(ClientJob clientJob) {
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
-      clientJob.run(new Context(nodeName, ignite, instanceId, tsaUri));
+      clientJob.run(new Context(nodeName, ignite, instanceId));
       return null;
     });
     return new ClientJobFuture(igniteFuture);
@@ -161,6 +161,7 @@ public class Client implements Closeable {
     closed = true;
 
     logger.info("Wiping up client '{}' on {}", subNodeName, nodeName);
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     ignite.compute(location).broadcast((IgniteRunnable) () -> {
       Agent.CONTROLLER.destroyClient(instanceId, subNodeName, subClientPid);

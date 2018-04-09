@@ -64,6 +64,22 @@ public class Tsa implements AutoCloseable {
     this.ignite = ignite;
   }
 
+  public ClusterTool clusterTool(TerracottaServer terracottaServer) {
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
+    if (terracottaServerState == null) {
+      throw new IllegalStateException("Cannot control cluster tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
+    }
+    return new ClusterTool(ignite, instanceId, terracottaServer);
+  }
+
+  public String licensePath(TerracottaServer terracottaServer) {
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
+    if (terracottaServerState == null) {
+      throw new IllegalStateException("Cannot get license path: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
+    }
+    return executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId)).get();
+  }
+
   public void installAll() {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
@@ -171,10 +187,18 @@ public class Tsa implements AutoCloseable {
   }
 
   public void licenseAll() {
-    licenseAll(null);
+    licenseAll(null, null);
   }
 
-  public void licenseAll(final SecurityRootDirectory securityRootDirectory) {
+  public void licenseAll(String clusterName) {
+    licenseAll(clusterName, null);
+  }
+
+  public void licenseAll(SecurityRootDirectory securityRootDirectory) {
+    licenseAll(null, securityRootDirectory);
+  }
+
+  public void licenseAll(String clusterName, SecurityRootDirectory securityRootDirectory) {
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
     for (Map.Entry<ServerSymbolicName, TerracottaServer> entry : topology.getServers().entrySet()) {
       TerracottaServerState terracottaServerState = getState(entry.getValue());
@@ -189,7 +213,7 @@ public class Tsa implements AutoCloseable {
     TcConfig[] tcConfigs = topology.getTcConfigs();
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, license, tcConfigs, securityRootDirectory)).get();
+    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory)).get();
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
@@ -216,6 +240,14 @@ public class Tsa implements AutoCloseable {
       default:
         throw new IllegalStateException("There is more than one Passive Terracotta server, found " + servers.size());
     }
+  }
+
+  public Collection<TerracottaServer> getServers() {
+    return topology.getServers().values();
+  }
+
+  public TerracottaServer getServer(ServerSymbolicName symbolicName) {
+    return topology.getServers().get(symbolicName);
   }
 
   public Collection<TerracottaServer> getActives() {
@@ -281,11 +313,13 @@ public class Tsa implements AutoCloseable {
 
 
   private IgniteFuture<Void> executeRemotely(final TerracottaServer hostname, final IgniteRunnable runnable) {
+    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
     return ignite.compute(location).runAsync(runnable);
   }
 
   private <R> IgniteFuture<R> executeRemotely(final TerracottaServer hostname, final IgniteCallable<R> callable) {
+    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
     return ignite.compute(location).callAsync(callable);
   }

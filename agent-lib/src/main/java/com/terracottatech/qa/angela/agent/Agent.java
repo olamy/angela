@@ -15,9 +15,15 @@
  */
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.util.AngelaVersion;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -27,8 +33,12 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Ludovic Orban
@@ -40,6 +50,7 @@ public class Agent {
   public static final String ROOT_DIR;
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
   public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
+  public static final String IGNITE_LOGGING_SYSPROP_NAME = "tc.qa.angela.logging";
 
   static {
     final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
@@ -106,10 +117,15 @@ public class Agent {
 
       IgniteConfiguration cfg = new IgniteConfiguration();
       cfg.setIgniteHome(new File(workDirFile, "ignite").getPath());
-      cfg.setUserAttributes(Collections.singletonMap("nodename", nodeName));
+      Map<String, String> userAttributes = new HashMap<>();
+      userAttributes.put("angela.version", AngelaVersion.getAngelaVersion());
+      userAttributes.put("nodename", nodeName);
+      cfg.setUserAttributes(userAttributes);
       cfg.setIgniteInstanceName(nodeName);
-      cfg.setGridLogger(new Slf4jLogger());
+      boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING_SYSPROP_NAME);
+      cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setPeerClassLoadingEnabled(true);
+      cfg.setMetricsLogFrequency(0);
 
       if (nodesToJoin != null) {
         LOGGER.info("Joining isolated cluster : " + nodesToJoin);
@@ -119,18 +135,37 @@ public class Agent {
         ipFinder.setShared(true);
         ipFinder.setAddresses(nodesToJoin);
         spi.setIpFinder(ipFinder);
+        spi.setJoinTimeout(10000);
         cfg.setDiscoverySpi(spi);
       } else if (nodeName.equals("localhost")) {
         LOGGER.info("Isolating cluster to localhost");
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
         spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(Collections.singleton("localhost")));
         spi.setLocalPort(40000);
+        spi.setJoinTimeout(10000);
         cfg.setDiscoverySpi(spi);
       } else {
         LOGGER.info("Joining multicast cluster");
       }
 
-      ignite = Ignition.start(cfg);
+      try {
+        ignite = Ignition.start(cfg);
+      } catch (IgniteException e) {
+        throw new RuntimeException("Error starting agent " + nodeName, e);
+      }
+
+      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+      IgniteFuture<Collection<Object>> future = ignite.compute(location).broadcastAsync((IgniteCallable<Object>) () -> 0);
+      try {
+        Collection<Object> results = future.get(10, TimeUnit.SECONDS);
+        if (results.size() != 1) {
+          ignite.close();
+          throw new IllegalStateException("Node with name [" + nodeName + "] already exists on the network, refusing to duplicate it.");
+        }
+      } catch (IgniteException e) {
+        // expected
+      }
+
       CONTROLLER = new AgentController(ignite);
       LOGGER.info("Registered node '" + nodeName + "'");
     }

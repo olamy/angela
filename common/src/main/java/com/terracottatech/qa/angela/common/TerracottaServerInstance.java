@@ -7,15 +7,11 @@ import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
-import org.zeroturnaround.exec.StartedProcess;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
-import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
-import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static java.util.Arrays.stream;
 
 /**
@@ -44,8 +40,12 @@ public class TerracottaServerInstance  {
     this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
   }
 
-  public void configureLicense(final InstanceId instanceId, final License license, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
-    this.distributionController.configureLicense(instanceId, location, license, tcConfigs, securityRootDirectory);
+  public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
+    this.distributionController.configureLicense(clusterName, location, licensePath, tcConfigs, securityRootDirectory);
+  }
+
+  public ClusterToolExecutionResult clusterTool(String... arguments) {
+    return distributionController.invokeClusterTool(location, arguments);
   }
 
   public void waitForState(Predicate<TerracottaServerState> condition) {

@@ -58,7 +58,7 @@ public class TcDBTest {
         int rank = barrier.await();
 
         logger.info("all client sync'ed");
-        try (DatasetManager datasetManager = DatasetManager.clustered(context.tsaURI()).build()) {
+        try (DatasetManager datasetManager = DatasetManager.clustered(tsa.uri()).build()) {
           DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
               .offheap("primary-server-resource");
           Dataset<String> dataset = null;
