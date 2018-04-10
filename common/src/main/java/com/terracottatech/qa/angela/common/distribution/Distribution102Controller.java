@@ -19,7 +19,6 @@ import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -296,7 +295,6 @@ public class Distribution102Controller extends DistributionController {
     AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
     AtomicInteger javaPid = new AtomicInteger(-1);
 
-    ServerSymbolicName tmsSymbolicName = new ServerSymbolicName("TMS");
     TriggeringOutputStream outputStream = TriggeringOutputStream.triggerOn(
         compile("^.*\\Qstarted on port\\E.*$"), mr -> stateRef.set(TerracottaManagementServerState.STARTED)
     ).andTriggerOn(
@@ -325,15 +323,18 @@ public class Distribution102Controller extends DistributionController {
       processWatcher.setDaemon(true);
       processWatcher.start();
     } catch (IOException e) {
-      throw new RuntimeException("Can not start Terracotta server process " + tmsSymbolicName, e);
+      throw new RuntimeException("Cannot start TMS process", e);
     }
 
-    while (javaPid.get() == -1 || !TerracottaManagementServerState.STARTED.equals(stateRef.get())) {
+    while (startedProcess.getProcess().isAlive() && (javaPid.get() == -1 || !TerracottaManagementServerState.STARTED.equals(stateRef.get()))) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
+    }
+    if (!startedProcess.getProcess().isAlive()) {
+      throw new RuntimeException("TMS process died before reaching STARTED state");
     }
     int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
     int javaProcessPid = javaPid.get();

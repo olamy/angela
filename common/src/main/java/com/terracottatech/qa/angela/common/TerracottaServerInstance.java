@@ -2,13 +2,14 @@ package com.terracottatech.qa.angela.common;
 
 
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.Processes;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
@@ -49,12 +50,15 @@ public class TerracottaServerInstance  {
   }
 
   public void waitForState(Predicate<TerracottaServerState> condition) {
-    while (!condition.test(getTerracottaServerState())) {
+    while (this.terracottaServerInstanceProcess.isAlive() && !condition.test(getTerracottaServerState())) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
+    }
+    if (!this.terracottaServerInstanceProcess.isAlive()) {
+      throw new RuntimeException("TC server died while waiting on state-change condition");
     }
   }
 
@@ -77,6 +81,21 @@ public class TerracottaServerInstance  {
 
     public int[] getPids() {
       return stream(pids).mapToInt(Number::intValue).toArray();
+    }
+
+    public boolean isAlive() {
+      try {
+        // if at least one PID is alive, the process is considered alive
+        for (Number pid : pids) {
+          PidProcess pidProcess = Processes.newPidProcess(pid.intValue());
+          if (pidProcess.isAlive()) {
+            return true;
+          }
+        }
+        return false;
+      } catch (Exception e) {
+        throw new RuntimeException("Error checking liveness of a process instance with PIDs " + Arrays.toString(pids), e);
+      }
     }
   }
 }
