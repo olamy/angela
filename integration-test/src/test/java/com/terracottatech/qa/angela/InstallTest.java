@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
@@ -11,8 +10,6 @@ import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
-
-import java.util.concurrent.Future;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -25,7 +22,6 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
 
 /**
  * @author Aurelien Broszniowski
@@ -159,35 +155,6 @@ public class InstallTest {
       await().atMost(15, SECONDS).until(() -> tsa.getState(passive), is(TerracottaServerState.STARTED_AS_ACTIVE));
 
       System.out.println("********** done, shutting down");
-    }
-  }
-
-  @Test
-  public void testRemoteClient() throws Exception {
-    try (ClusterFactory instance = new ClusterFactory("InstallTest::testRemoteClient")) {
-      try (Client client = instance.client("localhost")) {
-        Future<Void> f = client.submit((context) -> System.out.println("hello world"));
-        f.get();
-      }
-    }
-  }
-
-  @Test
-  public void testMixingLocalhostWithRemote() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
-
-    try (ClusterFactory factory = new ClusterFactory("InstallTest::testMixingLocalhostWithRemote")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-
-      try {
-        factory.client("remote-server");
-        fail("expected exception");
-      } catch (Exception e) {
-        // expected
-      }
     }
   }
 

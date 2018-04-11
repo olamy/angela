@@ -15,7 +15,7 @@ public class Barrier {
   Barrier(Ignite ignite, final int count, final String name) {
     this.ignite = ignite;
     this.count = count;
-    IgniteAtomicLong igniteCounter = ignite.atomicLong(name, 0, true);
+    IgniteAtomicLong igniteCounter = ignite.atomicLong("Barrier-Counter-" + name, 0, true);
     this.index = (int)igniteCounter.getAndIncrement();
     igniteCounter.compareAndSet(count,0);
     this.name = name;
@@ -23,7 +23,7 @@ public class Barrier {
   }
 
   private void resetLatch() {
-    countDownLatch = ignite.countDownLatch(name + "_" + (resetCount++), count, true, true);
+    countDownLatch = ignite.countDownLatch("Barrier-" + name + "#" + (resetCount++), count, true, true);
   }
 
   public int await() {
