@@ -30,10 +30,15 @@ public class TerracottaManagementServerInstance {
 
 
   public static class TerracottaManagementServerInstanceProcess {
-    private final int[] pids;
+    private final Number[] pids;
     private final AtomicReference<TerracottaManagementServerState> state;
 
-    public TerracottaManagementServerInstanceProcess(AtomicReference<TerracottaManagementServerState> state, int... pids) {
+    public TerracottaManagementServerInstanceProcess(AtomicReference<TerracottaManagementServerState> state, Number... pids) {
+      for (Number pid : pids) {
+        if (pid.intValue() < 1) {
+          throw new IllegalArgumentException("Pid cannot be < 1");
+        }
+      }
       this.pids = pids;
       this.state = state;
     }
@@ -42,7 +47,7 @@ public class TerracottaManagementServerInstance {
       return state.get();
     }
 
-    public int[] getPids() {
+    public Number[] getPids() {
       return pids;
     }
   }

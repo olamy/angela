@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
@@ -32,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -82,39 +80,24 @@ public class Distribution102Controller extends DistributionController {
     ).andTriggerOn(
         tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + mr.group())
     );
-    ProcessExecutor executor = new ProcessExecutor()
+    WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, topology, installLocation))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
-        .redirectOutput(serverLogOutputStream);
-    StartedProcess startedProcess;
-    try {
-      startedProcess = executor.start();
-      // spawn a thread that resets stateRef to STOPPED when the TC server process dies
-      Thread processWatcher = new Thread(() -> {
-        try {
-          startedProcess.getFuture().get();
-          stateRef.set(STOPPED);
-        } catch (InterruptedException | ExecutionException e) {
-          throw new RuntimeException(e);
-        }
-      });
-      processWatcher.setDaemon(true);
-      processWatcher.start();
-    } catch (IOException e) {
-      throw new RuntimeException("Can not start Terracotta server process " + serverSymbolicName, e);
-    }
+        .redirectOutput(serverLogOutputStream), stateRef, STOPPED);
 
-    while (javaPid.get() == -1) {
+    while (javaPid.get() == -1 && watchedProcess.isAlive()) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
-    int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
+    if (!watchedProcess.isAlive()) {
+      throw new RuntimeException("Terracotta server process died in its infancy : " + serverSymbolicName);
+    }
+    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
   }
 
   @Override
@@ -302,52 +285,35 @@ public class Distribution102Controller extends DistributionController {
     ).andTriggerOn(
         tmsFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[TMS] " + mr.group())
     );
-    ProcessExecutor executor = new ProcessExecutor()
+    WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTMSCommand(installLocation))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
-        .redirectOutput(outputStream);
-    StartedProcess startedProcess;
-    try {
-      startedProcess = executor.start();
-      // spawn a thread that resets stateRef to STOPPED when the TC server process dies
-      Thread processWatcher = new Thread(() -> {
-        try {
-          startedProcess.getFuture().get();
-          stateRef.set(TerracottaManagementServerState.STOPPED);
-        } catch (InterruptedException | ExecutionException e) {
-          throw new RuntimeException(e);
-        }
-      });
-      processWatcher.setDaemon(true);
-      processWatcher.start();
-    } catch (IOException e) {
-      throw new RuntimeException("Cannot start TMS process", e);
-    }
+        .redirectOutput(outputStream), stateRef, TerracottaManagementServerState.STOPPED);
 
-    while (startedProcess.getProcess().isAlive() && (javaPid.get() == -1 || !TerracottaManagementServerState.STARTED.equals(stateRef.get()))) {
+    while (javaPid.get() == -1 && watchedProcess.isAlive()) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
-    if (!startedProcess.getProcess().isAlive()) {
+    if (!watchedProcess.isAlive()) {
       throw new RuntimeException("TMS process died before reaching STARTED state");
     }
-    int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
+    int wrapperPid = watchedProcess.getPid();
     int javaProcessPid = javaPid.get();
     return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
   }
 
   @Override
   public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess) {
-    int[] pids = terracottaServerInstanceProcess.getPids();
+    Number[] pids = terracottaServerInstanceProcess.getPids();
     logger.info("Destroying TMS process");
-    for (int pid : pids) {
+    for (Number pid : pids) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
       } catch (Exception e) {
         logger.warn("Could not destroy process {}", pid, e);
       }
