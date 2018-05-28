@@ -5,8 +5,6 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
@@ -26,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -68,31 +65,14 @@ public class Distribution43Controller extends DistributionController {
             .getSymbolicName() + "] " + mr.group())
     );
 
-    ProcessExecutor executor = new ProcessExecutor()
+    WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, topology, installLocation))
         .directory(installLocation)
         .environment(buildEnv())
         .redirectError(System.err)
-        .redirectOutput(serverLogOutputStream);
-    StartedProcess startedProcess;
-    try {
-      startedProcess = executor.start();
-      // spawn a thread that resets stateRef to STOPPED when the TC server process dies
-      Thread processWatcher = new Thread(() -> {
-        try {
-          startedProcess.getFuture().get();
-          stateRef.set(STOPPED);
-        } catch (InterruptedException | ExecutionException e) {
-          throw new RuntimeException(e);
-        }
-      });
-      processWatcher.setDaemon(true);
-      processWatcher.start();
-    } catch (IOException e) {
-      throw new RuntimeException("Can not start Terracotta server process " + serverSymbolicName, e);
-    }
+        .redirectOutput(serverLogOutputStream), stateRef, STOPPED);
 
-    int wrapperPid = PidUtil.getPid(startedProcess.getProcess());
+    int wrapperPid = watchedProcess.getPid();
     return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid);
   }
 
