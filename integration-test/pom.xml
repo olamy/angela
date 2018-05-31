@@ -19,6 +19,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.terracottatech.internal</groupId>
+      <artifactId>security-common-test</artifactId>
+      <version>${terracotta.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
