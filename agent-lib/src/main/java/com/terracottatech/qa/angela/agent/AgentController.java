@@ -123,10 +123,10 @@ public class AgentController {
                                             Topology topology, int tcConfigIndex) {
     if (securityRootDirectory != null) {
       final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
-      Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory").resolve(serverName);
+      Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory-" + serverName);
       logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
       securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
-      topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.getParent().resolve("${SERVER_NAME_TEMPLATE}").toString());
+      topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.toString());
     }
   }
 
@@ -140,25 +140,29 @@ public class AgentController {
       KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationPath);
       File kitDir = kitManager.installKit(license, false);
       File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
-      enableSecurity(tmcProperties, tmsServerSecurityConfig);
+      if (tmsServerSecurityConfig != null) {
+        enableSecurity(tmcProperties, tmsServerSecurityConfig);
+      }
 
       tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir));
     }
   }
 
   private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
-    String securityRootDirectory = tmsServerSecurityConfig != null ? tmsServerSecurityConfig.getSecurityRootDirectory() : "";
-    String securityLevel = tmsServerSecurityConfig != null ? tmsServerSecurityConfig.getSecurityLevel() : "";
+    String tmsSecurityRootDirectory = adaptToWindowsPaths(tmsServerSecurityConfig.getTmsSecurityRootDirectory());
+    String clusterSecurityRootDirectory = adaptToWindowsPaths(tmsServerSecurityConfig.getClusterSecurityRootDirectory());
 
-    List<String> lines = new ArrayList<String>();
-    String line = null;
+    List<String> lines = new ArrayList<>();
+    String line;
     try (BufferedReader br = new BufferedReader(new FileReader(tmcProperties))) {
 
       while ((line = br.readLine()) != null) {
-        if (line.startsWith("security.root.directory=")) {
-          line = line.replace("security.root.directory=", "security.root.directory=" + securityRootDirectory);
-        } else if(line.startsWith("security.level=")) {
-          line = line.replace("security.level=", "security.level=" + securityLevel);
+        if (line.startsWith("tms.security.root.directory=")) {
+          line = line.replace("tms.security.root.directory=", "tms.security.root.directory=" + tmsSecurityRootDirectory);
+        } else if (line.startsWith("tms.security.root.directory.connection.default=")) {
+          line = line.replace("tms.security.root.directory.connection.default=", "tms.security.root.directory.connection.default=" + clusterSecurityRootDirectory);
+        } else if (line.equals("tms.security.https.enabled=false")) {
+          line = line.replace("tms.security.https.enabled=false", "tms.security.https.enabled=true");
         }
         lines.add(line);
       }
@@ -173,6 +177,16 @@ public class AgentController {
     } catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
+  }
+
+  private String adaptToWindowsPaths(Path path) {
+    String pathAsString = path.toString();
+    if(OS.INSTANCE.isWindows()) {
+      //Replace "\" with "\\"
+      pathAsString = pathAsString.replace("\\","\\\\");
+      return pathAsString;
+    }
+    return pathAsString;
   }
 
   public void startTms(final InstanceId instanceId) {
