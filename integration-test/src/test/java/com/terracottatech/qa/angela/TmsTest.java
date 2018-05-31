@@ -20,6 +20,7 @@ import com.terracottatech.store.manager.DatasetManager;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Anthony Dahanne
  */
 
+@Ignore("TDB-3370")
 public class TmsTest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(TmsTest.class);
