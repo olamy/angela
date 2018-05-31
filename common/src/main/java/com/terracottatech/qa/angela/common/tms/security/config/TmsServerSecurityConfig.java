@@ -1,21 +1,22 @@
 package com.terracottatech.qa.angela.common.tms.security.config;
 
+import java.nio.file.Path;
+
 public class TmsServerSecurityConfig {
 
-  private final String securityRootDirectory;
-  private final String securityLevel;
+  private final Path tmsSecurityRootDirectory;
+  private final Path clusterSecurityRootDirectory;
 
-  public TmsServerSecurityConfig(String securityRootDirectory, String securityLevel) {
-    this.securityRootDirectory = securityRootDirectory;
-    this.securityLevel = securityLevel;
+  public TmsServerSecurityConfig(Path tmsSecurityRootDirectory, Path clusterSecurityRootDirectory) {
+    this.tmsSecurityRootDirectory = tmsSecurityRootDirectory;
+    this.clusterSecurityRootDirectory = clusterSecurityRootDirectory;
   }
 
-  public String getSecurityRootDirectory() {
-    return securityRootDirectory != null ? securityRootDirectory : "";
+  public Path getTmsSecurityRootDirectory() {
+    return tmsSecurityRootDirectory;
   }
 
-  public String getSecurityLevel() {
-    return securityLevel != null ? securityLevel : "";
+  public Path getClusterSecurityRootDirectory() {
+    return clusterSecurityRootDirectory;
   }
-
 }
