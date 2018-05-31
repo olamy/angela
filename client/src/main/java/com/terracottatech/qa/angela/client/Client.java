@@ -33,7 +33,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -160,12 +159,12 @@ public class Client implements Closeable {
     }
     closed = true;
 
-    logger.info("Wiping up client '{}' on {}", subNodeName, nodeName);
-    IgniteHelper.checkAgentHealth(ignite, nodeName);
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-    ignite.compute(location).broadcast((IgniteRunnable) () -> {
-      Agent.CONTROLLER.destroyClient(instanceId, subNodeName, subClientPid);
-    });
+    if (!ClusterFactory.SKIP_UNINSTALL) {
+      logger.info("Wiping up client '{}' on {}", subNodeName, nodeName);
+      IgniteHelper.checkAgentHealth(ignite, nodeName);
+      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+      ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.destroyClient(instanceId, subNodeName, subClientPid));
+    }
   }
 
   static class ClientJobFuture<V> implements Future<V> {

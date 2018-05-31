@@ -42,7 +42,6 @@ public class Tsa implements AutoCloseable {
 
   private final static Logger logger = LoggerFactory.getLogger(Tsa.class);
   private static final long TIMEOUT = 60000;
-  private static final boolean SKIP_UNINSTALL = Boolean.getBoolean("skipUninstall");
 
   private final Topology topology;
   private final Ignite ignite;
@@ -306,7 +305,7 @@ public class Tsa implements AutoCloseable {
       logger.error("Error when trying to stop servers" , e.getMessage());
       // ignore, not installed
     }
-    if (!SKIP_UNINSTALL) {
+    if (!ClusterFactory.SKIP_UNINSTALL) {
       uninstallAll();
     }
   }

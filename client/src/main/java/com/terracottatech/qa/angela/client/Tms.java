@@ -134,7 +134,9 @@ public class Tms implements AutoCloseable {
     } catch (Exception e) {
       // ignore, not installed
     }
-    uninstall();
+    if (!ClusterFactory.SKIP_UNINSTALL) {
+      uninstall();
+    }
   }
 
   private void uninstall() {
