@@ -292,7 +292,7 @@ public class Distribution102Controller extends DistributionController {
         .redirectError(System.err)
         .redirectOutput(outputStream), stateRef, TerracottaManagementServerState.STOPPED);
 
-    while (javaPid.get() == -1 && watchedProcess.isAlive()) {
+    while ((javaPid.get() == -1 || stateRef.get() == TerracottaManagementServerState.STOPPED) && watchedProcess.isAlive()) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
