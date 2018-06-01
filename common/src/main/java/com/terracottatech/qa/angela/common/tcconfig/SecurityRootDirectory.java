@@ -17,23 +17,14 @@ import java.util.Map;
  */
 public class SecurityRootDirectory implements Serializable {
 
-  static final String TRUSTED_AUTHORITY_DIR_NAME             = "trusted-authority";
-  static final String IDENTITY_DIR_NAME                      = "identity";
+  static final String TRUSTED_AUTHORITY_DIR_NAME = "trusted-authority";
+  static final String IDENTITY_DIR_NAME = "identity";
+  static final String ACCESS_CONTROL_DIR_NAME = "access-control";
+
 
   private final Map<String, byte[]> identityMap;
   private final Map<String, byte[]> trustedAuthorityMap;
-
-  public static SecurityRootDirectory securityRootDirectory(URL securityRootDirectoryUrl) {
-    try {
-      return new SecurityRootDirectory(Paths.get(securityRootDirectoryUrl.toURI()));
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
-
-  public static SecurityRootDirectory securityRootDirectory(Path securityRootDirectoryPath) {
-    return new SecurityRootDirectory(securityRootDirectoryPath);
-  }
+  private final Map<String, byte[]> accessControlMap;
 
   private SecurityRootDirectory(Path securityRootDirectory) {
     Path identityDir = securityRootDirectory.resolve(IDENTITY_DIR_NAME);
@@ -51,33 +42,34 @@ public class SecurityRootDirectory implements Serializable {
     } else {
       trustedAuthorityMap = null;
     }
-  }
 
-  public void createSecurityRootDirectory(Path newSecurityRootDirectory) {
-    Path identityDir = newSecurityRootDirectory.resolve(IDENTITY_DIR_NAME);
-    if (identityMap != null) {
-      try {
-        Files.createDirectories(identityDir);
-        storeContentsTodir(identityMap, identityDir);
-      } catch (IOException e) {
-        throw new RuntimeException("Unable to create directory " + identityDir, e);
-      }
+    Path accessControlDir = securityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    if (Files.exists(accessControlDir)) {
+      accessControlMap = new HashMap<>();
+      storeContentsToMap(accessControlDir, accessControlMap);
+    } else {
+      accessControlMap = null;
     }
 
-    Path trustedAuthorityDir = newSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
-    if (trustedAuthorityMap != null) {
-      try {
-        Files.createDirectories(newSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME));
-        storeContentsTodir(trustedAuthorityMap, trustedAuthorityDir);
-      } catch (IOException e) {
-        throw new RuntimeException("Unable to create directory " + trustedAuthorityDir, e);
-      }
+  }
+
+  public static SecurityRootDirectory securityRootDirectory(URL securityRootDirectoryUrl) {
+    try {
+      return new SecurityRootDirectory(Paths.get(securityRootDirectoryUrl.toURI()));
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(e);
     }
   }
 
-  private static void storeContentsTodir(Map<String, byte[]> map, Path directory) {
+  public static SecurityRootDirectory securityRootDirectory(Path securityRootDirectoryPath) {
+    return new SecurityRootDirectory(securityRootDirectoryPath);
+  }
+
+  private static void storeContentsToDir(Map<String, byte[]> map, Path directory) {
+
     for (Map.Entry<String, byte[]> entry : map.entrySet()) {
       Path filePath = directory.resolve(entry.getKey());
+
       byte[] fileContents = entry.getValue();
 
       try {
@@ -89,6 +81,7 @@ public class SecurityRootDirectory implements Serializable {
   }
 
   private static void storeContentsToMap(Path directory, Map<String, byte[]> map) {
+
     try {
       Files.list(directory).forEach((path) -> {
         try {
@@ -100,5 +93,38 @@ public class SecurityRootDirectory implements Serializable {
     } catch (IOException e) {
       throw new RuntimeException("Unable to read directory " + directory, e);
     }
+  }
+
+  public void createSecurityRootDirectory(Path newSecurityRootDirectory) {
+    Path identityDir = newSecurityRootDirectory.resolve(IDENTITY_DIR_NAME);
+    if (identityMap != null) {
+      try {
+        Files.createDirectories(identityDir);
+        storeContentsToDir(identityMap, identityDir);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create directory " + identityDir, e);
+      }
+    }
+
+    Path trustedAuthorityDir = newSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
+    if (trustedAuthorityMap != null) {
+      try {
+        Files.createDirectories(trustedAuthorityDir);
+        storeContentsToDir(trustedAuthorityMap, trustedAuthorityDir);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create directory " + trustedAuthorityDir, e);
+      }
+    }
+
+    Path accessControlDir = newSecurityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    if (accessControlMap != null) {
+      try {
+        Files.createDirectories(accessControlDir);
+        storeContentsToDir(accessControlMap, accessControlDir);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create directory " + accessControlDir, e);
+      }
+    }
+
   }
 }
