@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
+  static final boolean SKIP_UNINSTALL = Boolean.getBoolean("tc.qa.angela.skipUninstall")
+      || Boolean.getBoolean("skipUninstall"); // legacy system prop name
+
   private final static Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
 
   private final List<AutoCloseable> controllers = new ArrayList<>();
