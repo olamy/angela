@@ -20,7 +20,6 @@ import com.terracottatech.store.manager.DatasetManager;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Anthony Dahanne
  */
 
-@Ignore("TDB-3370")
 public class TmsTest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(TmsTest.class);
@@ -50,7 +48,7 @@ public class TmsTest {
   private static URI tsaUri;
 
   @BeforeClass
-  public static void setUp() throws Exception {
+  public static void setUp() {
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
     Topology topology = new Topology(distribution,
         tcConfig(version(Versions.TERRACOTTA_VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml")));
@@ -99,7 +97,7 @@ public class TmsTest {
 
     ClientJob clientJobTms = (context) -> {
       String url = "http://" + TMS_HOSTNAME + ":9480/api/connections";
-      String response = sendGetRequest(url);
+      String response = sendGetRequest(url, null);
       LOGGER.info("tms list connections result :" + response.toString());
       assertThat(response.toString(), Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
     };

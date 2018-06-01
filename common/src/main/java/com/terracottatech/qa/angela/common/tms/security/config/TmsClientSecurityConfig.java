@@ -2,8 +2,10 @@ package com.terracottatech.qa.angela.common.tms.security.config;
 
 import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 
 public class TmsClientSecurityConfig {
@@ -16,7 +18,7 @@ public class TmsClientSecurityConfig {
     this.truststoreUri = truststoreUri;
   }
 
-  public TrustManagerFactory getTrustManagerFactory() throws Exception {
+  public TrustManagerFactory getTrustManagerFactory() throws IOException, GeneralSecurityException {
     InputStream truststoreStream = new FileInputStream(truststoreUri.getPath());
     KeyStore truststore = KeyStore.getInstance("JKS");
     truststore.load(truststoreStream, password.toCharArray());

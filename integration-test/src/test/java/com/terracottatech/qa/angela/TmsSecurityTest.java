@@ -16,7 +16,7 @@ import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tms;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.http.HttpsUtils;
+import com.terracottatech.qa.angela.common.http.HttpUtils;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
@@ -40,7 +40,6 @@ import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharac
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Ignore("TDB-3370")
 public class TmsSecurityTest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(TmsSecurityTest.class);
@@ -108,7 +107,7 @@ public class TmsSecurityTest {
 
     ClientJob clientJobTms = (context) -> {
       String url = "https://" + TMS_HOSTNAME + ":9480/api/connections";
-      String response = HttpsUtils.sendGetRequest(url, tmsClientSecurityConfig);
+      String response = HttpUtils.sendGetRequest(url, tmsClientSecurityConfig);
       LOGGER.info("tms list connections result :" + response);
       assertThat(response, Matchers.containsString("{}"));
     };
