@@ -14,9 +14,11 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.IDENTITY_DIR_NAME;
 import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.TRUSTED_AUTHORITY_DIR_NAME;
+import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.ACCESS_CONTROL_DIR_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -27,6 +29,44 @@ public class SecurityRootDirectoryTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  private static void verifyDirectories(Path actualSecurityRootDirectory, Path deserializedSecurityRootDirectory) throws IOException {
+    Path actualIdentityDir = actualSecurityRootDirectory.resolve(IDENTITY_DIR_NAME);
+    Path actualTrustedAuthorityDir = actualSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
+    Path actualAccessControlDir = actualSecurityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+
+    if (Files.exists(actualIdentityDir)) {
+      final Path deserializedIdentityDir = deserializedSecurityRootDirectory.resolve(IDENTITY_DIR_NAME);
+      assertThat(Files.exists(deserializedIdentityDir), is(true));
+      verifyFiles(actualIdentityDir, deserializedIdentityDir);
+    }
+    if (Files.exists(actualTrustedAuthorityDir)) {
+      final Path deserializedTrustedAuthorityDir = deserializedSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
+      assertThat(Files.exists(deserializedTrustedAuthorityDir), is(true));
+      verifyFiles(actualTrustedAuthorityDir, deserializedTrustedAuthorityDir);
+    }
+    if (Files.exists(actualAccessControlDir)) {
+      final Path deserializedAccessControlDir = deserializedSecurityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+      assertThat(Files.exists(deserializedAccessControlDir), is(true));
+      verifyFiles(actualAccessControlDir, deserializedAccessControlDir);
+    }
+  }
+
+  private static void verifyFiles(Path actualDirectory, Path deserializedDirectory) throws IOException {
+    assertThat(Files.list(deserializedDirectory).count(), is(Files.list(actualDirectory).count()));
+    Files.list(actualDirectory).forEach((actualPath -> {
+              Path deserializedPath = deserializedDirectory.resolve(actualPath.getFileName());
+              assertThat(Files.exists(deserializedPath), is(true));
+              try {
+                byte[] expectedFileContents = IOUtils.toByteArray(Files.newInputStream(actualPath));
+                byte[] actualFileContents = IOUtils.toByteArray(Files.newInputStream(actualPath));
+                assertThat(Arrays.equals(expectedFileContents, actualFileContents), is(true));
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+    );
+  }
 
   @Test
   public void testSerialization() throws Exception {
@@ -41,6 +81,11 @@ public class SecurityRootDirectoryTest {
     Files.createDirectory(trustedAuthorityDir);
     Files.write(trustedAuthorityDir.resolve("file1"), "trusted-authority-file1 contents".getBytes());
     Files.write(trustedAuthorityDir.resolve("file2"), "trusted-authority-file2 contents".getBytes());
+
+    Path accessControlDir = securityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    Files.createDirectory(accessControlDir);
+    Files.write(accessControlDir.resolve("file1"), "access-control-file1 contents".getBytes());
+    Files.write(accessControlDir.resolve("file2"), "access-control-file2 contents".getBytes());
 
     serializeAndVerify(securityRootDirectory);
   }
@@ -66,8 +111,13 @@ public class SecurityRootDirectoryTest {
 
     Path trustedAuthorityDir = securityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
     Files.createDirectory(trustedAuthorityDir);
+    Path accessControlDir = securityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    Files.createDirectory(accessControlDir);
+
     Files.write(trustedAuthorityDir.resolve("file1"), "trusted-authority-file1 contents".getBytes());
     Files.write(trustedAuthorityDir.resolve("file2"), "trusted-authority-file2 contents".getBytes());
+    Files.write(accessControlDir.resolve("file1"), "access-control-file1 contents".getBytes());
+    Files.write(accessControlDir.resolve("file2"), "access-control-file2 contents".getBytes());
 
     serializeAndVerify(securityRootDirectory);
   }
@@ -90,11 +140,48 @@ public class SecurityRootDirectoryTest {
 
     Path identityDir = securityRootDirectory.resolve(IDENTITY_DIR_NAME);
     Files.createDirectory(identityDir);
+    Path accessControlDir = securityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    Files.createDirectory(accessControlDir);
+
     Files.write(identityDir.resolve("file1"), "identity-file1 contents".getBytes());
     Files.write(identityDir.resolve("file2"), "identity-file2 contents".getBytes());
+    Files.write(accessControlDir.resolve("file1"), "access-control-file1 contents".getBytes());
+    Files.write(accessControlDir.resolve("file2"), "access-control-file2 contents".getBytes());
 
     Path trustedAuthorityDir = securityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
     Files.createDirectory(trustedAuthorityDir);
+
+    serializeAndVerify(securityRootDirectory);
+  }
+
+  @Test
+  public void testSerializationWithAccessControlDirectoryOnly() throws Exception {
+    Path securityRootDirectory = temporaryFolder.newFolder().toPath();
+
+    Path accessControlDir = securityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    Files.createDirectory(accessControlDir);
+    Files.write(accessControlDir.resolve("file1"), "access-control-file1 contents".getBytes());
+    Files.write(accessControlDir.resolve("file2"), "access-control-file2 contents".getBytes());
+
+    serializeAndVerify(securityRootDirectory);
+  }
+
+  @Test
+  public void testSerializationWithEmptyAccessControlDirectory() throws Exception {
+    Path securityRootDirectory = temporaryFolder.newFolder().toPath();
+
+    Path identityDir = securityRootDirectory.resolve(IDENTITY_DIR_NAME);
+    Files.createDirectory(identityDir);
+    Path trustedAuthorityDir = securityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
+    Files.createDirectory(trustedAuthorityDir);
+
+    Files.write(identityDir.resolve("file1"), "identity-file1 contents".getBytes());
+    Files.write(identityDir.resolve("file2"), "identity-file2 contents".getBytes());
+    Files.write(trustedAuthorityDir.resolve("file1"), "trusted-authority-file1 contents".getBytes());
+    Files.write(trustedAuthorityDir.resolve("file2"), "trusted-authority-file2 contents".getBytes());
+
+    Path accessControlDir = securityRootDirectory.resolve(ACCESS_CONTROL_DIR_NAME);
+    Files.createDirectory(accessControlDir);
 
     serializeAndVerify(securityRootDirectory);
   }
@@ -127,35 +214,5 @@ public class SecurityRootDirectoryTest {
     deserializedSecurityRootDirectory.createSecurityRootDirectory(deserializedSecurityRootDirectoryPath);
 
     verifyDirectories(actualSecurityRootDirectory, deserializedSecurityRootDirectoryPath);
-  }
-
-  private static void verifyDirectories(Path actualSecurityRootDirectory, Path deserializedSecurityRootDirectory) throws IOException {
-    Path actualIdentityDir = actualSecurityRootDirectory.resolve(IDENTITY_DIR_NAME);
-    Path actualTrustedAuthorityDir = actualSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
-    if (Files.exists(actualIdentityDir)) {
-      final Path deserializedIdentityDir = deserializedSecurityRootDirectory.resolve(IDENTITY_DIR_NAME);
-      assertThat(Files.exists(deserializedIdentityDir), is(true));
-      verifyFiles(actualIdentityDir, deserializedIdentityDir);
-    }
-    if (Files.exists(actualTrustedAuthorityDir)) {
-      final Path deserializedTrustedAuthorityDir = deserializedSecurityRootDirectory.resolve(TRUSTED_AUTHORITY_DIR_NAME);
-      assertThat(Files.exists(actualTrustedAuthorityDir), is(true));
-      verifyFiles(actualTrustedAuthorityDir, deserializedTrustedAuthorityDir);
-    }
-  }
-
-  private static void verifyFiles(Path actualDirectory, Path deserializedDirectory) throws IOException {
-    assertThat(Files.list(deserializedDirectory).count(), is(Files.list(actualDirectory).count()));
-    Files.list(actualDirectory).forEach((actualPath -> {
-      Path deserializedPath = deserializedDirectory.resolve(actualPath.getFileName());
-      assertThat(Files.exists(deserializedPath), is(true));
-      try {
-        String expectedFileContents = IOUtils.toString(actualPath.toUri());
-        String actualFileContents = IOUtils.toString(deserializedPath.toUri());
-        assertThat(actualFileContents, is(expectedFileContents));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }));
   }
 }
