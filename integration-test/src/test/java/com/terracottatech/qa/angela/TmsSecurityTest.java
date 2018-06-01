@@ -4,7 +4,6 @@ import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
@@ -47,7 +46,7 @@ public class TmsSecurityTest {
   private static ClusterFactory factory;
   private static final String TMS_HOSTNAME = "localhost";
 
-  private static TmsClientSecurityConfig tmsClientSecurityConfig;
+  private static URI clientTruststoreUri;
   private static Tms TMS;
   private static Tsa TSA;
 
@@ -65,8 +64,7 @@ public class TmsSecurityTest {
         .withKeystore(VALID)
         .build();
 
-    URI clientTruststoreUri = clientSecurityRootDirectory.getTruststorePaths().iterator().next().toUri();
-    tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri);
+    clientTruststoreUri = clientSecurityRootDirectory.getTruststorePaths().iterator().next().toUri();
 
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
     Topology topology =
@@ -96,13 +94,15 @@ public class TmsSecurityTest {
   }
 
   @Test
-  public void testSecureClusterConnection() throws Exception {
+  public void testSecureClusterConnection() {
+    TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri);
     String connectionName = TMS.connectToCluster(TSA.uri(), tmsClientSecurityConfig);
     assertThat(connectionName, startsWith("TmsSecurityTest"));
   }
 
   @Test
   public void testSecureBrowserTmsConnection() throws Exception {
+    TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri);
     Client client = factory.client("localhost");
 
     ClientJob clientJobTms = (context) -> {
