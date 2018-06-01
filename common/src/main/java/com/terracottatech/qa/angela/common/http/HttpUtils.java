@@ -69,12 +69,10 @@ public class HttpUtils {
       con.setRequestProperty(stringStringEntry.getKey(), stringStringEntry.getValue());
     }
     con.setDoOutput(true);
-    DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-    wr.writeBytes(payload);
-    wr.flush();
-    wr.close();
+    try (DataOutputStream wr = new DataOutputStream(con.getOutputStream())) {
+      wr.writeBytes(payload);
+    }
   }
-
 
   private static void checkResponseCode(HttpURLConnection con) throws IOException {
     int responseCode = con.getResponseCode();
@@ -82,7 +80,6 @@ public class HttpUtils {
       throw new FailedHttpRequestException(responseCode);
     }
   }
-
 
   private static String inputStreamToString(HttpURLConnection con) throws IOException {
     StringBuilder response = new StringBuilder();
