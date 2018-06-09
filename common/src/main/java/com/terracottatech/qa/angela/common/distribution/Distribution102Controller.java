@@ -62,7 +62,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, final TcConfig tcConfig) {
     Map<String, String> env = buildEnv();
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
@@ -81,7 +81,7 @@ public class Distribution102Controller extends DistributionController {
         tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + mr.group())
     );
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(startCommand(serverSymbolicName, topology, installLocation))
+        .command(startCommand(serverSymbolicName, tcConfig, installLocation))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -180,7 +180,7 @@ public class Distribution102Controller extends DistributionController {
     }
     command.add(sb.toString());
     if (securityRootDirectory != null) {
-      Path securityRootDirectoryPath = location.toPath().resolve("security-root-directory");
+      Path securityRootDirectoryPath = location.toPath().resolve("cluster-tool-security").resolve("security-root-directory");
       securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
       logger.info("Using SecurityRootDirectory " + securityRootDirectoryPath);
       command.add("-srd");
@@ -208,10 +208,10 @@ public class Distribution102Controller extends DistributionController {
    * Construct the Start Command with the Version, Tc Config file and server name
    *
    * @param serverSymbolicName
-   * @param topology
+   * @param tcConfig
    * @return String[] representing the start command and its parameters
    */
-  private String[] startCommand(final ServerSymbolicName serverSymbolicName, final Topology topology, final File installLocation) {
+  private String[] startCommand(final ServerSymbolicName serverSymbolicName, final TcConfig tcConfig, final File installLocation) {
     List<String> options = new ArrayList<String>();
     // start command
     options.add(getStartCmd(installLocation));
@@ -223,24 +223,9 @@ public class Distribution102Controller extends DistributionController {
     }
 
     // add -f if applicable
-    TcConfig tcConfig = topology.getTcConfig(serverSymbolicName);
     if (tcConfig.getPath() != null) {
-      //workaround to have unique platform restart directory for active & passives
-      //TODO this can  be removed when platform persistent has server name in the path
-      String modifiedTcConfigPath = null;
-      try {
-        modifiedTcConfigPath = tcConfig.getPath()
-                                   .substring(0, tcConfig.getPath()
-                                                     .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
-        String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
-            replaceAll(quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName)).
-            replaceAll(quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
-        FileUtils.write(new File(modifiedTcConfigPath), modifiedConfig);
-      } catch (IOException e) {
-        throw new RuntimeException("Error when modifying tc config", e);
-      }
       options.add("-f");
-      options.add(modifiedTcConfigPath);
+      options.add(tcConfig.getPath());
     }
 
     StringBuilder sb = new StringBuilder();

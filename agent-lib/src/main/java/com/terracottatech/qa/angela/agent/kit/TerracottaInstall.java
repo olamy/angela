@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.agent.kit;
 
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
@@ -21,11 +22,10 @@ public class TerracottaInstall {
   //  private final NetworkController networkController;
   private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
 
-  public TerracottaInstall(final Topology topology, TerracottaServer terracottaServer, File location, String licenseFilename) {
+  public TerracottaInstall(final Topology topology, File location, String licenseFilename) {
     this.topology = topology;
     this.installLocation = location;
     this.licenseFile = new File(location, licenseFilename);
-    addServer(terracottaServer);
 //    this.networkController = networkController;
   }
 
@@ -43,9 +43,9 @@ public class TerracottaInstall {
     return licenseFile;
   }
 
-  public void addServer(TerracottaServer terracottaServer) {
+  public void addServer(TerracottaServer terracottaServer, TcConfig tcConfig) {
     synchronized (terracottaServerInstances) {
-      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), topology.createDistributionController(), installLocation));
+      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), topology.createDistributionController(tcConfig), installLocation, tcConfig, topology.isNetDisruptionEnabled()));
     }
   }
 
