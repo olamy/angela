@@ -58,6 +58,20 @@ public class InstallTest {
   }
 
   @Test
+  public void testLocalSagInstall() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalSagInstall")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+      tsa.startAll();
+      tsa.licenseAll();
+    }
+  }
+
+  @Test
   public void testTwoTsaInstalls() throws Exception {
     Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
