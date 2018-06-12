@@ -355,6 +355,12 @@ public class KitManager implements Serializable {
             logger.debug("Kit name: {}", sb.toString());
             return sb.toString();
           }
+        } else if (version.getMinor() == 3) {
+          if (distribution.getLicenseType() == LicenseType.TC_DB) {
+            sb.append("SoftwareAGInstaller103_LATEST.jar");
+            logger.debug("Kit name: {}", sb.toString());
+            return sb.toString();
+          }
         }
       }
     }
