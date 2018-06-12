@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
+import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.tcconfig.holders.TcConfig10Holder;
 import com.terracottatech.qa.angela.common.tcconfig.holders.TcConfig8Holder;
 import com.terracottatech.qa.angela.common.tcconfig.holders.TcConfig9Holder;
@@ -30,6 +31,23 @@ public class TcConfig implements Serializable {
     return new TcConfig(version, tcConfigPath);
   }
 
+  public static TcConfig copy(TcConfig tcConfig) {
+    return new TcConfig(tcConfig);
+  }
+
+  TcConfig(TcConfig tcConfig) {
+    this.tcConfigName = tcConfig.tcConfigName;
+    if (tcConfig.tcConfigHolder instanceof TcConfig8Holder) {
+      this.tcConfigHolder = new TcConfig8Holder((TcConfig8Holder)tcConfig.tcConfigHolder);
+    } else if (tcConfig.tcConfigHolder instanceof TcConfig9Holder) {
+      this.tcConfigHolder = new TcConfig9Holder((TcConfig9Holder)tcConfig.tcConfigHolder);
+    } else if (tcConfig.tcConfigHolder instanceof TcConfig10Holder) {
+      this.tcConfigHolder = new TcConfig10Holder((TcConfig10Holder)tcConfig.tcConfigHolder);
+    } else {
+      throw new RuntimeException("Unexpected");
+    }
+  }
+
   TcConfig(Version version, URL tcConfigPath) {
     this.tcConfigName = new File(tcConfigPath.getPath()).getName();
     this.tcConfigHolder = initTcConfigHolder(version, tcConfigPath);
@@ -54,8 +72,7 @@ public class TcConfig implements Serializable {
           throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
         }
       }
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       throw new RuntimeException("Cannot read tc-config file : " + tcConfigPath, e);
     }
   }
@@ -72,6 +89,10 @@ public class TcConfig implements Serializable {
     return this.tcConfigHolder.getServers().values().toArray(new TerracottaServer[0])[index];
   }
 
+  public String getTcConfigName() {
+    return tcConfigName;
+  }
+
 
   public void updateTcProperties(final Properties tcProperties) {
     tcConfigHolder.setTcProperties(tcProperties);
@@ -79,6 +100,10 @@ public class TcConfig implements Serializable {
 
   public void writeTcConfigFile(File kitDir) {
     this.tcConfigHolder.writeTcConfigFile(kitDir, tcConfigName);
+  }
+
+  public void writeTcConfigFile(File kitDir, String name) {
+    this.tcConfigHolder.writeTcConfigFile(kitDir, name);
   }
 
   public String getPath() {
@@ -100,4 +125,17 @@ public class TcConfig implements Serializable {
   public void updateDataDirectory(final String rootId, final String newlocation) {
     tcConfigHolder.updateDataDirectory(rootId, newlocation);
   }
+
+  public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy){
+    return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy);
+  }
+
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy) {
+    return tcConfigHolder.retrieveTsaPorts(updateForProxy);
+  }
+
+  public void substituteToken(final String token, final String value){
+    tcConfigHolder.substituteToken(token, value);
+  }
+  
 }

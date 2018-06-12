@@ -50,7 +50,7 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, TcConfig tcConfig) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -66,7 +66,7 @@ public class Distribution43Controller extends DistributionController {
     );
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(startCommand(serverSymbolicName, topology, installLocation))
+        .command(startCommand(serverSymbolicName, tcConfig, installLocation))
         .directory(installLocation)
         .environment(buildEnv())
         .redirectError(System.err)
@@ -181,10 +181,10 @@ public class Distribution43Controller extends DistributionController {
    * Construct the Start Command with the Version, Tc Config file and server name
    *
    * @param serverSymbolicName
-   * @param topology
+   * @param tcConfig
    * @return String[] representing the start command and its parameters
    */
-  private String[] startCommand(final ServerSymbolicName serverSymbolicName, final Topology topology, final File installLocation) {
+  private String[] startCommand(final ServerSymbolicName serverSymbolicName, final TcConfig tcConfig, final File installLocation) {
     List<String> options = new ArrayList<String>();
     // start command
     options.add(getStartCmd(installLocation));
@@ -196,7 +196,6 @@ public class Distribution43Controller extends DistributionController {
     }
 
     // add -f if applicable
-    TcConfig tcConfig = topology.getTcConfig(serverSymbolicName);
     if (tcConfig.getPath() != null) {
       //workaround to have unique platform restart directory for active & passives
       //TODO this can  be removed when platform persistent has server name in the path

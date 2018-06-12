@@ -51,7 +51,7 @@ public abstract class DistributionController {
     return env;
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation);
 
