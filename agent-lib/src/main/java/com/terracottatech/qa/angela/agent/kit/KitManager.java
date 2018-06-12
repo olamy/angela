@@ -144,6 +144,10 @@ public class KitManager implements Serializable {
             if (licenseType == LicenseType.TC_DB) {
               return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller102_LATEST.jar");
             }
+          } else if (version.getMinor() == 3) {
+            if (licenseType == LicenseType.TC_DB) {
+              return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller103_LATEST.jar");
+            }
 
           }
         }
@@ -348,6 +352,12 @@ public class KitManager implements Serializable {
         } else if (version.getMinor() == 2) {
           if (distribution.getLicenseType() == LicenseType.TC_DB) {
             sb.append("SoftwareAGInstaller102_LATEST.jar");
+            logger.debug("Kit name: {}", sb.toString());
+            return sb.toString();
+          }
+        } else if (version.getMinor() == 3) {
+          if (distribution.getLicenseType() == LicenseType.TC_DB) {
+            sb.append("SoftwareAGInstaller103_LATEST.jar");
             logger.debug("Kit name: {}", sb.toString());
             return sb.toString();
           }
