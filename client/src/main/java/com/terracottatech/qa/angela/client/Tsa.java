@@ -1,7 +1,16 @@
 package com.terracottatech.qa.angela.client;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.client.net.DisruptionController;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig;
@@ -11,13 +20,6 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -61,6 +63,7 @@ public class Tsa implements AutoCloseable {
     this.license = license;
     this.instanceId = instanceId;
     this.ignite = ignite;
+    DisruptionController.add(ignite, instanceId, topology);
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {
@@ -105,7 +108,8 @@ public class Tsa implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
 
     logger.info("installing on {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory)).get();
+    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory))
+        .get();
   }
 
   public void uninstallAll() {
@@ -161,9 +165,15 @@ public class Tsa implements AutoCloseable {
         .reduce(CompletableFuture::allOf).ifPresent(CompletableFuture::join);
   }
 
+  public DisruptionController disruptionController() {
+    return DisruptionController.get(instanceId);
+  }
+
+
   public void start(final TerracottaServer terracottaServer) {
     create(terracottaServer);
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.waitForState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE))).get(TIMEOUT);
+    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.waitForState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE)))
+        .get(TIMEOUT);
   }
 
   public void stopAll() {
@@ -209,14 +219,18 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    TcConfig[] tcConfigs = topology.getTcConfigs();
+    TcConfig[] tcConfigs = topology.isNetDisruptionEnabled() ? disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) : topology
+        .getTcConfigs();
+
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory)).get();
+    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory))
+        .get();
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
-    return executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer)).get();
+    return executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer))
+        .get();
   }
 
   public Collection<TerracottaServer> getPassives() {
@@ -288,7 +302,8 @@ public class Tsa implements AutoCloseable {
   }
 
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
-    String path = executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getInstallPath(instanceId, terracottaServer)).get();
+    String path = executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getInstallPath(instanceId, terracottaServer))
+        .get();
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
   }
 
@@ -300,16 +315,24 @@ public class Tsa implements AutoCloseable {
     closed = true;
 
     try {
-        stopAll();
+      stopAll();
     } catch (Exception e) {
-      logger.error("Error when trying to stop servers" , e.getMessage());
+      logger.error("Error when trying to stop servers", e.getMessage());
       // ignore, not installed
     }
     if (!ClusterFactory.SKIP_UNINSTALL) {
       uninstallAll();
     }
-  }
 
+    if (topology.isNetDisruptionEnabled()) {
+      try {
+        DisruptionController.get(instanceId).close();
+        DisruptionController.remove(instanceId);
+      } catch (Exception e) {
+        logger.error("Error when trying to close traffic controller", e.getMessage());
+      }
+    }
+  }
 
   private IgniteFuture<Void> executeRemotely(final TerracottaServer hostname, final IgniteRunnable runnable) {
     IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());

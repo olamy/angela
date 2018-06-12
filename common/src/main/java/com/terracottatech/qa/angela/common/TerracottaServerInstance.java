@@ -1,17 +1,29 @@
 package com.terracottatech.qa.angela.common;
 
 
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
-import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import org.zeroturnaround.process.PidProcess;
 import org.zeroturnaround.process.Processes;
 
+import com.terracottatech.qa.angela.common.distribution.DistributionController;
+import com.terracottatech.qa.angela.common.net.DisruptionProvider;
+import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
+import com.terracottatech.qa.angela.common.net.Disruptor;
+import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import static java.util.Arrays.stream;
 
@@ -20,25 +32,62 @@ import static java.util.Arrays.stream;
  *
  * @author Aurelien Broszniowski
  */
-public class TerracottaServerInstance  {
-
+public class TerracottaServerInstance {
+  private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
   private final ServerSymbolicName serverSymbolicName;
   private final DistributionController distributionController;
   private final File location;
+  private final TcConfig tcConfig;
   private volatile TerracottaServerInstanceProcess terracottaServerInstanceProcess = new TerracottaServerInstanceProcess(new AtomicReference<>(TerracottaServerState.STOPPED));
+  private final Map<ServerSymbolicName, Disruptor> disruptionLinks = new ConcurrentHashMap<>();
+  private final boolean netDisruptionEnabled;
 
-  public TerracottaServerInstance(final ServerSymbolicName serverSymbolicName, final DistributionController distributionController, final File location) {
+  public TerracottaServerInstance(final ServerSymbolicName serverSymbolicName, final DistributionController distributionController, final File location, final TcConfig tcConfig, final boolean netDisruptionEnabled) {
     this.serverSymbolicName = serverSymbolicName;
     this.distributionController = distributionController;
     this.location = location;
+    this.netDisruptionEnabled = netDisruptionEnabled;
+
+    this.tcConfig = TcConfig.copy(tcConfig);
+    if (this.netDisruptionEnabled && DISRUPTION_PROVIDER.isProxyBased()) {
+      constructNetDisruptionLinks();
+    }
+    this.tcConfig.substituteToken(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
+    String modifiedTcConfigName = this.tcConfig.getTcConfigName()
+                                      .substring(0, this.tcConfig.getTcConfigName()
+                                                        .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
+    this.tcConfig.writeTcConfigFile(location,modifiedTcConfigName);
   }
 
   public void create() {
-    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location);
+    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig);
+  }
+
+  public void disrupt(Collection<TerracottaServer> targets) {
+    if (!netDisruptionEnabled) {
+      throw new IllegalArgumentException("Topology not enabled for network disruption");
+    }
+    for (TerracottaServer server : targets) {
+      disruptionLinks.get(server.getServerSymbolicName()).disrupt();
+    }
+  }
+
+  public void undisrupt(Collection<TerracottaServer> targets) {
+    if (!netDisruptionEnabled) {
+      throw new IllegalArgumentException("Topology not enabled for network disruption");
+    }
+    for (TerracottaServer target : targets) {
+      disruptionLinks.get(target.getServerSymbolicName()).undisrupt();
+    }
   }
 
   public void stop() {
-    this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
+    try {
+      this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
+    } finally {
+      //remove net disruption links with other servers
+      disruptionLinks.values().stream().forEach(DISRUPTION_PROVIDER::removeLink);
+    }
   }
 
   public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
@@ -101,6 +150,20 @@ public class TerracottaServerInstance  {
       } catch (Exception e) {
         throw new RuntimeException("Error checking liveness of a process instance with PIDs " + Arrays.toString(pids), e);
       }
+    }
+  }
+
+  /**
+   * Construct net disruption link between this server and other servers in stripe
+   */
+  private void constructNetDisruptionLinks() {
+    List<GroupMember> members = tcConfig.retrieveGroupMembers(serverSymbolicName.getSymbolicName(), DISRUPTION_PROVIDER.isProxyBased());
+    GroupMember thisMember = members.get(0);
+    for(int i = 1; i < members.size(); ++i){
+      GroupMember otherMember = members.get(i);
+      final InetSocketAddress src = new InetSocketAddress(thisMember.getHost(), otherMember.isProxiedMember() ? otherMember.getProxyPort() : thisMember.getGroupPort());
+      final InetSocketAddress dest = new InetSocketAddress(otherMember.getHost(), otherMember.getGroupPort());
+      disruptionLinks.put(new ServerSymbolicName(otherMember.getServerName()), DISRUPTION_PROVIDER.createLink(src,dest));
     }
   }
 }

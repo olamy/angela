@@ -1,12 +1,12 @@
 package com.terracottatech.qa.angela.common.topology;
 
+import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.distribution.Distribution102Controller;
 import com.terracottatech.qa.angela.common.distribution.Distribution43Controller;
+import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.distribution.Distribution102Controller;
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -27,6 +27,7 @@ import java.util.Map;
 public class Topology {
   private final Distribution distribution;
   private final TcConfig[] tcConfigs;
+  private final boolean netDisruptionEnabled;
 
   /*
    * Galvan compatibility mode: if non-null, use the kit in that folder instead of downloading one.
@@ -34,18 +35,30 @@ public class Topology {
   private final String kitInstallationPath;
 
   public Topology(final Distribution distribution, final TcConfig... tcConfigs) {
+    this(distribution, false, tcConfigs);
+  }
+
+  public Topology(final Distribution distribution, final boolean netDisruptionEnabled, final TcConfig... tcConfigs) {
+    if (netDisruptionEnabled && tcConfigs.length > 1){
+      //No disruption testing with multi stripes for now(due to constraint on TopologyIgnoredConnectionService)
+      throw new IllegalArgumentException("Disruption tests doesn't support multi stripes");
+    }
     this.distribution = distribution;
+    this.netDisruptionEnabled = netDisruptionEnabled;
     this.tcConfigs = tcConfigs;
     this.kitInstallationPath = System.getProperty("kitInstallationPath");
   }
 
-  public DistributionController createDistributionController() {
+  public DistributionController createDistributionController(TcConfig tcConfig) {
+    //TODO should it be validated early when constructing topology?
     if (distribution.getVersion().getMajor() == 10) {
       if (distribution.getVersion().getMinor() > 0) {
         return new Distribution102Controller(distribution, this);
       }
+    } else if (netDisruptionEnabled) {
+      throw new IllegalArgumentException("Network disruption not supported for older versions");
     } else if (distribution.getVersion().getMajor() == 4) {
-      if (distribution.getVersion().getMinor() >= 3 ) {
+      if (distribution.getVersion().getMinor() >= 3) {
         return new Distribution43Controller(distribution, this);
       }
     }
@@ -59,6 +72,7 @@ public class Topology {
     }
     return servers;
   }
+
 
   public String getKitInstallationPath() {
     return kitInstallationPath;
@@ -115,12 +129,17 @@ public class Topology {
     return distribution.getLicenseType();
   }
 
+  public boolean isNetDisruptionEnabled() {
+    return netDisruptionEnabled;
+  }
+
   @Override
   public String toString() {
     return "Topology{" +
-        "distribution=" + distribution +
-        ", tcConfigs=" + Arrays.toString(tcConfigs) +
-        '}';
+           "distribution=" + distribution +
+           ", tcConfigs=" + Arrays.toString(tcConfigs) +
+           ", netDisruptionEnabled=" + netDisruptionEnabled +
+           '}';
   }
 
   public Distribution getDistribution() {

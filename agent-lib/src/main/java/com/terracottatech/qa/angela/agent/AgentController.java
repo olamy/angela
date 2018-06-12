@@ -1,5 +1,18 @@
 package com.terracottatech.qa.angela.agent;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.PidUtil;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
+
 import com.terracottatech.qa.angela.agent.kit.KitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
@@ -21,18 +34,6 @@ import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidProcess;
-import org.zeroturnaround.process.PidUtil;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -78,13 +80,7 @@ public class AgentController {
 
   public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
-    if (terracottaInstall != null) {
-      logger.info("Kit for " + terracottaServer + " already installed");
-      terracottaInstall.addServer(terracottaServer);
-      installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
-      topology.get(tcConfigIndex).updateLogsLocation(terracottaInstall.getInstallLocation(),tcConfigIndex);
-      topology.get(tcConfigIndex).writeTcConfigFile(terracottaInstall.getInstallLocation());
-    } else {
+    if (terracottaInstall == null){
       logger.info("Installing kit for " + terracottaServer);
       KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
       File kitDir = kitManager.installKit(license, offline);
@@ -96,9 +92,17 @@ public class AgentController {
         tcConfig.writeTcConfigFile(kitDir);
         logger.info("Tc Config installed config path : {}", tcConfig.getPath());
       }
-
-      kitsInstalls.put(instanceId, new TerracottaInstall(topology, terracottaServer, kitDir, license.getFilename()));
+      terracottaInstall = new TerracottaInstall(topology, kitDir, license.getFilename());
+      kitsInstalls.put(instanceId, terracottaInstall);
+    } else {
+      logger.info("Kit for " + terracottaServer + " already installed");
+      installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
     }
+
+    TcConfig tcConfig = topology.get(tcConfigIndex);
+    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(),tcConfigIndex);
+    terracottaInstall.addServer(terracottaServer,tcConfig);
+
   }
 
   public String getInstallPath(InstanceId instanceId, TerracottaServer terracottaServer) {
@@ -270,10 +274,10 @@ public class AgentController {
     }
   }
 
-  public TerracottaServerInstance create(final InstanceId instanceId, final TerracottaServer terracottaServer) {
+  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.create();
-    return serverInstance;
+
   }
 
   public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer) {
@@ -300,6 +304,25 @@ public class AgentController {
       return TerracottaServerState.NOT_INSTALLED;
     }
     return serverInstance.getTerracottaServerState();
+  }
+
+
+  public void disrupt(final InstanceId instanceId, final TerracottaServer src, final TerracottaServer target) {
+    disrupt(instanceId, src, Collections.singleton(target));
+  }
+
+  public void disrupt(final InstanceId instanceId, final TerracottaServer src, final Collection<TerracottaServer> targets) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(src);
+    serverInstance.disrupt(targets);
+  }
+
+  public void undisrupt(final InstanceId instanceId, final TerracottaServer src, final TerracottaServer target) {
+    undisrupt(instanceId, src, Collections.singleton(target));
+  }
+
+  public void undisrupt(final InstanceId instanceId, final TerracottaServer src, final Collection<TerracottaServer> targets) {
+    TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(src);
+    serverInstance.undisrupt(targets);
   }
 
   public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory) {

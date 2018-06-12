@@ -16,7 +16,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <terracotta.version>10.3.0.0.203</terracotta.version>
+    <terracotta.version>10.3.0.0.229</terracotta.version>
     <java.build.version>1.8</java.build.version>
     <ignite.version>2.4.0</ignite.version>
   </properties>
@@ -79,6 +79,11 @@
         <version>3.0.6</version>
       </dependency>
       <dependency>
+        <groupId>com.terracottatech.internal</groupId>
+        <artifactId>terracotta-common-client</artifactId>
+        <version>${terracotta.version}</version>
+      </dependency>
+      <dependency>
         <groupId>com.terracottatech.store</groupId>
         <artifactId>terracotta-store-client</artifactId>
         <version>${terracotta.version}</version>
@@ -124,6 +129,11 @@
         <groupId>ch.qos.logback</groupId>
         <artifactId>logback-classic</artifactId>
         <version>1.1.9</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.netcrusherorg</groupId>
+        <artifactId>netcrusher-core</artifactId>
+        <version>0.10</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

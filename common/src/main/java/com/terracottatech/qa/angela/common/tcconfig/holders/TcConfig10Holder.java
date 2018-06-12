@@ -5,15 +5,24 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.net.PortChooser;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.Charset;
 
 /**
  * Terracotta config for Terracotta 5.0
@@ -23,6 +32,12 @@ import java.nio.charset.Charset;
  * @author Aurelien Broszniowski
  */
 public class TcConfig10Holder extends TcConfigHolder {
+
+  private static final PortChooser PORT_CHOOSER = new PortChooser();
+
+  public TcConfig10Holder(final TcConfig10Holder tcConfig10Holder){
+    super(tcConfig10Holder);
+  }
 
   public TcConfig10Holder(final InputStream tcConfigInputStream) {
     super(tcConfigInputStream);
@@ -100,6 +115,78 @@ public class TcConfig10Holder extends TcConfigHolder {
 
         this.tcConfigContent = domToString(tcConfigXml);
       }
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
+
+  public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy){
+    try {
+      List<GroupMember> members = new ArrayList<>();
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+
+      for(int i = 0; i < serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
+        String name = nameNode.getTextContent();
+        Node hostNode = (Node) xPath.evaluate("@host", server, XPathConstants.NODE);
+        String host = hostNode.getTextContent();
+        
+        Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
+        int groupPort = Integer.parseInt(tsaGroupPortNode.getTextContent().trim());
+        GroupMember member = null;
+        if (name.equals(serverName) || !updateProxy){
+          member = new GroupMember(name,host,groupPort);
+        }else {
+          int proxyPort = PORT_CHOOSER.chooseRandomPort();
+          member = new GroupMember(name,host,groupPort, proxyPort);
+          tsaGroupPortNode.setTextContent(String.valueOf(proxyPort));
+        }
+        if (name.equals(serverName)){
+          members.add(0, member);
+        }else {
+          members.add(member);
+        }
+      }
+      this.tcConfigContent = domToString(tcConfigXml);
+      return members;
+
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
+  @Override
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy){
+    try {
+      Map<ServerSymbolicName, Integer> tsaPorts = new HashMap<>();
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+
+      for(int i = 0; i < serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
+        String name = nameNode.getTextContent();
+
+        Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
+        int tsaPort = Integer.parseInt(tsaPortNode.getTextContent().trim());
+        if (updateForProxy) {
+          tsaPort = PORT_CHOOSER.chooseRandomPort();
+          tsaPortNode.setTextContent(String.valueOf(tsaPort));
+        }
+        tsaPorts.put(new ServerSymbolicName(name), tsaPort);
+      }
+      this.tcConfigContent = domToString(tcConfigXml);
+      return tsaPorts;
+
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);
     }

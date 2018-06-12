@@ -50,6 +50,10 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.github.netcrusherorg</groupId>
+      <artifactId>netcrusher-core</artifactId>
+    </dependency>
   </dependencies>
 
   <!-- This is required to pass the 'project.version' from the pom -->
