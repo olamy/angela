@@ -7,7 +7,8 @@
   <parent>
     <groupId>com.terracottatech.qa</groupId>
     <artifactId>angela</artifactId>
-    <version>1.0.12-SNAPSHOT</version>
+    <version>w<
+    /version>
   </parent>
 
   <artifactId>angela-agent-lib</artifactId>
