@@ -9,6 +9,8 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
+
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
@@ -57,8 +59,10 @@ public class InstallTest {
     }
   }
 
+  @Ignore("The sandbox doesn't keep enough builds to make this test pass beyond a couple of days. So we keep for testing manually")
   @Test
   public void testLocalSagInstall() throws Exception {
+    System.setProperty("sandbox", "TDB_PI_103oct2018");
     Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, LicenseType.TC_DB),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
