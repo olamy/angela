@@ -126,6 +126,10 @@ public class TcConfig implements Serializable {
     tcConfigHolder.updateDataDirectory(rootId, newlocation);
   }
 
+  public void updateServerHost(int serverIndex, String newServerName) {
+    tcConfigHolder.updateServerHost(serverIndex, newServerName);
+  }
+
   public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy){
     return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy);
   }

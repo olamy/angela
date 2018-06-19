@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>angela-common</artifactId>
-  
+
   <dependencies>
     <dependency>
       <groupId>org.apache.ignite</groupId>

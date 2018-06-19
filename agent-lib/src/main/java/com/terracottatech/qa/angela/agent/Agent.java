@@ -68,6 +68,8 @@ public class Agent {
   public static volatile AgentController CONTROLLER;
 
   public static void main(String[] args) throws Exception {
+    // the angela-agent jar may end up on the classpath, so its logback config cannot have the default filename
+    System.setProperty("logback.configurationFile", "/angela-logback.xml");
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
     String directjoin = System.getProperty("tc.qa.directjoin");
 
