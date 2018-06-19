@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -13,6 +14,7 @@ import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +31,16 @@ public class ClientTest {
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
       try (Client client = instance.client("localhost")) {
         Future<Void> f = client.submit((context) -> System.out.println("hello world"));
+        f.get();
+      }
+    }
+  }
+
+  @Test
+  public void testRemoteClientWithJdk9() throws Exception {
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
+      try (Client client = instance.client("localhost", new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--illegal-access=warn", "--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")))) {
+        Future<Void> f = client.submit((context) -> System.out.println("hello JDK 9 world"));
         f.get();
       }
     }

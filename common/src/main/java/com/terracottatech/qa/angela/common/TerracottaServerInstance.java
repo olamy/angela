@@ -59,8 +59,8 @@ public class TerracottaServerInstance {
     this.tcConfig.writeTcConfigFile(location,modifiedTcConfigName);
   }
 
-  public void create() {
-    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig);
+  public void create(TerracottaCommandLineEnvironment env) {
+    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig, env);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
@@ -81,21 +81,21 @@ public class TerracottaServerInstance {
     }
   }
 
-  public void stop() {
+  public void stop(TerracottaCommandLineEnvironment tcEnv) {
     try {
-      this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess);
+      this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess, tcEnv);
     } finally {
       //remove net disruption links with other servers
       disruptionLinks.values().stream().forEach(DISRUPTION_PROVIDER::removeLink);
     }
   }
 
-  public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
-    this.distributionController.configureLicense(clusterName, location, licensePath, tcConfigs, securityRootDirectory);
+  public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env) {
+    this.distributionController.configureLicense(clusterName, location, licensePath, tcConfigs, securityRootDirectory, env);
   }
 
-  public ClusterToolExecutionResult clusterTool(String... arguments) {
-    return distributionController.invokeClusterTool(location, arguments);
+  public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {
+    return distributionController.invokeClusterTool(location, env, arguments);
   }
 
   public void waitForState(Predicate<TerracottaServerState> condition) {

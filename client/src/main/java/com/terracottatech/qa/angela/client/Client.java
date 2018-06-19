@@ -17,6 +17,7 @@ package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Context;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
@@ -53,15 +54,17 @@ public class Client implements Closeable {
   private final Ignite ignite;
   private final String subNodeName;
   private final boolean localhostOnly;
+  private final TerracottaCommandLineEnvironment tcEnv;
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, boolean localhostOnly) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, boolean localhostOnly, TerracottaCommandLineEnvironment tcEnv) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
     this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
     this.localhostOnly = localhostOnly;
+    this.tcEnv = tcEnv;
     this.subClientPid = spawnSubClient();
   }
 
@@ -77,7 +80,7 @@ public class Client implements Closeable {
       uploadClasspath(queue);
       remoteDownloadFuture.get();
 
-      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, subNodeName, localhostOnly));
+      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, subNodeName, localhostOnly, tcEnv));
       int pid = results.iterator().next();
       logger.info("client '{}' on {} started with PID {}", subNodeName, nodeName, pid);
 

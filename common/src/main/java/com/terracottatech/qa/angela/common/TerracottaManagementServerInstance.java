@@ -9,19 +9,21 @@ public class TerracottaManagementServerInstance {
 
   private final DistributionController distributionController;
   private final File location;
+  private final TerracottaCommandLineEnvironment tcEnv;
   private volatile TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaManagementServerInstanceProcess = new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(new AtomicReference<>(TerracottaManagementServerState.STOPPED));
 
-  public TerracottaManagementServerInstance(final DistributionController distributionController, final File location) {
+  public TerracottaManagementServerInstance(final DistributionController distributionController, final File location, TerracottaCommandLineEnvironment tcEnv) {
     this.distributionController = distributionController;
     this.location = location;
+    this.tcEnv = tcEnv;
   }
 
   public void start() {
-    this.terracottaManagementServerInstanceProcess = this.distributionController.startTms(location);
+    this.terracottaManagementServerInstanceProcess = this.distributionController.startTms(location, tcEnv);
   }
 
   public void stop() {
-    this.distributionController.stopTms(location, terracottaManagementServerInstanceProcess);
+    this.distributionController.stopTms(location, terracottaManagementServerInstanceProcess, tcEnv);
   }
 
   public TerracottaManagementServerState getTerracottaManagementServerState() {

@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, TcConfig tcConfig) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -68,7 +69,7 @@ public class Distribution43Controller extends DistributionController {
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, tcConfig, installLocation))
         .directory(installLocation)
-        .environment(buildEnv())
+        .environment(buildEnv(tcEnv))
         .redirectError(System.err)
         .redirectOutput(serverLogOutputStream), stateRef, STOPPED);
 
@@ -77,11 +78,11 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
+  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     ProcessExecutor executor = new ProcessExecutor()
         .command(stopCommand(serverSymbolicName, topology, installLocation))
         .directory(installLocation)
-        .environment(buildEnv())
+        .environment(buildEnv(tcEnv))
         .redirectError(System.err)
         .redirectOutput(System.out);  // TODO
 
@@ -168,12 +169,12 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory) {
+  public void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
     LOGGER.info("There is no licensing step in 4.x");
   }
 
   @Override
-  public ClusterToolExecutionResult invokeClusterTool(File installLocation, String... arguments) {
+  public ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
     throw new UnsupportedOperationException("4.x does not have a cluster tool");
   }
 
@@ -244,12 +245,12 @@ public class Distribution43Controller extends DistributionController {
 
 
   @Override
-  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation) {
+  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation, TerracottaCommandLineEnvironment tcEnv) {
     throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
   }
 
   @Override
-  public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess) {
+  public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
   }
 

@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.http.HttpUtils;
@@ -31,14 +32,16 @@ public class Tms implements AutoCloseable {
   private final String tmsHostname;
   private final String kitInstallationPath;
   private final Distribution distribution;
+  private final TerracottaCommandLineEnvironment tcEnv;
   private boolean closed = false;
   private final Ignite ignite;
   private final License license;
   private final InstanceId instanceId;
   private final TmsServerSecurityConfig securityConfig;
 
-  public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution, TmsServerSecurityConfig securityConfig) {
+  public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution, TmsServerSecurityConfig securityConfig, TerracottaCommandLineEnvironment tcEnv) {
     this.distribution = distribution;
+    this.tcEnv = tcEnv;
     if (license == null) {
       throw new IllegalArgumentException("TMS requires a license.");
     }
@@ -175,7 +178,7 @@ public class Tms implements AutoCloseable {
   public void install() {
     logger.info("starting TMS on {}", tmsHostname);
 
-    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, kitInstallationPath, license, securityConfig));
+    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, kitInstallationPath, license, securityConfig, tcEnv));
   }
 
   public void stopTms(final String tmsHostname) {

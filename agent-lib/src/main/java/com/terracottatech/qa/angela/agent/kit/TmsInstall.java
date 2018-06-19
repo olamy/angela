@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
@@ -21,21 +22,23 @@ public class TmsInstall {
 
   private final Distribution distribution;
   private final File installLocation;
+  private final TerracottaCommandLineEnvironment tcEnv;
   private TerracottaManagementServerInstance terracottaManagementServerInstance;
 
   public File getInstallLocation() {
     return installLocation;
   }
 
-  public TmsInstall(Distribution distribution, File location) {
+  public TmsInstall(Distribution distribution, File location, TerracottaCommandLineEnvironment tcEnv) {
     this.distribution = distribution;
     this.installLocation = location;
+    this.tcEnv = tcEnv;
     addTerracottaManagementServer();
 //    this.networkController = networkController;
   }
 
   public void addTerracottaManagementServer() {
-    terracottaManagementServerInstance = new TerracottaManagementServerInstance(createDistributionController(distribution), installLocation);
+    terracottaManagementServerInstance = new TerracottaManagementServerInstance(createDistributionController(distribution), installLocation, tcEnv);
   }
 
   public TerracottaManagementServerInstance getTerracottaManagementServerInstance() {

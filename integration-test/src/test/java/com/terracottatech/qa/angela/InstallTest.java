@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -13,6 +14,8 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.Arrays;
 
 import java.net.InetAddress;
 
@@ -60,6 +63,20 @@ public class InstallTest {
     License license = new License(getClass().getResource("/terracotta/4/terracotta-license.key"));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall4x")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+      tsa.startAll();
+      tsa.licenseAll();
+    }
+  }
+
+  @Test
+  public void testLocalInstallJava9() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstallJava9", new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--add-modules", "java.xml.bind", "--illegal-access=warn")))) {
       Tsa tsa = factory.tsa(topology, license);
       tsa.installAll();
       tsa.startAll();
