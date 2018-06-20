@@ -1,20 +1,16 @@
 package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.HashMap;
@@ -27,7 +23,7 @@ import java.util.Map;
 
 public abstract class DistributionController {
 
-  private final static Logger logger = LoggerFactory.getLogger(DistributionController.class);
+  private final static Logger LOGGER = LoggerFactory.getLogger(DistributionController.class);
 
   protected final Distribution distribution;
   protected final Topology topology;
@@ -40,26 +36,30 @@ public abstract class DistributionController {
     this.topology = topology;
   }
 
-  protected Map<String, String> buildEnv() {
+  protected Map<String, String> buildEnv(TerracottaCommandLineEnvironment tcEnv) {
     Map<String, String> env = new HashMap<>();
-    List<JDK> j8Homes = javaLocationResolver.resolveJavaLocation("1.8");
-    if (j8Homes.size() > 1) {
-      logger.warn("Multiple JDK 8 homes found: {} - using the 1st one", j8Homes);
+    String javaHome = javaLocationResolver.resolveJavaLocation(tcEnv).getHome();
+    env.put("JAVA_HOME", javaHome);
+    LOGGER.info(" JAVA_HOME = {}", javaHome);
+
+    List<String> javaOpts = tcEnv.getJavaOpts();
+    if (javaOpts != null) {
+      String joinedJavaOpts = String.join(" ", javaOpts);
+      env.put("JAVA_OPTS", joinedJavaOpts);
+      LOGGER.info(" JAVA_OPTS = {}", joinedJavaOpts);
     }
-    env.put("JAVA_HOME", j8Homes.get(0).getHome());
-    logger.info(" JAVA_HOME = {}", j8Homes.get(0).getHome());
     return env;
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, TerracottaCommandLineEnvironment env);
 
-  public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation);
+  public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
 
-  public abstract void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess);
+  public abstract void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void stop(final ServerSymbolicName serverSymbolicName, final File location, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess);
+  public abstract void stop(final ServerSymbolicName serverSymbolicName, final File location, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory);
+  public abstract void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env);
 
-  public abstract ClusterToolExecutionResult invokeClusterTool(File installLocation, String... arguments);
+  public abstract ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
 }

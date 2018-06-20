@@ -1,10 +1,19 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import org.apache.commons.io.FileUtils;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -13,18 +22,7 @@ import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
-import com.terracottatech.qa.angela.common.ClusterToolException;
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.topology.Version;
-import com.terracottatech.qa.angela.common.util.OS;
-import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
-
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,7 +41,6 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
-import static java.util.regex.Pattern.quote;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -62,8 +59,8 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, final TcConfig tcConfig) {
-    Map<String, String> env = buildEnv();
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, final TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv) {
+    Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicInteger javaPid = new AtomicInteger(-1);
@@ -101,7 +98,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
+  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     int[] pids = terracottaServerInstanceProcess.getPids();
     logger.info("Destroying L2 process for " + serverSymbolicName);
     for (int pid : pids) {
@@ -114,7 +111,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public ClusterToolExecutionResult invokeClusterTool(File installLocation, String... arguments) {
+  public ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
     List<String> args = new ArrayList<>();
     args.add(installLocation
         + File.separator + "tools"
@@ -126,7 +123,7 @@ public class Distribution102Controller extends DistributionController {
 
     try {
       ProcessBuilder builder = new ProcessBuilder(args);
-      builder.environment().putAll(buildEnv());
+      builder.environment().putAll(buildEnv(tcEnv));
       builder.inheritIO();
       builder.redirectErrorStream(true);
       File out_log = File.createTempFile("cluster-tool-output", ".tmp");
@@ -144,8 +141,8 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory) {
-    Map<String, String> env = buildEnv();
+  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
+    Map<String, String> env = buildEnv(tcEnv);
 
     String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory);
 
@@ -257,8 +254,8 @@ public class Distribution102Controller extends DistributionController {
 
 
   @Override
-  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation) {
-    Map<String, String> env = buildEnv();
+  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(final File installLocation, TerracottaCommandLineEnvironment tcEnv) {
+    Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
     AtomicInteger javaPid = new AtomicInteger(-1);
@@ -293,7 +290,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess) {
+  public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     Number[] pids = terracottaServerInstanceProcess.getPids();
     logger.info("Destroying TMS process");
     for (Number pid : pids) {

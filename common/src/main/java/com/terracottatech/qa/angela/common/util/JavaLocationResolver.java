@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.common.util;
 
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -11,9 +14,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -24,53 +27,28 @@ import java.util.stream.Collectors;
 
 public class JavaLocationResolver {
 
-  public static final EnumSet<Vendor> DEFAULT_ALLOWED_VENDORS = EnumSet.of(Vendor.ORACLE, Vendor.SUN, Vendor.OPENJDK);
-
-  public enum Vendor {
-    SUN("sun"),
-    ORACLE("Oracle Corporation"),
-    OPENJDK("openjdk"),
-    IBM("ibm"),
-    ;
-
-    private final String name;
-
-    Vendor(String name) {
-      this.name = name;
-    }
-
-    public String getName() {
-      return name;
-    }
-  }
+  private final static Logger LOGGER = LoggerFactory.getLogger(JavaLocationResolver.class);
 
   private final List<JDK> jdks;
-  private final EnumSet<Vendor> allowedVendors;
 
-  public JavaLocationResolver(URL url, EnumSet<Vendor> allowedVendors) {
-    this.allowedVendors = allowedVendors;
+  JavaLocationResolver(URL url) {
     Objects.requireNonNull(url, "Toolchains URL must not be null");
     jdks = findJDKs(url);
   }
 
   public JavaLocationResolver() {
-    this(DEFAULT_ALLOWED_VENDORS);
-  }
-
-  public JavaLocationResolver(EnumSet<Vendor> allowedVendors) {
-    this.allowedVendors = allowedVendors;
     jdks = findJDKs();
   }
 
-   List<JDK> resolveJavaLocation() {
-    return resolveJavaLocation(null, allowedVendors);
+  public JDK resolveJavaLocation(TerracottaCommandLineEnvironment tcEnv) {
+    List<JDK> jdks = resolveJavaLocation(tcEnv.getJavaVersion(), tcEnv.getJavaVendors());
+    if (jdks.size() > 1) {
+      LOGGER.info("Multiple java with version {} found: {} - using the 1st one", tcEnv.getJavaVersion(), jdks);
+    }
+    return jdks.get(0);
   }
 
-  public List<JDK> resolveJavaLocation(String version) {
-    return resolveJavaLocation(version, allowedVendors);
-  }
-
-   List<JDK> resolveJavaLocation(String version, EnumSet<Vendor> vendors) {
+  List<JDK> resolveJavaLocation(String version, Set<String> vendors) {
     List<JDK> list = jdks.stream()
         .filter(JDK::isValid)
         .filter(jdk -> version == null || version.equals(jdk.getVersion()))
@@ -78,8 +56,8 @@ public class JavaLocationResolver {
           if (vendors == null) {
             return true;
           }
-          for (Vendor vendor : vendors) {
-            if (vendor.getName().equalsIgnoreCase(jdk.getVendor())) {
+          for (String vendor : vendors) {
+            if (vendor.equalsIgnoreCase(jdk.getVendor())) {
               return true;
             }
           }
