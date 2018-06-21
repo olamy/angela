@@ -49,7 +49,7 @@ public class GettingStarted {
   @Test
   public void configureClusterWithSecurity() throws Exception {
     // tag::configureClusterWithSecurity[]
-    Topology topology =
+    Topology topology = // <1>
         new Topology(distribution(version("10.2.0-SNAPSHOT"), PackageType.KIT, LicenseType.TC_DB), // <2>
                      secureTcConfig(version("10.2.0-SNAPSHOT"), getClass().getResource("/tc-config-a-with-security.xml"), // <3>
                                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(getClass().getResource("/security"))))); // <4>
