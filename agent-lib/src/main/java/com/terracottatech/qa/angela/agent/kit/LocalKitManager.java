@@ -26,7 +26,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  * @author Aurelien Broszniowski
  */
 
-public class LocalKitManager extends ParentKitManager {
+public class LocalKitManager extends KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
 

@@ -14,7 +14,7 @@ import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
-import com.terracottatech.qa.angela.agent.kit.KitManager;
+import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
@@ -84,7 +84,7 @@ public class AgentController {
 
     if (terracottaInstall == null) {
       logger.info("Installing kit for " + terracottaServer);
-      KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), kitInstallationName);
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, topology.getDistribution(), kitInstallationName);
 
       boolean isKitAvailable = kitManager.verifyKitAvailability(offline);
       if (isKitAvailable) {
@@ -118,7 +118,7 @@ public class AgentController {
   public void downloadKit(final InstanceId instanceId, Distribution distribution, final String kitInstallationName) {
     final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
     try {
-      KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationName);
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
 
       File kitDestDir = kitManager.getKitInstallationPath();
       logger.info("Downloading tsa jars into {}", kitDestDir);
@@ -165,7 +165,7 @@ public class AgentController {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall == null) {
       logger.info("Installing kit for " + terracottaServer);
-      KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), kitInstallationName);
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, topology.getDistribution(), kitInstallationName);
 
       File kitDir = kitManager.installKit(license);
 
@@ -225,7 +225,7 @@ public class AgentController {
       return true;
     } else {
       logger.info("Attempting to install kit from cached install for " + tmsHostname);
-      KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationName);
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
 
       boolean isKitAvailable = kitManager.verifyKitAvailability(offline);
       if (isKitAvailable) {
@@ -249,7 +249,7 @@ public class AgentController {
       tmsInstall.addTerracottaManagementServer();
     } else {
       logger.info("Installing kit for " + tmsHostname);
-      KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationName);
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
       File kitDir = kitManager.installKit(license, false);
       File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
       if (tmsServerSecurityConfig != null) {
@@ -337,7 +337,7 @@ public class AgentController {
       if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null)) {
         try {
           logger.info("Uninstalling kit for {}", terracottaServer);
-          KitManager kitManager = new KitManager(instanceId, topology.getDistribution(), topology.getKitInstallationPath());
+          RemoteKitManager kitManager = new RemoteKitManager(instanceId, topology.getDistribution(), kitInstallationName);
           // TODO : get log files
 
           kitManager.deleteInstall(terracottaInstall.getInstallLocation());
@@ -364,7 +364,7 @@ public class AgentController {
       if (numberOfTerracottaInstances == 0) {
         try {
           logger.info("Uninstalling kit for " + tmsHostname);
-          KitManager kitManager = new KitManager(instanceId, distribution, kitInstallationPath);
+          RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
           // TODO : get log files
 
           kitManager.deleteInstall(tmsInstall.getInstallLocation());
