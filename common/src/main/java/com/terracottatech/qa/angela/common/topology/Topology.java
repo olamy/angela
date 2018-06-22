@@ -29,10 +29,6 @@ public class Topology {
   private final TcConfig[] tcConfigs;
   private final boolean netDisruptionEnabled;
 
-  /*
-   * Galvan compatibility mode: if non-null, use the kit in that folder instead of downloading one.
-   */
-  private final String kitInstallationPath;
 
   public Topology(final Distribution distribution, final TcConfig... tcConfigs) {
     this(distribution, false, tcConfigs);
@@ -46,7 +42,7 @@ public class Topology {
     this.distribution = distribution;
     this.netDisruptionEnabled = netDisruptionEnabled;
     this.tcConfigs = tcConfigs;
-    this.kitInstallationPath = System.getProperty("kitInstallationPath");
+
   }
 
   public DistributionController createDistributionController(TcConfig tcConfig) {
@@ -71,11 +67,6 @@ public class Topology {
       servers.putAll(tcConfig.getServers());
     }
     return servers;
-  }
-
-
-  public String getKitInstallationPath() {
-    return kitInstallationPath;
   }
 
   public TcConfig get(final int stripeId) {

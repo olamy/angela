@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.client.net.DisruptionController;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
@@ -21,7 +23,11 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.FileMetadata;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -29,6 +35,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -52,6 +59,7 @@ public class Tsa implements AutoCloseable {
   private final InstanceId instanceId;
   private final TerracottaCommandLineEnvironment tcEnv;
   private boolean closed = false;
+  private LocalKitManager localKitManager;
 
   Tsa(Ignite ignite, InstanceId instanceId, Topology topology, License license, TerracottaCommandLineEnvironment tcEnv) {
     this.tcEnv = tcEnv;
@@ -63,6 +71,7 @@ public class Tsa implements AutoCloseable {
     this.instanceId = instanceId;
     this.ignite = ignite;
     DisruptionController.add(ignite, instanceId, topology);
+    this.localKitManager = new LocalKitManager(topology.getDistribution());
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {
@@ -104,11 +113,70 @@ public class Tsa implements AutoCloseable {
     }
 
     final int finalTcConfigIndex = tcConfigIndex;
-    boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));  //TODO :get offline flag
+    boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
 
-    logger.info("installing on {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory))
-        .get();
+    logger.info("Setting up locally the extracted install to be deployed remotely");
+    localKitManager.setupLocalInstall(license, offline);
+
+    logger.info("Attempting to remotely installing if existing install already exists on {}", terracottaServer.getHostname());
+    boolean isRemoteInstallationSuccessful = executeRemotely(terracottaServer, () -> Agent.CONTROLLER.attemptRemoteInstallation(
+        instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory, localKitManager.getKitInstallationName())).get();
+    if (!isRemoteInstallationSuccessful) {
+      IgniteHelper.checkAgentHealth(ignite, terracottaServer.getHostname());
+      try {
+        ClusterGroup location = ignite.cluster().forAttribute("nodename", terracottaServer.getHostname());
+        final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
+        IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location)
+            .broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadKit(instanceId, topology.getDistribution(), localKitManager.getKitInstallationName()));
+        uploadFile(queue, localKitManager.getKitInstallationPath(), null);
+        queue.put(Boolean.TRUE); // end of upload marker
+
+        remoteDownloadFuture.get();
+
+        executeRemotely(terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory,
+            localKitManager.getKitInstallationName())).get();
+      } catch (Exception e) {
+        throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);
+      }
+
+    }
+  }
+
+  private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
+    FileMetadata fileMetadata = new FileMetadata(path, file);
+    if (!file.exists()) {
+      logger.debug("skipping upload of non-existent classpath entry {}", fileMetadata);
+      return;
+    }
+    queue.put(fileMetadata);
+    logger.debug("uploading {}", fileMetadata);
+
+    if (file.isDirectory()) {
+      File[] files = file.listFiles();
+      for (File _file : files) {
+        String parentPath = path == null ? "" : path + "/";
+        uploadFile(queue, _file, parentPath + file.getName());
+      }
+    } else {
+      byte[] buffer = new byte[64 * 1024];
+      try (FileInputStream fis = new FileInputStream(file)) {
+        while (true) {
+          int read = fis.read(buffer);
+          if (read < 0) {
+            break;
+          }
+          byte[] toSend;
+          if (read != buffer.length) {
+            toSend = new byte[read];
+            System.arraycopy(buffer, 0, toSend, 0, read);
+          } else {
+            toSend = buffer;
+          }
+          queue.put(toSend);
+        }
+      }
+      logger.debug("uploaded {}", fileMetadata);
+    }
   }
 
   public void uninstallAll() {
@@ -132,7 +200,8 @@ public class Tsa implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer)).get();
+    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer, localKitManager
+        .getKitInstallationName())).get();
   }
 
   public void createAll() {
