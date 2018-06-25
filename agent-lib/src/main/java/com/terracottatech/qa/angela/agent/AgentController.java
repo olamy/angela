@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela.agent;
 
-import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
@@ -18,6 +17,7 @@ import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
@@ -217,7 +217,10 @@ public class AgentController {
     }
   }
 
-  public boolean attemptRemoteTmsInstallation(final InstanceId instanceId, final String tmsHostname, final Distribution distribution, final boolean offline, final License license, final TmsServerSecurityConfig tmsServerSecurityConfig, final String kitInstallationName) {
+  public boolean attemptRemoteTmsInstallation(final InstanceId instanceId, final String tmsHostname,
+                                              final Distribution distribution, final boolean offline, final License license,
+                                              final TmsServerSecurityConfig tmsServerSecurityConfig, final String kitInstallationName,
+                                              TerracottaCommandLineEnvironment tcEnv) {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       logger.info("Kit for " + tmsHostname + " already installed");
@@ -229,7 +232,7 @@ public class AgentController {
 
       boolean isKitAvailable = kitManager.verifyKitAvailability(offline);
       if (isKitAvailable) {
-        File kitDir = kitManager.installKit(license, false);
+        File kitDir = kitManager.installKit(license);
         File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
         if (tmsServerSecurityConfig != null) {
           enableSecurity(tmcProperties, tmsServerSecurityConfig);
@@ -250,7 +253,7 @@ public class AgentController {
     } else {
       logger.info("Installing kit for " + tmsHostname);
       RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
-      File kitDir = kitManager.installKit(license, false);
+      File kitDir = kitManager.installKit(license);
       File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
       if (tmsServerSecurityConfig != null) {
         enableSecurity(tmcProperties, tmsServerSecurityConfig);
@@ -259,6 +262,7 @@ public class AgentController {
       tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir, tcEnv));
     }
   }
+
   private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
     String tmsSecurityRootDirectory = adaptToWindowsPaths(tmsServerSecurityConfig.getTmsSecurityRootDirectory());
     String clusterSecurityRootDirectory = adaptToWindowsPaths(tmsServerSecurityConfig.getClusterSecurityRootDirectory());
@@ -347,7 +351,8 @@ public class AgentController {
               .getAbsolutePath(), ioe);
         }
       } else {
-        logger.info("Kit install still in use by {} Terracotta servers", installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1));
+        logger.info("Kit install still in use by {} Terracotta servers",
+            installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1));
       }
     } else {
       LOGGER.info("No installed kit for " + topology);
@@ -433,7 +438,8 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
-  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs,
+                               String clusterName, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     String licensePath = getLicensePath(instanceId);
     if (clusterName == null) {
