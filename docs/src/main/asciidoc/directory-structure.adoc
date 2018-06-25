@@ -1,0 +1,95 @@
+= Angela Directory Structure
+
+
+== Global Directories
+
+- *ROOT_DIR:* Root directory for angela used to store files on the node by Angela
+
+        Specify via `kitsDir` system property -- default `/data/tsamanager`.
+
+- *KRATOS_KITS_DIR*: Directory acting as cache for the downloaded Kratos kits.
+
+        Computed as `ROOT_DIR + "kits"` -- default `/data/tsamanager/kits`
+
+- *SAG_INSTALLER_DIR*: Directory acting as cache for the downloaded SAG installers.
+
+        Computed as `ROOT_DIR + "sag"` -- default `/data/tsamanager/sag`
+
+- *IGNITE_DIR:* Directory used by the ignite instance for keeping its files (ignite is being internally used by Angela)
+
+        Computed as `ROOT_DIR + "ignite"` -- default `/data/tsamanager/ignite`
+
+
+== Test Execution
+Every test execution creates a temporary (gets deleted only in case successful test execution) directories to provide isolated execution environment for test cases.
+
+=== Client Directories
+Every test case creates a new client directory in the format `<id-prefix>-<UUID>` in the folder defined by `ROOT_DIR`.
+This directory contains `commons jars`, `angela classes` and `test classes`, having following sample content:
+
+    tree /data/tsamanager/TcDBTest__testConnection-88a01a35-0b3a-4bc6-989d-2904cbf400b4
+
+    TcDBTest__testConnection-88a01a35-0b3a-4bc6-989d-2904cbf400b4
+    └── localhost_ded435bc-3d87-45f3-8620-2c3c97a479c5
+        └── lib
+            ├── annotations-13.0.jar
+            ├── ant-1.9.2.jar
+            ├── ant-launcher-1.9.2.jar
+            ├── awaitility-3.0.0.jar
+            ├── cache-api-1.0.0.jar
+            ├── classes
+            │   ├── angela
+            │   │   └── angela-version.properties
+            │   ├── com
+            │   │   └── terracottatech
+            │   │       └── qa
+            │   │           └── angela
+            │   │               ├── agent
+            │   │               │   ├── Agent$Node.class
+            │   │               │   ├── Agent.class
+            │   │               │   ├── AgentController$1.class
+            │   │               │   ├── AgentController.class
+            .
+            .
+            .
+            ├── security-common-test-10.3.0.0.203.jar
+            ├── slf4j-api-1.7.22.jar
+            ├── terracotta-common-client-10.3.0.0.203.jar
+            ├── terracotta-store-client-10.3.0.0.203.jar
+            ├── test-classes
+            │   ├── com
+            │   │   └── terracottatech
+            │   │       └── qa
+            │   │           └── angela
+            │   │               ├── BrowseTest.class
+            │   │               ├── ClientTest.class
+            │   │               ├── ClusterToolTest.class
+            │   │               ├── InstallTest.class
+            │   │               ├── InstallWithSecurityTest.class
+            │   │               ├── MultiStripeWithSecurityTest.class
+            │   │               ├── MultistripesTest.class
+            │   │               ├── TcDBTest.class
+            │   │               ├── TmsSecurityTest.class
+            │   │               └── TmsTest.class
+
+
+=== Server Directories
+Every test case a new server directory in the format `<id-prefix>-<UUID>` within directory `ROOT_DIR + "work"`.
+This directory contains `license file`, `tc-config`, `logs` and `data` directory, having following sample content:
+
+    ls -al /data/tsamanager/work/TcDBTest__testConnection-07ee9923-0673-4c13-b7ca-e6bcfcd604cb
+
+    drwxr-xr-x  13 ravi  wheel   442 Jun 25 12:20 .
+    drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 ..
+    -rw-r--r--   1 ravi  wheel  2438 May 31 22:58 README.txt
+    -rw-r--r--   1 ravi  wheel  1247 Jun 25 12:20 TerracottaDB101_license.xml
+    drwxr-xr-x   6 ravi  wheel   204 May 31 22:58 client
+    drwxr-xr-x   6 ravi  wheel   204 May 31 23:04 legal
+    drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 logs-0-1
+    drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 root1
+    drwxr-xr-x   6 ravi  wheel   204 May 31 23:04 server
+    -rw-r--r--   1 ravi  wheel   955 Jun 25 12:20 tc-config-a-Server1.xml
+    -rw-r--r--   1 ravi  wheel   955 Jun 25 12:20 tc-config-a.xml
+    drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 tc-configs
+    drwxr-xr-x   5 ravi  wheel   170 May 31 23:04 tools
+
