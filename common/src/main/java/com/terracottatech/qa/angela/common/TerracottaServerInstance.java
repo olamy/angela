@@ -86,7 +86,7 @@ public class TerracottaServerInstance {
       this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess, tcEnv);
     } finally {
       //remove net disruption links with other servers
-      disruptionLinks.values().stream().forEach(DISRUPTION_PROVIDER::removeLink);
+      disruptionLinks.values().forEach(DISRUPTION_PROVIDER::removeLink);
     }
   }
 

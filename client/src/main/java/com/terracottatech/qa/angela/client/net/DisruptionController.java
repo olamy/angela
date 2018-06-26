@@ -68,7 +68,6 @@ public class DisruptionController implements AutoCloseable {
    * @return
    */
   public ServerToServerDisruptor newServerToServerDisruptor(SplitCluster... splitClusters) {
-
     if (!topology.isNetDisruptionEnabled()) {
       throw new IllegalArgumentException("Topology not enabled for network disruption");
     }
@@ -135,7 +134,7 @@ public class DisruptionController implements AutoCloseable {
     }
 
 
-    ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, instanceId, topology, linkedServers, d -> removeDisruptor(d));
+    ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, instanceId, topology, linkedServers, existingDisruptors::remove);
     existingDisruptors.add(disruption);
     LOGGER.debug("created disruptor {}", disruption);
     return disruption;
@@ -153,27 +152,24 @@ public class DisruptionController implements AutoCloseable {
     if (!topology.isNetDisruptionEnabled()) {
       throw new IllegalArgumentException("Topology not enabled for network disruption");
     }
+    if (closed) {
+      throw new IllegalStateException("already closed");
+    }
+    if (!topology.isNetDisruptionEnabled()) {
+      throw new IllegalArgumentException("Topology not enabled for network disruption");
+    }
     LOGGER.debug("creating new client to servers disruption");
     Optional<Disruptor> disruptor = existingDisruptors.stream()
         .filter(d -> d instanceof ClientToServerDisruptor)
         .findAny();
-    if (DISRUPTION_PROVIDER.isProxyBased() & disruptor.isPresent()) {
+    if (DISRUPTION_PROVIDER.isProxyBased() && disruptor.isPresent()) {
       //make sure single disruptor serves all clients
       return (ClientToServerDisruptor)disruptor.get();
     } else {
-      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, d -> removeDisruptor(d), proxyTsaPorts);
+      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
       return newDisruptor;
     }
-  }
-
-
-  /**
-   * @param disruptor
-   */
-  void removeDisruptor(Disruptor disruptor) {
-    LOGGER.debug("removing {}", disruptor);
-    existingDisruptors.remove(disruptor);
   }
 
 
@@ -196,7 +192,7 @@ public class DisruptionController implements AutoCloseable {
         proxyTsaPorts.putAll(proxiedTcConfigs[i].retrieveTsaPorts(true));
       }
       //create disruptor up front for cluster tool configuration
-      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, d -> removeDisruptor(d), proxyTsaPorts);
+      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
       return proxiedTcConfigs;
     } else {
