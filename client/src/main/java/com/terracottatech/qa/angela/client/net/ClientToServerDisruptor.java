@@ -52,7 +52,7 @@ public class ClientToServerDisruptor implements Disruptor {
           .getTsaPort());
 
       endPoints.putIfAbsent(server.getServerSymbolicName(), DISRUPTION_PROVIDER.isProxyBased() ? proxyEndPoint : serverEndPoint);
-      LOGGER.info("Server {} endpoint {}", server.getServerSymbolicName()
+      LOGGER.debug("Server {} endpoint {}", server.getServerSymbolicName()
           .getSymbolicName(), endPoints.get(server.getServerSymbolicName()));
       links.computeIfAbsent(server.getServerSymbolicName(), s -> DISRUPTION_PROVIDER.createLink(DISRUPTION_PROVIDER.isProxyBased() ? proxyEndPoint : clientEndPoint, serverEndPoint));
     }
@@ -65,7 +65,7 @@ public class ClientToServerDisruptor implements Disruptor {
       throw new IllegalStateException("Illegal state before disrupt:" + state);
     }
 
-    LOGGER.info("blocking client to {}", servers.stream()
+    LOGGER.debug("blocking client to {}", servers.stream()
         .map(s -> s.getSymbolicName())
         .collect(Collectors.joining(",", "[", "]")));
 
@@ -83,7 +83,7 @@ public class ClientToServerDisruptor implements Disruptor {
   @Override
   public void undisrupt() {
     if (state == DisruptorState.DISRUPTED) {
-      LOGGER.info("undisrupting client to servers");
+      LOGGER.debug("undisrupting client to servers");
       for (Disruptor link : links.values()) {
         link.undisrupt();
       }
@@ -95,7 +95,7 @@ public class ClientToServerDisruptor implements Disruptor {
 
   @Override
   public void close() throws Exception {
-    links.values().stream().forEach(DISRUPTION_PROVIDER::removeLink);
+    links.values().forEach(DISRUPTION_PROVIDER::removeLink);
     closeHook.accept(this);
     state = DisruptorState.CLOSED;
   }

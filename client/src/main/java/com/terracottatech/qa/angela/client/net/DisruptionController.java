@@ -114,7 +114,7 @@ public class DisruptionController implements AutoCloseable {
       }
     }
 
-    LOGGER.info("new disruptor for {}", (Object)splitClusters);
+    LOGGER.debug("new disruptor for {}", (Object)splitClusters);
     //compute servers to be linked for disruption based on input split clusters
     final Map<ServerSymbolicName, Collection<ServerSymbolicName>> linkedServers = new HashMap<>();
     for (int i = 0; i < splitClusters.length; ++i) {
@@ -154,7 +154,7 @@ public class DisruptionController implements AutoCloseable {
 
     ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, instanceId, topology, linkedServers, d -> removeDisruptor(d));
     existingDisruptors.add(disruption);
-    LOGGER.info("created disruptor {}", disruption);
+    LOGGER.debug("created disruptor {}", disruption);
     return disruption;
   }
 
@@ -170,7 +170,7 @@ public class DisruptionController implements AutoCloseable {
     if (!topology.isNetDisruptionEnabled()) {
       throw new IllegalArgumentException("Topology not enabled for network disruption");
     }
-    LOGGER.info("creating new client to servers disruption");
+    LOGGER.debug("creating new client to servers disruption");
     Optional<Disruptor> disruptor = existingDisruptors.stream()
         .filter(d -> d instanceof ClientToServerDisruptor)
         .findAny();
@@ -189,14 +189,14 @@ public class DisruptionController implements AutoCloseable {
    * @param disruptor
    */
   void removeDisruptor(Disruptor disruptor) {
-    LOGGER.info("removing {}", disruptor);
+    LOGGER.debug("removing {}", disruptor);
     existingDisruptors.remove(disruptor);
   }
 
 
   @Override
   public void close() throws Exception {
-    LOGGER.info("closing disruption controller");
+    LOGGER.debug("closing disruption controller");
     for (Disruptor disruption : existingDisruptors) {
       disruption.close();
     }

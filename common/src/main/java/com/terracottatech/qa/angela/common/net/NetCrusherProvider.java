@@ -27,7 +27,7 @@ public class NetCrusherProvider implements DisruptionProvider {
 
   @Override
   public Disruptor createLink(InetSocketAddress src, InetSocketAddress dest) {
-    LOGGER.info("creating link between source {} and destination {}", src, dest);
+    LOGGER.debug("creating link between source {} and destination {}", src, dest);
     return links.computeIfAbsent(new DisruptorLinkImpl(src, dest), link -> link);
   }
 
@@ -77,7 +77,7 @@ public class NetCrusherProvider implements DisruptionProvider {
       if (state != DisruptorState.UNDISRUPTED) {
         throw new IllegalStateException("illegal state " + state);
       }
-      LOGGER.info("blocking {} ", this);
+      LOGGER.debug("blocking {} ", this);
       crusher.freeze();
       state = DisruptorState.DISRUPTED;
     }
@@ -86,7 +86,7 @@ public class NetCrusherProvider implements DisruptionProvider {
     @Override
     public void undisrupt() {
       if (state == DisruptorState.DISRUPTED) {
-        LOGGER.info("undisrupting {}", this);
+        LOGGER.debug("undisrupting {}", this);
         crusher.unfreeze();
       }
       state = DisruptorState.UNDISRUPTED;
@@ -95,7 +95,7 @@ public class NetCrusherProvider implements DisruptionProvider {
     @Override
     public void close() throws Exception {
       if (state != DisruptorState.CLOSED) {
-        LOGGER.info("closing {}", this);
+        LOGGER.debug("closing {}", this);
         crusher.close();
       }
       state = DisruptorState.CLOSED;
@@ -127,6 +127,5 @@ public class NetCrusherProvider implements DisruptionProvider {
              '}';
     }
   }
-
 
 }
