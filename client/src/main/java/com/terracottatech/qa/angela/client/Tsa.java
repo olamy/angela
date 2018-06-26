@@ -50,6 +50,7 @@ public class Tsa implements AutoCloseable {
   private final License license;
   private final InstanceId instanceId;
   private final TerracottaCommandLineEnvironment tcEnv;
+  private final transient DisruptionController disruptionController;
   private boolean closed = false;
   private LocalKitManager localKitManager;
 
@@ -62,7 +63,7 @@ public class Tsa implements AutoCloseable {
     this.license = license;
     this.instanceId = instanceId;
     this.ignite = ignite;
-    DisruptionController.add(ignite, instanceId, topology);
+    this.disruptionController = new DisruptionController(ignite, instanceId, topology);
     this.localKitManager = new LocalKitManager(topology.getDistribution());
   }
 
@@ -181,7 +182,7 @@ public class Tsa implements AutoCloseable {
   }
 
   public DisruptionController disruptionController() {
-    return DisruptionController.get(instanceId);
+    return disruptionController;
   }
 
 
@@ -341,8 +342,7 @@ public class Tsa implements AutoCloseable {
 
     if (topology.isNetDisruptionEnabled()) {
       try {
-        DisruptionController.get(instanceId).close();
-        DisruptionController.remove(instanceId);
+        disruptionController.close();
       } catch (Exception e) {
         logger.error("Error when trying to close traffic controller", e.getMessage());
       }

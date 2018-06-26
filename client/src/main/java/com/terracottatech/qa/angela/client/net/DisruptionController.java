@@ -1,9 +1,5 @@
 package com.terracottatech.qa.angela.client.net;
 
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
@@ -12,6 +8,9 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +20,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -34,25 +32,10 @@ public class DisruptionController implements AutoCloseable {
   private final InstanceId instanceId;
   private final Topology topology;
   private final Collection<Disruptor> existingDisruptors = new ArrayList<>();
+  private final Map<ServerSymbolicName, Integer> proxyTsaPorts = new HashMap<>();
   private volatile boolean closed;
-  private Map<ServerSymbolicName, Integer> proxyTsaPorts = new HashMap<>();
 
-
-  private static final Map<InstanceId, DisruptionController> controllers = new ConcurrentHashMap<>();
-
-  public static void add(Ignite ignite, InstanceId instanceId, Topology topology) {
-    controllers.putIfAbsent(instanceId, new DisruptionController(ignite, instanceId, topology));
-  }
-
-  public static DisruptionController get(InstanceId instanceId) {
-    return controllers.get(instanceId);
-  }
-
-  public static void remove(InstanceId instanceId) {
-    controllers.remove(instanceId);
-  }
-
-  private DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology) {
+  public DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology) {
     this.ignite = ignite;
     this.instanceId = instanceId;
     this.topology = topology;
