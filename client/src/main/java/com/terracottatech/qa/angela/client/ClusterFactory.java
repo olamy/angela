@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
@@ -131,6 +132,13 @@ public class ClusterFactory implements AutoCloseable {
       }
     }
     return true;
+  }
+
+  public Barrier barrier(String name, int count) {
+    if (ignite == null) {
+      throw new IllegalStateException("No cluster component started; cannot create a barrier");
+    }
+    return new Barrier(ignite, count, name);
   }
 
   public Tsa tsa(Topology topology) {

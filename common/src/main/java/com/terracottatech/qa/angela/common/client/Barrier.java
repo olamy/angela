@@ -4,6 +4,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteCountDownLatch;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 public class Barrier {
   private final Ignite ignite;
   private final int count;
@@ -12,12 +15,12 @@ public class Barrier {
   private volatile IgniteCountDownLatch countDownLatch;
   private volatile int resetCount;
 
-  Barrier(Ignite ignite, final int count, final String name) {
+  public Barrier(Ignite ignite, final int count, final String name) {
     this.ignite = ignite;
     this.count = count;
     IgniteAtomicLong igniteCounter = ignite.atomicLong("Barrier-Counter-" + name, 0, true);
-    this.index = (int)igniteCounter.getAndIncrement();
-    igniteCounter.compareAndSet(count,0);
+    this.index = (int) igniteCounter.getAndIncrement();
+    igniteCounter.compareAndSet(count, 0);
     this.name = name;
     resetLatch();
   }
@@ -28,11 +31,28 @@ public class Barrier {
 
   public int await() {
     int countDown = countDownLatch.countDown();
-    if (countDown > 0) {
-      countDownLatch.await();
+    try {
+      if (countDown > 0) {
+        countDownLatch.await();
+      }
+      return index;
+    } finally {
+      resetLatch();
     }
-    resetLatch();
-    return index;
+  }
+
+  public int await(long time, TimeUnit unit) throws TimeoutException {
+    int countDown = countDownLatch.countDown();
+    try {
+      if (countDown > 0) {
+        if (!countDownLatch.await(time, unit)) {
+          throw new TimeoutException();
+        }
+      }
+      return index;
+    } finally {
+      resetLatch();
+    }
   }
 
 }
