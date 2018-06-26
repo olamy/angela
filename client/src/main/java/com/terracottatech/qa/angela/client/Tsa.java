@@ -1,12 +1,6 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +8,7 @@ import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.client.net.DisruptionController;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig;
@@ -23,11 +18,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -35,10 +26,11 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
+import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
@@ -87,7 +79,7 @@ public class Tsa implements AutoCloseable {
     if (terracottaServerState == null) {
       throw new IllegalStateException("Cannot get license path: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
-    return executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId)).get();
+    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId)).get();
   }
 
   public void installAll() {
@@ -112,70 +104,25 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
 
-    final int finalTcConfigIndex = tcConfigIndex;
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
 
     logger.info("Setting up locally the extracted install to be deployed remotely");
     localKitManager.setupLocalInstall(license, offline);
 
     logger.info("Attempting to remotely installing if existing install already exists on {}", terracottaServer.getHostname());
-    boolean isRemoteInstallationSuccessful = executeRemotely(terracottaServer, () -> Agent.CONTROLLER.attemptRemoteInstallation(
-        instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory, localKitManager.getKitInstallationName())).get();
+    boolean isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.attemptRemoteInstallation(
+        instanceId, topology, terracottaServer, offline, license, tcConfigIndex, securityRootDirectory, localKitManager.getKitInstallationName()))
+        .get();
     if (!isRemoteInstallationSuccessful) {
-      IgniteHelper.checkAgentHealth(ignite, terracottaServer.getHostname());
       try {
-        ClusterGroup location = ignite.cluster().forAttribute("nodename", terracottaServer.getHostname());
-        final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
-        IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location)
-            .broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadKit(instanceId, topology.getDistribution(), localKitManager.getKitInstallationName()));
-        uploadFile(queue, localKitManager.getKitInstallationPath(), null);
-        queue.put(Boolean.TRUE); // end of upload marker
+        uploadKit(ignite, terracottaServer.getHostname(), instanceId, topology.getDistribution(),
+            localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
-        remoteDownloadFuture.get();
-
-        executeRemotely(terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, finalTcConfigIndex, securityRootDirectory,
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, tcConfigIndex, securityRootDirectory,
             localKitManager.getKitInstallationName())).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);
       }
-
-    }
-  }
-
-  private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
-    FileMetadata fileMetadata = new FileMetadata(path, file);
-    if (!file.exists()) {
-      logger.debug("skipping upload of non-existent classpath entry {}", fileMetadata);
-      return;
-    }
-    queue.put(fileMetadata);
-    logger.debug("uploading {}", fileMetadata);
-
-    if (file.isDirectory()) {
-      File[] files = file.listFiles();
-      for (File _file : files) {
-        String parentPath = path == null ? "" : path + "/";
-        uploadFile(queue, _file, parentPath + file.getName());
-      }
-    } else {
-      byte[] buffer = new byte[64 * 1024];
-      try (FileInputStream fis = new FileInputStream(file)) {
-        while (true) {
-          int read = fis.read(buffer);
-          if (read < 0) {
-            break;
-          }
-          byte[] toSend;
-          if (read != buffer.length) {
-            toSend = new byte[read];
-            System.arraycopy(buffer, 0, toSend, 0, read);
-          } else {
-            toSend = buffer;
-          }
-          queue.put(toSend);
-        }
-      }
-      logger.debug("uploaded {}", fileMetadata);
     }
   }
 
@@ -200,7 +147,7 @@ public class Tsa implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer, localKitManager
+    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.uninstall(instanceId, topology, terracottaServer, localKitManager
         .getKitInstallationName())).get();
   }
 
@@ -220,7 +167,7 @@ public class Tsa implements AutoCloseable {
         return;
       case STOPPED:
         logger.info("creating on {}", terracottaServer.getHostname());
-        executeRemotely(terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tcEnv)).get(TIMEOUT);
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tcEnv)).get(TIMEOUT);
         return;
     }
     throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
@@ -240,7 +187,7 @@ public class Tsa implements AutoCloseable {
 
   public void start(final TerracottaServer terracottaServer) {
     create(terracottaServer);
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.waitForState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE)))
+    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.waitForState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE)))
         .get(TIMEOUT);
   }
 
@@ -260,7 +207,7 @@ public class Tsa implements AutoCloseable {
       return;
     }
     logger.info("stopping on {}", terracottaServer.getHostname());
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.stop(instanceId, terracottaServer, tcEnv)).get(TIMEOUT);
+    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.stop(instanceId, terracottaServer, tcEnv)).get(TIMEOUT);
   }
 
   public void licenseAll() {
@@ -292,12 +239,12 @@ public class Tsa implements AutoCloseable {
 
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tcEnv))
+    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tcEnv))
         .get();
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
-    return executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer))
+    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer))
         .get();
   }
 
@@ -370,7 +317,7 @@ public class Tsa implements AutoCloseable {
   }
 
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
-    String path = executeRemotely(terracottaServer, () -> Agent.CONTROLLER.getInstallPath(instanceId, terracottaServer))
+    String path = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getInstallPath(instanceId, terracottaServer))
         .get();
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
   }
@@ -402,16 +349,5 @@ public class Tsa implements AutoCloseable {
     }
   }
 
-  private IgniteFuture<Void> executeRemotely(final TerracottaServer hostname, final IgniteRunnable runnable) {
-    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
-    return ignite.compute(location).runAsync(runnable);
-  }
-
-  private <R> IgniteFuture<R> executeRemotely(final TerracottaServer hostname, final IgniteCallable<R> callable) {
-    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
-    return ignite.compute(location).callAsync(callable);
-  }
 }
 

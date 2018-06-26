@@ -20,7 +20,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  * @author Aurelien Broszniowski
  */
 
-public class KitManager {
+public abstract class KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(KitManager.class);
 

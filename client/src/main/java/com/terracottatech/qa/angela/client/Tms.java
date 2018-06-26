@@ -2,11 +2,6 @@ package com.terracottatech.qa.angela.client;
 
 import io.restassured.path.json.JsonPath;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +24,10 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
+
+import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
+import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
 
 public class Tms implements AutoCloseable {
 
@@ -39,7 +36,6 @@ public class Tms implements AutoCloseable {
   private static final String API_CONNECTIONS_PROBE_OLD = "/api/connections/probe/";
   private static final String API_CONNECTIONS_PROBE_NEW = "/api/connections/probe?uri=";
   private final String tmsHostname;
-//  private final String kitInstallationPath;
   private final Distribution distribution;
   private final TerracottaCommandLineEnvironment tcEnv;
   private boolean closed = false;
@@ -66,7 +62,6 @@ public class Tms implements AutoCloseable {
   }
 
   /**
-   *
    * This method connects to the TMS via HTTP (insecurely) REST calls.  It also creates a TMS connection to the cluster.
    *
    * @param uri of the cluster to connect to
@@ -77,11 +72,10 @@ public class Tms implements AutoCloseable {
   }
 
   /**
-   *
    * This method connects to the TMS via HTTPS (securely) REST calls.  It also creates a TMS connection to the cluster.
    * If cluster security is enabled it will connect to the cluster via SSL/TLS, otherwise if connects via plain text.
    *
-   * @param uri of the cluster to connect to
+   * @param uri                     of the cluster to connect to
    * @param tmsClientSecurityConfig
    * @return connectionName
    */
@@ -122,8 +116,8 @@ public class Tms implements AutoCloseable {
   private String probe(URI uri, String probeEndpoint, TmsClientSecurityConfig securityConfig) {
     String url;
     try {
-      url = (securityConfig != null ? "https://" : "http://")   + tmsHostname + ":9480" + probeEndpoint +
-          URLEncoder.encode(uri.toString(), "UTF-8");
+      url = (securityConfig != null ? "https://" : "http://") + tmsHostname + ":9480" + probeEndpoint +
+            URLEncoder.encode(uri.toString(), "UTF-8");
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("Could not encode terracotta connection url", e);
     }
@@ -133,7 +127,7 @@ public class Tms implements AutoCloseable {
   }
 
   public RemoteFolder browse(String root) {
-    String path = executeRemotely(tmsHostname, () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId));
+    String path = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId)).get();
     return new RemoteFolder(ignite, tmsHostname, path, root);
   }
 
@@ -164,27 +158,12 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("uninstalling from {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.uninstallTms(instanceId, distribution, localKitManager.getKitInstallationName(), tmsHostname));
+    executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.uninstallTms(instanceId, distribution, localKitManager
+        .getKitInstallationName(), tmsHostname)).get();
   }
 
   private void stop() {
     stopTms(tmsHostname);
-  }
-
-  private void executeRemotely(final String hostname, final long timeout, final IgniteRunnable runnable) {
-    IgniteHelper.checkAgentHealth(ignite, hostname);
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
-    ignite.compute(location).withTimeout(timeout).broadcast(runnable);
-  }
-
-  private <R> R executeRemotely(final String hostname, final IgniteCallable<R> callable) {
-    IgniteHelper.checkAgentHealth(ignite, hostname);
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname);
-    Collection<R> results = ignite.compute(location).broadcast(callable);
-    if (results.size() != 1) {
-      throw new IllegalStateException("Multiple response for the Execution on " + hostname);
-    }
-    return results.iterator().next();
   }
 
   public void install() {
@@ -195,22 +174,16 @@ public class Tms implements AutoCloseable {
     localKitManager.setupLocalInstall(license, offline);
 
     logger.info("Attempting to remotely installing if existing install already exists on {}", tmsHostname);
-    boolean isRemoteInstallationSuccessful = executeRemotely(tmsHostname, () -> Agent.CONTROLLER.attemptRemoteTmsInstallation(
-        instanceId, tmsHostname, distribution, offline, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv));
+    boolean isRemoteInstallationSuccessful = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.attemptRemoteTmsInstallation(
+        instanceId, tmsHostname, distribution, offline, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv))
+        .get();
     if (!isRemoteInstallationSuccessful) {
-      IgniteHelper.checkAgentHealth(ignite, tmsHostname);
       try {
-        ClusterGroup location = ignite.cluster().forAttribute("nodename", tmsHostname);
-        final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
-        IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location)
-            .broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadKit(instanceId, distribution, localKitManager
-                .getKitInstallationName()));
-        uploadFile(queue, localKitManager.getKitInstallationPath(), null);
-        queue.put(Boolean.TRUE); // end of upload marker
+        uploadKit(ignite, tmsHostname, instanceId, distribution,
+            localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
-        remoteDownloadFuture.get();
-
-        executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname, distribution, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv));
+        executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname,
+            distribution, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv)).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + tmsHostname, e);
       }
@@ -228,16 +201,16 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("stopping on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.stopTms(instanceId));
+    executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.stopTms(instanceId)).get();
   }
 
   public TerracottaManagementServerState getTmsState(final String tmsHostname) {
-    return executeRemotely(tmsHostname, () -> Agent.CONTROLLER.getTerracottaManagementServerState(instanceId));
+    return executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.getTerracottaManagementServerState(instanceId)).get();
   }
 
   public void start() {
     logger.info("starting TMS on {}", tmsHostname);
-    executeRemotely(tmsHostname, TIMEOUT, () -> Agent.CONTROLLER.startTms(instanceId));
+    executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.startTms(instanceId)).get();
   }
 
   private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {

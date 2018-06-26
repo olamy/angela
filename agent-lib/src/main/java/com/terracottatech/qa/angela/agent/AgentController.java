@@ -67,7 +67,6 @@ import static java.util.stream.Collectors.toList;
 
 public class AgentController {
 
-  private final static Logger LOGGER = LoggerFactory.getLogger(AgentController.class);
   private final static Logger logger = LoggerFactory.getLogger(AgentController.class);
 
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
@@ -211,7 +210,7 @@ public class AgentController {
     if (securityRootDirectory != null) {
       final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
       Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory-" + serverName);
-      LOGGER.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
+      logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
       securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
       topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.toString());
     }
@@ -355,7 +354,7 @@ public class AgentController {
             installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1));
       }
     } else {
-      LOGGER.info("No installed kit for " + topology);
+      logger.info("No installed kit for " + topology);
     }
   }
 
@@ -379,10 +378,10 @@ public class AgentController {
               .getAbsolutePath(), ioe);
         }
       } else {
-        LOGGER.info("Kit install still in use by {} Terracotta servers", numberOfTerracottaInstances);
+        logger.info("Kit install still in use by {} Terracotta servers", numberOfTerracottaInstances);
       }
     } else {
-      LOGGER.info("No installed kit for " + tmsHostname);
+      logger.info("No installed kit for " + tmsHostname);
     }
   }
 
@@ -458,12 +457,12 @@ public class AgentController {
 
   public void destroyClient(InstanceId instanceId, String subNodeName, int pid) {
     try {
-      LOGGER.info("killing client '{}' with PID {}", subNodeName, pid);
+      logger.info("killing client '{}' with PID {}", subNodeName, pid);
       PidProcess pidProcess = Processes.newPidProcess(pid);
       ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
       File subAgentRoot = clientRootDir(instanceId, subNodeName);
-      LOGGER.info("cleaning up directory structure '{}' of client {}", subAgentRoot, subNodeName);
+      logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, subNodeName);
       FileUtils.deleteDirectory(subAgentRoot);
     } catch (Exception e) {
       throw new RuntimeException("Error cleaning up client " + subNodeName, e);
@@ -493,7 +492,7 @@ public class AgentController {
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
       cmdLine.add(Agent.class.getName());
 
-      LOGGER.info("Spawning client {}", cmdLine);
+      logger.info("Spawning client {}", cmdLine);
       ProcessExecutor processExecutor = new ProcessExecutor().command(cmdLine)
           .redirectOutput(new LogOutputStream() {
             @Override
@@ -514,7 +513,7 @@ public class AgentController {
       }
 
       int pid = PidUtil.getPid(startedProcess.getProcess());
-      LOGGER.info("Spawned client with PID {}", pid);
+      logger.info("Spawned client with PID {}", pid);
       return pid;
     } catch (Exception e) {
       throw new RuntimeException("Error spawning client " + subNodeName, e);
@@ -554,7 +553,7 @@ public class AgentController {
     final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
     try {
       File subClientDir = new File(clientRootDir(instanceId, subNodeName), "lib");
-      LOGGER.info("Downloading client '{}' into {}", subNodeName, subClientDir);
+      logger.info("Downloading client '{}' into {}", subNodeName, subClientDir);
       if (!subClientDir.mkdirs()) {
         throw new RuntimeException("Cannot create client directory '" + subClientDir + "' on " + subNodeName);
       }
@@ -562,12 +561,12 @@ public class AgentController {
       while (true) {
         Object read = queue.take();
         if (read.equals(Boolean.TRUE)) {
-          LOGGER.info("Downloaded client '{}' into {}", subNodeName, subClientDir);
+          logger.info("Downloaded client '{}' into {}", subNodeName, subClientDir);
           break;
         }
 
         FileMetadata fileMetadata = (FileMetadata)read;
-        LOGGER.debug("downloading " + fileMetadata);
+        logger.debug("downloading " + fileMetadata);
         if (!fileMetadata.isDirectory()) {
           long readFileLength = 0L;
           File file = new File(subClientDir + File.separator + fileMetadata.getPathName());
@@ -586,7 +585,7 @@ public class AgentController {
               readFileLength += buffer.length;
             }
           }
-          LOGGER.debug("downloaded " + fileMetadata);
+          logger.debug("downloaded " + fileMetadata);
         }
       }
     } catch (Exception e) {
@@ -604,7 +603,7 @@ public class AgentController {
   }
 
   public void cleanup(InstanceId instanceId) {
-    LOGGER.info("Cleaning up instance {}", instanceId);
+    logger.info("Cleaning up instance {}", instanceId);
     try {
       FileUtils.deleteDirectory(instanceRootDir(instanceId));
     } catch (IOException ioe) {

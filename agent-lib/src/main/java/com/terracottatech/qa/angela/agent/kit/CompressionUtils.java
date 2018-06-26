@@ -311,7 +311,7 @@ public class CompressionUtils implements Serializable {
       exit = new ProcessExecutor().command("java", "-jar", sagInstaller.getPath(), "-readScript", scriptFile.getPath(), "-console")
           .redirectOutput(out)
           .execute().getExitValue();
-      System.out.println(out.toString());
+      logger.info(out.toString());
       logger.info("kit installation path = {}", localInstallDir.getAbsolutePath());
     } catch (Exception e) {
       try {
@@ -320,7 +320,7 @@ public class CompressionUtils implements Serializable {
             .sorted((o1, o2) -> -o1.compareTo(o2))
             .forEach(File::delete);
       } catch (IOException e1) {
-        e1.printStackTrace();
+        logger.error("Error when cleaning kit installation {} after a SAG installer execution error", localInstallDir.toPath(), e1);
       }
       throw new RuntimeException("Problem when installing Terracotta from SAG installer script " + scriptFile.getPath());
     }
@@ -331,7 +331,7 @@ public class CompressionUtils implements Serializable {
             .sorted((o1, o2) -> -o1.compareTo(o2))
             .forEach(File::delete);
       } catch (IOException e1) {
-        e1.printStackTrace();
+        logger.error("Error when cleaning kit installation {} after a SAG installer returned a failure exit code", localInstallDir.toPath(), e1);
       }
       throw new RuntimeException("Error when installing with the sag installer. Check the file " + dest.getPath() + File.separatorChar + "installLog.txt");
     }

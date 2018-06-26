@@ -49,7 +49,6 @@ public class Agent {
 
   public static final String ROOT_DIR;
   public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
-
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
   public static final String IGNITE_LOGGING_SYSPROP_NAME = "tc.qa.angela.logging";
 
