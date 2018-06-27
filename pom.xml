@@ -12,7 +12,7 @@
 
   <groupId>com.terracottatech.qa</groupId>
   <artifactId>angela</artifactId>
-  <version>1.0.13-SNAPSHOT</version>
+  <version>1.0.14-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
