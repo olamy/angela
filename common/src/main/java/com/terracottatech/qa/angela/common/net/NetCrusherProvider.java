@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Net Crusher based DisruptionProvider.
@@ -18,7 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class NetCrusherProvider implements DisruptionProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(NetCrusherProvider.class);
-  private final Map<Disruptor, Disruptor> links = new ConcurrentHashMap<>();
+
+  private final Map<Link, DisruptorLinkImpl> links = new HashMap<>();
 
   @Override
   public boolean isProxyBased() {
@@ -28,42 +29,49 @@ public class NetCrusherProvider implements DisruptionProvider {
   @Override
   public Disruptor createLink(InetSocketAddress src, InetSocketAddress dest) {
     LOGGER.debug("creating link between source {} and destination {}", src, dest);
-    return links.computeIfAbsent(new DisruptorLinkImpl(src, dest), link -> link);
+    synchronized (links) {
+      Link link = new Link(src, dest);
+      DisruptorLinkImpl existing = links.get(link);
+      if (existing == null) {
+        existing = new DisruptorLinkImpl(link);
+        links.put(link, existing);
+      }
+      return existing;
+    }
   }
 
 
   @Override
-  public void removeLink(Disruptor link) {
+  public void removeLink(Disruptor disruptor) {
     try {
-      link.close();
+      disruptor.close();
     } catch (Exception e) {
-      LOGGER.error("Error when closing {} {} ", link, e);
+      LOGGER.error("Error when closing {} {} ", disruptor, e);
     } finally {
-      links.remove(link);
+      synchronized (links) {
+        links.remove(((DisruptorLinkImpl) disruptor).getLink());
+      }
     }
-
   }
 
   /**
    * Support only partition(disrupt) for now
    */
   private static class DisruptorLinkImpl implements Disruptor {
+    private final NioReactor reactor;
     private final TcpCrusher crusher;
-    private final InetSocketAddress source;
-    private final InetSocketAddress destination;
-
+    private final Link link;
     private volatile DisruptorState state;
 
-    public DisruptorLinkImpl(final InetSocketAddress source, final InetSocketAddress destination) {
-      this.source = source;
-      this.destination = destination;
+    public DisruptorLinkImpl(Link link) {
+      this.link = link;
       try {
-        NioReactor reactor = new NioReactor();
+        reactor = new NioReactor();
 
         crusher = TcpCrusherBuilder.builder()
             .withReactor(reactor)
-            .withBindAddress(source)
-            .withConnectAddress(destination)
+            .withBindAddress(link.getSource())
+            .withConnectAddress(link.getDestination())
             .buildAndOpen();
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -85,46 +93,36 @@ public class NetCrusherProvider implements DisruptionProvider {
 
     @Override
     public void undisrupt() {
-      if (state == DisruptorState.DISRUPTED) {
-        LOGGER.debug("undisrupting {}", this);
-        crusher.unfreeze();
+      if (state != DisruptorState.DISRUPTED) {
+        throw new IllegalStateException("illegal state " + state);
       }
+      crusher.unfreeze();
       state = DisruptorState.UNDISRUPTED;
     }
 
+    Link getLink() {
+      return link;
+    }
+
     @Override
-    public void close() throws Exception {
-      if (state != DisruptorState.CLOSED) {
+    public void close() {
+      if (state == DisruptorState.DISRUPTED) {
+        undisrupt();
+      }
+      if (state == DisruptorState.UNDISRUPTED) {
         LOGGER.debug("closing {}", this);
         crusher.close();
+        reactor.close();
+        state = DisruptorState.CLOSED;
       }
-      state = DisruptorState.CLOSED;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-
-      DisruptorLinkImpl that = (DisruptorLinkImpl)o;
-
-      if (!source.equals(that.source)) return false;
-      return destination.equals(that.destination);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = source.hashCode();
-      result = 31 * result + destination.hashCode();
-      return result;
     }
 
     @Override
     public String toString() {
       return "DisruptorLinkImpl{" +
-             "source=" + source +
-             ", destination=" + destination +
-             '}';
+          "link=" + link +
+          ", state=" + state +
+          '}';
     }
   }
 

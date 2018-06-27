@@ -14,7 +14,7 @@ public interface DisruptionProvider {
    *
    * @return
    */
-  public boolean isProxyBased();
+  boolean isProxyBased();
 
   /**
    * Create link to disrupt traffic flowing from the given source address to destination address(unidirectional)
@@ -23,7 +23,7 @@ public interface DisruptionProvider {
    * @param dest
    * @return
    */
-  public Disruptor createLink(InetSocketAddress src, InetSocketAddress dest);
+  Disruptor createLink(InetSocketAddress src, InetSocketAddress dest);
 
 
   /**
@@ -31,6 +31,6 @@ public interface DisruptionProvider {
    *
    * @param link
    */
-  public void removeLink(Disruptor link);
+  void removeLink(Disruptor link);
 
 }
