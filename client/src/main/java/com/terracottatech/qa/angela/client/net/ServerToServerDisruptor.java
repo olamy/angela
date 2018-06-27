@@ -58,7 +58,7 @@ public class ServerToServerDisruptor implements Disruptor {
       TerracottaServer server = topologyServers.get(entry.getKey());
       Collection<TerracottaServer> otherServers = Collections.unmodifiableCollection(entry.getValue()
           .stream()
-          .map(s -> topologyServers.get(s))
+          .map(topologyServers::get)
           .collect(Collectors.toList()));
       executeRemotely(server, blockRemotely(instanceId, server, otherServers)).get();
     }
@@ -68,30 +68,34 @@ public class ServerToServerDisruptor implements Disruptor {
 
   @Override
   public void undisrupt() {
-    if (state == DisruptorState.DISRUPTED) {
-      LOGGER.info("undisrupting {}", this);
-      Map<ServerSymbolicName, TerracottaServer> topologyServers = topology.getServers();
-      for (Map.Entry<ServerSymbolicName, Collection<ServerSymbolicName>> entry : linkedServers.entrySet()) {
-        TerracottaServer server = topologyServers.get(entry.getKey());
-        Collection<TerracottaServer> otherServers = Collections.unmodifiableCollection(entry.getValue()
-            .stream()
-            .map(s -> topologyServers.get(s))
-            .collect(Collectors.toList()));
-        executeRemotely(server, undisruptRemotely(instanceId, server, otherServers)).get();
-      }
-      state = DisruptorState.UNDISRUPTED;
-    } else {
-      //ignore?
+    if (state != DisruptorState.DISRUPTED) {
+      throw new IllegalStateException("Illegal state before undisrupt:" + state);
     }
+
+    LOGGER.info("undisrupting {}", this);
+    Map<ServerSymbolicName, TerracottaServer> topologyServers = topology.getServers();
+    for (Map.Entry<ServerSymbolicName, Collection<ServerSymbolicName>> entry : linkedServers.entrySet()) {
+      TerracottaServer server = topologyServers.get(entry.getKey());
+      Collection<TerracottaServer> otherServers = Collections.unmodifiableCollection(entry.getValue()
+          .stream()
+          .map(topologyServers::get)
+          .collect(Collectors.toList()));
+      executeRemotely(server, undisruptRemotely(instanceId, server, otherServers)).get();
+    }
+    state = DisruptorState.UNDISRUPTED;
   }
 
 
   @Override
   public void close() {
-    //remote server links will be closed when servers are stopped.
-
-    closeHook.accept(this);
-    state = DisruptorState.CLOSED;
+    if (state == DisruptorState.DISRUPTED) {
+      undisrupt();
+    }
+    if (state == DisruptorState.UNDISRUPTED) {
+      //remote server links will be closed when servers are stopped.
+      closeHook.accept(this);
+      state = DisruptorState.CLOSED;
+    }
   }
 
   Map<ServerSymbolicName, Collection<ServerSymbolicName>> getLinkedServers() {
@@ -119,11 +123,10 @@ public class ServerToServerDisruptor implements Disruptor {
                .stream()
                .map(e -> e.getKey().getSymbolicName() + "->" + e.getValue()
                    .stream()
-                   .map(s -> s.getSymbolicName())
+                   .map(ServerSymbolicName::getSymbolicName)
                    .collect(Collectors.joining(",", "[", "]")))
                .collect(Collectors.joining(",", "{", "}")) +
            '}';
   }
-
 
 }
