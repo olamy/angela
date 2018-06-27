@@ -26,4 +26,13 @@ public class TerracottaCommandLineEnvironment {
   public List<String> getJavaOpts() {
     return javaOpts;
   }
+
+  @Override
+  public String toString() {
+    return "TerracottaCommandLineEnvironment{" +
+           "javaVersion='" + javaVersion + '\'' +
+           ", javaVendors=" + javaVendors +
+           ", javaOpts=" + javaOpts +
+           '}';
+  }
 }

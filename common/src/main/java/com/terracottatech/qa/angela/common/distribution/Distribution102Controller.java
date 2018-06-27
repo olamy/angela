@@ -146,6 +146,9 @@ public class Distribution102Controller extends DistributionController {
 
     String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory);
 
+    logger.info("Licensing commands: {}", (Object[])commands);
+    logger.info("Licensing command line environment: {}", tcEnv);
+
     ProcessExecutor executor = new ProcessExecutor()
         .command(commands).directory(location).environment(env);
 
