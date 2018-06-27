@@ -160,6 +160,7 @@
           <groupId>org.apache.maven.plugins</groupId>
           <version>2.20.1</version>
           <configuration>
+            <argLine>-Xmx1024m</argLine>
             <systemProperties>
               <kitsDir>${project.build.directory}/tsamanager</kitsDir>
             </systemProperties>
