@@ -455,21 +455,21 @@ public class AgentController {
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
   }
 
-  public void destroyClient(InstanceId instanceId, String subNodeName, int pid) {
+  public void destroyClient(InstanceId instanceId, int pid) {
     try {
-      logger.info("killing client '{}' with PID {}", subNodeName, pid);
+      logger.info("killing client '{}' with PID {}", instanceId, pid);
       PidProcess pidProcess = Processes.newPidProcess(pid);
       ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
-      File subAgentRoot = clientRootDir(instanceId, subNodeName);
-      logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, subNodeName);
+      File subAgentRoot = clientRootDir(instanceId);
+      logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, instanceId);
       FileUtils.deleteDirectory(subAgentRoot);
     } catch (Exception e) {
-      throw new RuntimeException("Error cleaning up client " + subNodeName, e);
+      throw new RuntimeException("Error cleaning up client " + instanceId, e);
     }
   }
 
-  public int spawnClient(InstanceId instanceId, String subNodeName, boolean localhostOnly, TerracottaCommandLineEnvironment tcEnv) {
+  public int spawnClient(InstanceId instanceId, boolean localhostOnly, TerracottaCommandLineEnvironment tcEnv) {
     try {
       String javaHome = javaLocationResolver.resolveJavaLocation(tcEnv).getHome();
 
@@ -484,11 +484,11 @@ public class AgentController {
         cmdLine.addAll(tcEnv.getJavaOpts());
       }
       cmdLine.add("-classpath");
-      cmdLine.add(buildClasspath(instanceId, subNodeName));
+      cmdLine.add(buildClasspath(instanceId));
       if (localhostOnly) {
         cmdLine.add("-Dtc.qa.directjoin=localhost:40000");
       }
-      cmdLine.add("-Dtc.qa.nodeName=" + subNodeName);
+      cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
       cmdLine.add(Agent.class.getName());
 
@@ -497,12 +497,12 @@ public class AgentController {
           .redirectOutput(new LogOutputStream() {
             @Override
             protected void processLine(String line) {
-              System.out.println(" |" + subNodeName + "| " + line);
+              System.out.println(" |" + instanceId + "| " + line);
               if (line.equals(Agent.AGENT_IS_READY_MARKER_LOG)) {
                 started.set(true);
               }
             }
-          }).directory(clientRootDir(instanceId, subNodeName));
+          }).directory(clientRootDir(instanceId));
       StartedProcess startedProcess = processExecutor.start();
 
       while (startedProcess.getProcess().isAlive() && !started.get()) {
@@ -516,15 +516,15 @@ public class AgentController {
       logger.info("Spawned client with PID {}", pid);
       return pid;
     } catch (Exception e) {
-      throw new RuntimeException("Error spawning client " + subNodeName, e);
+      throw new RuntimeException("Error spawning client " + instanceId, e);
     }
   }
 
-  private static String buildClasspath(InstanceId instanceId, String subNodeName) {
-    File subClientDir = new File(clientRootDir(instanceId, subNodeName), "lib");
+  private static String buildClasspath(InstanceId instanceId) {
+    File subClientDir = new File(clientRootDir(instanceId), "lib");
     String[] cpEntries = subClientDir.list();
     if (cpEntries == null) {
-      throw new IllegalStateException("No client to spawn from " + instanceId + " and " + subNodeName);
+      throw new IllegalStateException("No client to spawn from " + instanceId);
     }
 
     StringBuilder sb = new StringBuilder();
@@ -549,19 +549,19 @@ public class AgentController {
     return sb.toString();
   }
 
-  public void downloadClient(InstanceId instanceId, String subNodeName) {
-    final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
+  public void downloadClient(InstanceId instanceId) {
+    final BlockingQueue<Object> queue = ignite.queue("file-transfer-queue@" + instanceId, 100, new CollectionConfiguration());
     try {
-      File subClientDir = new File(clientRootDir(instanceId, subNodeName), "lib");
-      logger.info("Downloading client '{}' into {}", subNodeName, subClientDir);
+      File subClientDir = new File(clientRootDir(instanceId), "lib");
+      logger.info("Downloading client '{}' into {}", instanceId, subClientDir);
       if (!subClientDir.mkdirs()) {
-        throw new RuntimeException("Cannot create client directory '" + subClientDir + "' on " + subNodeName);
+        throw new RuntimeException("Cannot create client directory '" + subClientDir + "' on " + instanceId);
       }
 
       while (true) {
         Object read = queue.take();
         if (read.equals(Boolean.TRUE)) {
-          logger.info("Downloaded client '{}' into {}", subNodeName, subClientDir);
+          logger.info("Downloaded client '{}' into {}", instanceId, subClientDir);
           break;
         }
 
@@ -577,7 +577,7 @@ public class AgentController {
                 break;
               }
               if (readFileLength > fileMetadata.getLength()) {
-                throw new RuntimeException("Error creating client classpath on " + subNodeName);
+                throw new RuntimeException("Error creating client classpath on " + instanceId);
               }
 
               byte[] buffer = (byte[])queue.take();
@@ -589,13 +589,13 @@ public class AgentController {
         }
       }
     } catch (Exception e) {
-      throw new RuntimeException("Cannot upload client on " + subNodeName, e);
+      throw new RuntimeException("Cannot upload client on " + instanceId, e);
     }
   }
 
 
-  private static File clientRootDir(InstanceId instanceId, String subNodeName) {
-    return new File(instanceRootDir(instanceId), subNodeName);
+  private static File clientRootDir(InstanceId instanceId) {
+    return new File(Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId);
   }
 
   private static File instanceRootDir(InstanceId instanceId) {
