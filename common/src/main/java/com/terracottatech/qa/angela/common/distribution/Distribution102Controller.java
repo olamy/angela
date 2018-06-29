@@ -150,7 +150,7 @@ public class Distribution102Controller extends DistributionController {
     logger.info("Licensing commands: {}", (Object[])commands);
     logger.info("Licensing command line environment: {}", tcEnv);
 
-    ProcessExecutor executor = new ProcessExecutor().redirectOutput(Slf4jStream.ofCaller().asInfo())
+    ProcessExecutor executor = new ProcessExecutor()  //.redirectOutput(Slf4jStream.ofCaller().asInfo())
         .command(commands).directory(location).environment(env);
 
     ProcessResult processResult;

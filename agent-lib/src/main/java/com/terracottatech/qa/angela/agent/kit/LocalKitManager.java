@@ -64,11 +64,6 @@ public class LocalKitManager extends KitManager {
       }
     }
     logger.info("Local install is located in {}", this.kitInstallationPath);
-
-
-//    File workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(license, localInstallPath);
-//    logger.info("Working install is located in {}", workingCopyFromLocalInstall);
-//    return workingCopyFromLocalInstall;
   }
 
   public String getKitInstallationName() {

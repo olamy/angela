@@ -119,7 +119,7 @@ public class AgentController {
     try {
       RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
 
-      File kitDestDir = kitManager.getKitInstallationPath();
+      File kitDestDir = kitManager.getKitInstallationPath().getParentFile();
       logger.info("Downloading tsa jars into {}", kitDestDir);
       if (!kitDestDir.mkdirs()) {
         throw new RuntimeException("Cannot create client directory '" + kitDestDir);
