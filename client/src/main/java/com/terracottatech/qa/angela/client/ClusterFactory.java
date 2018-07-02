@@ -187,30 +187,58 @@ public class ClusterFactory implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    List<Exception> exceptions = new ArrayList<>();
+
     for (AutoCloseable controller : controllers) {
-      controller.close();
+      try {
+        controller.close();
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
     }
     controllers.clear();
 
     for (String nodeName : nodeToInstanceId.keySet()) {
-      IgniteHelper.checkAgentHealth(ignite, nodeName);
-      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      InstanceId instanceId = nodeToInstanceId.get(nodeName);
-      ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
+      try {
+        IgniteHelper.checkAgentHealth(ignite, nodeName);
+        ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+        InstanceId instanceId = nodeToInstanceId.get(nodeName);
+        ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
     }
     nodeToInstanceId.clear();
 
     if (ignite != null) {
-      ignite.close();
+      try {
+        ignite.close();
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
       ignite = null;
     }
 
-    remoteAgentLauncher.close();
+    try {
+      remoteAgentLauncher.close();
+    } catch (Exception e) {
+      exceptions.add(e);
+    }
 
     if (localhostAgent != null) {
-      LOGGER.info("shutting down localhost agent");
-      localhostAgent.shutdown();
+      try {
+        LOGGER.info("shutting down localhost agent");
+        localhostAgent.shutdown();
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
       localhostAgent = null;
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException runtimeException = new RuntimeException("Error while closing down Cluster Factory prefixed with " + idPrefix);
+      exceptions.forEach(runtimeException::addSuppressed);
+      throw runtimeException;
     }
   }
 
