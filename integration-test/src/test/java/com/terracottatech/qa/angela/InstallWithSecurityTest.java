@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela;
 
 import com.terracottatech.qa.angela.test.Versions;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharac
  * @author Aurelien Broszniowski
  */
 
+@Ignore("disabled due to TDB-3665")
 public class InstallWithSecurityTest {
 
   @Rule

@@ -4,6 +4,7 @@ import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharac
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@Ignore("disabled due to TDB-3665")
 public class TmsSecurityTest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(TmsSecurityTest.class);
