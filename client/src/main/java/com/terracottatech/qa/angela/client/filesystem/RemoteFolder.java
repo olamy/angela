@@ -12,6 +12,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -34,6 +36,19 @@ public class RemoteFolder extends RemoteFile {
     result.addAll(remoteFiles.stream().map(s -> new RemoteFile(ignite, nodeName, getAbsoluteName(), s)).collect(toList()));
     result.addAll(remoteFolders.stream().map(s -> new RemoteFolder(ignite, nodeName, getAbsoluteName(), s)).collect(toList()));
     return result;
+  }
+
+  public void upload(String filename, URL resourceUrl) throws IOException {
+    try (InputStream in = resourceUrl.openStream()) {
+      upload(filename, in);
+    }
+  }
+
+  public void upload(String filename, InputStream in) throws IOException {
+    IgniteHelper.checkAgentHealth(ignite, nodeName);
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+    byte[] data = IOUtils.toByteArray(in);
+    ignite.compute(location).applyAsync((IgniteClosure<String, Void>) (aName) -> { Agent.CONTROLLER.uploadFile(aName, data); return null;}, getAbsoluteName() + "/" + filename).get();
   }
 
   @Override
