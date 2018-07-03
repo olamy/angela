@@ -5,6 +5,8 @@ import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tms;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFile;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -23,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
 
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -104,4 +108,20 @@ public class BrowseTest {
     }
   }
 
+  @Test
+  public void testUpload() throws Exception {
+    try (ClusterFactory factory = new ClusterFactory("BrowseTest::testUpload")) {
+      Client localhost = factory.client("localhost");
+      RemoteFolder folder = localhost.browse("does-not-exist"); // check that we can upload to non-existent folder & the folder will be created
+
+      folder.upload("license.xml", getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+      Optional<RemoteFile> createdFolder = localhost.browse(".").list().stream().filter(remoteFile -> remoteFile.getName().equals("does-not-exist") && remoteFile.isFolder()).findAny();
+      assertThat(createdFolder.isPresent(), is(true));
+
+      List<RemoteFile> remoteFiles = ((RemoteFolder) createdFolder.get()).list();
+      Optional<RemoteFile> remoteFileOpt = remoteFiles.stream().filter(remoteFile -> remoteFile.getName().equals("license.xml")).findAny();
+      assertThat(remoteFileOpt.isPresent(), is(true));
+    }
+  }
 }

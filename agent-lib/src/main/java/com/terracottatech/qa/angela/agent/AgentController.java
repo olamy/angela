@@ -637,6 +637,16 @@ public class AgentController {
     return baos.toByteArray();
   }
 
+  public void uploadFile(String filename, byte[] data) {
+    File file = new File(filename);
+    file.getParentFile().mkdirs();
+    try (FileOutputStream fos = new FileOutputStream(file)) {
+      fos.write(data);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error uploading file " + filename, ioe);
+    }
+  }
+
   public byte[] downloadFolder(String file) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ZipOutputStream zos = new ZipOutputStream(baos)) {
