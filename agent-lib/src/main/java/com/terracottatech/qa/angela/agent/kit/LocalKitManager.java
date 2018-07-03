@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,7 @@ public class LocalKitManager extends KitManager {
 
       logger.debug("Success -> file downloaded succesfully");
     } catch (IOException e) {
+      FileUtils.deleteQuietly(localInstallerFilename); // messed up download -> delete it
       throw new RuntimeException("Can not download kit located at " + kitUrl, e);
     }
   }

@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -50,6 +51,7 @@ public class Tsa implements AutoCloseable {
   private final License license;
   private final InstanceId instanceId;
   private final TerracottaCommandLineEnvironment tcEnv;
+  private final transient DisruptionController disruptionController;
   private boolean closed = false;
   private LocalKitManager localKitManager;
 
@@ -62,7 +64,7 @@ public class Tsa implements AutoCloseable {
     this.license = license;
     this.instanceId = instanceId;
     this.ignite = ignite;
-    DisruptionController.add(ignite, instanceId, topology);
+    this.disruptionController = new DisruptionController(ignite, instanceId, topology);
     this.localKitManager = new LocalKitManager(topology.getDistribution());
   }
 
@@ -181,7 +183,7 @@ public class Tsa implements AutoCloseable {
   }
 
   public DisruptionController disruptionController() {
-    return DisruptionController.get(instanceId);
+    return disruptionController;
   }
 
 
@@ -192,12 +194,24 @@ public class Tsa implements AutoCloseable {
   }
 
   public void stopAll() {
+  List<Exception> exceptions = new ArrayList<>();
+
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (final TcConfig tcConfig : tcConfigs) {
       for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
-        stop(terracottaServer);
+        try {
+          stop(terracottaServer);
+        } catch (Exception e) {
+          exceptions.add(e);
+        }
       }
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException re = new RuntimeException("Error stopping all servers");
+      exceptions.forEach(re::addSuppressed);
+      throw re;
     }
   }
 
@@ -234,8 +248,7 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    TcConfig[] tcConfigs = topology.isNetDisruptionEnabled() ? disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) : topology
-        .getTcConfigs();
+    TcConfig[] tcConfigs = topology.isNetDisruptionEnabled() ? disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) : topology.getTcConfigs();
 
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
@@ -332,7 +345,7 @@ public class Tsa implements AutoCloseable {
     try {
       stopAll();
     } catch (Exception e) {
-      logger.error("Error when trying to stop servers", e.getMessage());
+      logger.error("Error when trying to stop servers : {}", e.getMessage());
       // ignore, not installed
     }
     if (!ClusterFactory.SKIP_UNINSTALL) {
@@ -341,10 +354,9 @@ public class Tsa implements AutoCloseable {
 
     if (topology.isNetDisruptionEnabled()) {
       try {
-        DisruptionController.get(instanceId).close();
-        DisruptionController.remove(instanceId);
+        disruptionController.close();
       } catch (Exception e) {
-        logger.error("Error when trying to close traffic controller", e.getMessage());
+        logger.error("Error when trying to close traffic controller : {}", e.getMessage());
       }
     }
   }

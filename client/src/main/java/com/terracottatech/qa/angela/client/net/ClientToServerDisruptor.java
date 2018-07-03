@@ -52,7 +52,7 @@ public class ClientToServerDisruptor implements Disruptor {
           .getTsaPort());
 
       endPoints.putIfAbsent(server.getServerSymbolicName(), DISRUPTION_PROVIDER.isProxyBased() ? proxyEndPoint : serverEndPoint);
-      LOGGER.info("Server {} endpoint {}", server.getServerSymbolicName()
+      LOGGER.debug("Server {} endpoint {}", server.getServerSymbolicName()
           .getSymbolicName(), endPoints.get(server.getServerSymbolicName()));
       links.computeIfAbsent(server.getServerSymbolicName(), s -> DISRUPTION_PROVIDER.createLink(DISRUPTION_PROVIDER.isProxyBased() ? proxyEndPoint : clientEndPoint, serverEndPoint));
     }
@@ -60,53 +60,46 @@ public class ClientToServerDisruptor implements Disruptor {
   }
 
 
-  public void disrupt(Collection<ServerSymbolicName> servers) {
+  @Override
+  public void disrupt() {
     if (state != DisruptorState.UNDISRUPTED) {
-      throw new IllegalStateException("Illegal state before disrupt:" + state);
+      throw new IllegalStateException("Illegal state before disrupt: " + state);
     }
 
-    LOGGER.info("blocking client to {}", servers.stream()
-        .map(s -> s.getSymbolicName())
-        .collect(Collectors.joining(",", "[", "]")));
-
-    for (ServerSymbolicName server : servers) {
+    LOGGER.debug("disrupting client to servers");
+    for (ServerSymbolicName server : links.keySet()) {
       links.get(server).disrupt();
     }
     state = DisruptorState.DISRUPTED;
   }
 
   @Override
-  public void disrupt() {
-    disrupt(links.keySet());
-  }
-
-  @Override
   public void undisrupt() {
-    if (state == DisruptorState.DISRUPTED) {
-      LOGGER.info("undisrupting client to servers");
-      for (Disruptor link : links.values()) {
-        link.undisrupt();
-      }
-      state = DisruptorState.UNDISRUPTED;
-    } else {
-      //ignore?
+    if (state != DisruptorState.DISRUPTED) {
+      throw new IllegalStateException("Illegal state before undisrupt: " + state);
     }
+
+    LOGGER.debug("undisrupting client to servers");
+    for (Disruptor link : links.values()) {
+      link.undisrupt();
+    }
+    state = DisruptorState.UNDISRUPTED;
   }
 
   @Override
   public void close() throws Exception {
-    links.values().stream().forEach(DISRUPTION_PROVIDER::removeLink);
-    closeHook.accept(this);
-    state = DisruptorState.CLOSED;
+    if (state == DisruptorState.DISRUPTED) {
+      undisrupt();
+    }
+    if (state == DisruptorState.UNDISRUPTED) {
+      links.values().forEach(DISRUPTION_PROVIDER::removeLink);
+      closeHook.accept(this);
+      state = DisruptorState.CLOSED;
+    }
   }
 
   public URI uri() {
-    try {
-      return URI.create("terracotta://" + getHostPortList());
-    } catch (Throwable t) {
-      t.printStackTrace();
-      throw new RuntimeException(t);
-    }
+    return URI.create("terracotta://" + getHostPortList());
   }
 
   public URI uri(TerracottaServer... servers) {
@@ -122,19 +115,16 @@ public class ClientToServerDisruptor implements Disruptor {
   }
 
   private String getHostPortList(TerracottaServer... servers) {
-    return getHostPortList(Arrays.asList(servers)
-        .stream()
+    return getHostPortList(Arrays.stream(servers)
         .map(TerracottaServer::getServerSymbolicName)
         .collect(Collectors.toList()));
   }
 
   private String getHostPortList(Collection<ServerSymbolicName> servers) {
-
     return servers.stream()
-        .map(s -> endPoints.get(s))
+        .map(endPoints::get)
         .map(s -> s.getHostName() + ":" + s.getPort())
         .collect(Collectors.joining(","));
   }
-
 
 }

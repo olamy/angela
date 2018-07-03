@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
@@ -133,6 +134,13 @@ public class ClusterFactory implements AutoCloseable {
     return true;
   }
 
+  public Barrier barrier(String name, int count) {
+    if (ignite == null) {
+      throw new IllegalStateException("No cluster component started; cannot create a barrier");
+    }
+    return new Barrier(ignite, count, name);
+  }
+
   public Tsa tsa(Topology topology) {
     InstanceId instanceId = init(topology.getServersHostnames());
 
@@ -179,30 +187,58 @@ public class ClusterFactory implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    List<Exception> exceptions = new ArrayList<>();
+
     for (AutoCloseable controller : controllers) {
-      controller.close();
+      try {
+        controller.close();
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
     }
     controllers.clear();
 
     for (String nodeName : nodeToInstanceId.keySet()) {
-      IgniteHelper.checkAgentHealth(ignite, nodeName);
-      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      InstanceId instanceId = nodeToInstanceId.get(nodeName);
-      ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
+      try {
+        IgniteHelper.checkAgentHealth(ignite, nodeName);
+        ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+        InstanceId instanceId = nodeToInstanceId.get(nodeName);
+        ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
     }
     nodeToInstanceId.clear();
 
     if (ignite != null) {
-      ignite.close();
+      try {
+        ignite.close();
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
       ignite = null;
     }
 
-    remoteAgentLauncher.close();
+    try {
+      remoteAgentLauncher.close();
+    } catch (Exception e) {
+      exceptions.add(e);
+    }
 
     if (localhostAgent != null) {
-      LOGGER.info("shutting down localhost agent");
-      localhostAgent.shutdown();
+      try {
+        LOGGER.info("shutting down localhost agent");
+        localhostAgent.shutdown();
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
       localhostAgent = null;
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException runtimeException = new RuntimeException("Error while closing down Cluster Factory prefixed with " + idPrefix);
+      exceptions.forEach(runtimeException::addSuppressed);
+      throw runtimeException;
     }
   }
 

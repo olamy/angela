@@ -115,21 +115,13 @@ public class CompressionUtils implements Serializable {
         destPath.mkdirs();
       } else {
         destPath.createNewFile();
-        //byte [] btoRead = new byte[(int)tarEntry.getSize()];
-        byte[] btoRead = new byte[1024];
-        //FileInputStream fin
-        //  = new FileInputStream(destPath.getCanonicalPath());
-        BufferedOutputStream bout =
-            new BufferedOutputStream(new FileOutputStream(destPath));
-        int len = 0;
-
-        while ((len = tarIn.read(btoRead)) != -1) {
-          bout.write(btoRead, 0, len);
+        try (BufferedOutputStream bout = new BufferedOutputStream(new FileOutputStream(destPath))) {
+          int len;
+          byte[] btoRead = new byte[1024];
+          while ((len = tarIn.read(btoRead)) != -1) {
+            bout.write(btoRead, 0, len);
+          }
         }
-
-        bout.close();
-        btoRead = null;
-
       }
       tarEntry = tarIn.getNextTarEntry();
     }
@@ -138,13 +130,12 @@ public class CompressionUtils implements Serializable {
   }
 
   public String getParentDirFromTarGz(final File localInstaller) throws IOException {
-    FileInputStream fileInputStream = new FileInputStream(localInstaller);
-    GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
-    TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(gzipInputStream);
-    TarArchiveEntry tarArchiveEntry;
-    tarArchiveEntry = tarArchiveInputStream.getNextTarEntry();
-    String[] split = tarArchiveEntry.getName().split(Pattern.quote(File.separator));
-    return split[0];
+    try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(new GZIPInputStream(new FileInputStream(localInstaller)))) {
+      TarArchiveEntry tarArchiveEntry;
+      tarArchiveEntry = tarArchiveInputStream.getNextTarEntry();
+      String[] split = tarArchiveEntry.getName().split(Pattern.quote(File.separator));
+      return split[0];
+    }
   }
 
 

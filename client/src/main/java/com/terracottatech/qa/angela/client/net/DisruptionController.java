@@ -1,9 +1,5 @@
 package com.terracottatech.qa.angela.client.net;
 
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
@@ -12,6 +8,9 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,7 +20,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -34,25 +32,10 @@ public class DisruptionController implements AutoCloseable {
   private final InstanceId instanceId;
   private final Topology topology;
   private final Collection<Disruptor> existingDisruptors = new ArrayList<>();
+  private final Map<ServerSymbolicName, Integer> proxyTsaPorts = new HashMap<>();
   private volatile boolean closed;
-  private Map<ServerSymbolicName, Integer> proxyTsaPorts = new HashMap<>();
 
-
-  private static final Map<InstanceId, DisruptionController> controllers = new ConcurrentHashMap<>();
-
-  public static void add(Ignite ignite, InstanceId instanceId, Topology topology) {
-    controllers.putIfAbsent(instanceId, new DisruptionController(ignite, instanceId, topology));
-  }
-
-  public static DisruptionController get(InstanceId instanceId) {
-    return controllers.get(instanceId);
-  }
-
-  public static void remove(InstanceId instanceId) {
-    controllers.remove(instanceId);
-  }
-
-  private DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology) {
+  public DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology) {
     this.ignite = ignite;
     this.instanceId = instanceId;
     this.topology = topology;
@@ -85,7 +68,6 @@ public class DisruptionController implements AutoCloseable {
    * @return
    */
   public ServerToServerDisruptor newServerToServerDisruptor(SplitCluster... splitClusters) {
-
     if (!topology.isNetDisruptionEnabled()) {
       throw new IllegalArgumentException("Topology not enabled for network disruption");
     }
@@ -114,7 +96,7 @@ public class DisruptionController implements AutoCloseable {
       }
     }
 
-    LOGGER.info("new disruptor for {}", (Object)splitClusters);
+    LOGGER.debug("new disruptor for {}", (Object)splitClusters);
     //compute servers to be linked for disruption based on input split clusters
     final Map<ServerSymbolicName, Collection<ServerSymbolicName>> linkedServers = new HashMap<>();
     for (int i = 0; i < splitClusters.length; ++i) {
@@ -152,9 +134,9 @@ public class DisruptionController implements AutoCloseable {
     }
 
 
-    ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, instanceId, topology, linkedServers, d -> removeDisruptor(d));
+    ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, instanceId, topology, linkedServers, existingDisruptors::remove);
     existingDisruptors.add(disruption);
-    LOGGER.info("created disruptor {}", disruption);
+    LOGGER.debug("created disruptor {}", disruption);
     return disruption;
   }
 
@@ -170,34 +152,32 @@ public class DisruptionController implements AutoCloseable {
     if (!topology.isNetDisruptionEnabled()) {
       throw new IllegalArgumentException("Topology not enabled for network disruption");
     }
-    LOGGER.info("creating new client to servers disruption");
+    if (closed) {
+      throw new IllegalStateException("already closed");
+    }
+    if (!topology.isNetDisruptionEnabled()) {
+      throw new IllegalArgumentException("Topology not enabled for network disruption");
+    }
+    LOGGER.debug("creating new client to servers disruption");
     Optional<Disruptor> disruptor = existingDisruptors.stream()
         .filter(d -> d instanceof ClientToServerDisruptor)
         .findAny();
-    if (DISRUPTION_PROVIDER.isProxyBased() & disruptor.isPresent()) {
+    if (DISRUPTION_PROVIDER.isProxyBased() && disruptor.isPresent()) {
       //make sure single disruptor serves all clients
       return (ClientToServerDisruptor)disruptor.get();
     } else {
-      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, d -> removeDisruptor(d), proxyTsaPorts);
+      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
       return newDisruptor;
     }
   }
 
 
-  /**
-   * @param disruptor
-   */
-  void removeDisruptor(Disruptor disruptor) {
-    LOGGER.info("removing {}", disruptor);
-    existingDisruptors.remove(disruptor);
-  }
-
-
   @Override
   public void close() throws Exception {
-    LOGGER.info("closing disruption controller");
-    for (Disruptor disruption : existingDisruptors) {
+    LOGGER.debug("closing disruption controller");
+    ArrayList<Disruptor> copy = new ArrayList<>(existingDisruptors);
+    for (Disruptor disruption : copy) {
       disruption.close();
     }
     closed = true;
@@ -212,7 +192,7 @@ public class DisruptionController implements AutoCloseable {
         proxyTsaPorts.putAll(proxiedTcConfigs[i].retrieveTsaPorts(true));
       }
       //create disruptor up front for cluster tool configuration
-      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, d -> removeDisruptor(d), proxyTsaPorts);
+      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
       return proxiedTcConfigs;
     } else {
