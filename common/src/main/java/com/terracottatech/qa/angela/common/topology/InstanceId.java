@@ -1,7 +1,6 @@
 package com.terracottatech.qa.angela.common.topology;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * @author Aurelien Broszniowski
@@ -9,34 +8,30 @@ import java.util.UUID;
 
 public class InstanceId {
   private final String prefix;
-  private final UUID uuid;
+  private final String type;
 
-  public InstanceId(String idPrefix) {
+  public InstanceId(String idPrefix, String type) {
     this.prefix = Objects.requireNonNull(idPrefix).replaceAll("[^a-zA-Z0-9.-]", "_");;
-    this.uuid = UUID.randomUUID();
+    this.type = type;
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-
-    final InstanceId that = (InstanceId)o;
-
-    if (!prefix.equals(that.prefix)) return false;
-    return uuid.equals(that.uuid);
+    InstanceId that = (InstanceId) o;
+    return Objects.equals(prefix, that.prefix) &&
+        Objects.equals(type, that.type);
   }
 
   @Override
   public int hashCode() {
-    int result = prefix.hashCode();
-    result = 31 * result + uuid.hashCode();
-    return result;
+    return Objects.hash(prefix, type);
   }
 
   @Override
   public String toString() {
-    return prefix + "-" + uuid.toString();
+    return String.format("%s-%s", prefix, type);
   }
 
 }

@@ -23,6 +23,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
@@ -42,10 +46,16 @@ public class ClusterFactory implements AutoCloseable {
   private static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("Oracle Corporation", "sun", "openjdk")));
   private static final String DEFAULT_JDK_VERSION = "1.8";
 
+  private static final String TSA = "tsa";
+  private static final String TMS = "tms";
+  private static final String CLIENT = "client";
+  private static final DateTimeFormatter PATH_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-hhmmss");
+
 
   private transient final RemoteAgentLauncher remoteAgentLauncher;
   private final List<AutoCloseable> controllers = new ArrayList<>();
   private final String idPrefix;
+  private final AtomicInteger instanceIndex;
   private final TerracottaCommandLineEnvironment tcEnv;
   private final Map<String, InstanceId> nodeToInstanceId = new HashMap<>();
   private Ignite ignite;
@@ -65,17 +75,19 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public ClusterFactory(String idPrefix, RemoteAgentLauncher remoteAgentLauncher, TerracottaCommandLineEnvironment tcEnv) {
-    this.idPrefix = idPrefix;
+    // Using UTC to have consistent layout even in case of timezone skew between client and server.
+    this.idPrefix = idPrefix + "-" + LocalDateTime.now(ZoneId.of("UTC")).format(PATH_FORMAT);
     this.remoteAgentLauncher = remoteAgentLauncher;
     this.tcEnv = tcEnv;
+    this.instanceIndex = new AtomicInteger();
   }
 
-  private InstanceId init(Collection<String> targetServerNames) {
+  private InstanceId init(String type, Collection<String> targetServerNames) {
     if (targetServerNames.isEmpty()) {
       throw new IllegalArgumentException("Cannot initialize with 0 server");
     }
 
-    InstanceId instanceId = new InstanceId(idPrefix);
+    InstanceId instanceId = new InstanceId(idPrefix + "-" + instanceIndex.getAndIncrement(), type);
     for (String targetServerName : targetServerNames) {
       if (targetServerName == null) {
         throw new IllegalArgumentException("Cannot initialize with a null server name");
@@ -142,7 +154,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tsa tsa(Topology topology) {
-    InstanceId instanceId = init(topology.getServersHostnames());
+    InstanceId instanceId = init(TSA, topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, null, tcEnv);
     controllers.add(tsa);
@@ -150,7 +162,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tsa tsa(Topology topology, License license) {
-    InstanceId instanceId = init(topology.getServersHostnames());
+    InstanceId instanceId = init(TSA, topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, license, tcEnv);
     controllers.add(tsa);
@@ -166,7 +178,7 @@ public class ClusterFactory implements AutoCloseable {
       throw new IllegalArgumentException("localhost agent started, connection to remote agent '" + nodeName + "' is not possible");
     }
 
-    InstanceId instanceId = init(Collections.singleton(nodeName));
+    InstanceId instanceId = init(CLIENT, Collections.singleton(nodeName));
 
     Client client = new Client(ignite, instanceId, nodeName, localhostOnly, tcEnv);
     controllers.add(client);
@@ -178,7 +190,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
-    InstanceId instanceId = init(Collections.singletonList(hostname));
+    InstanceId instanceId = init(TMS, Collections.singletonList(hostname));
 
     Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig, tcEnv);
     controllers.add(tms);

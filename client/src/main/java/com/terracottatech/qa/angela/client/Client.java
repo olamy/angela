@@ -52,7 +52,6 @@ public class Client implements Closeable {
   private final InstanceId instanceId;
   private final String nodeName;
   private final Ignite ignite;
-  private final String subNodeName;
   private final boolean localhostOnly;
   private final TerracottaCommandLineEnvironment tcEnv;
   private final int subClientPid;
@@ -62,27 +61,26 @@ public class Client implements Closeable {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
-    this.subNodeName = nodeName + "_" + UUID.randomUUID().toString();
     this.localhostOnly = localhostOnly;
     this.tcEnv = tcEnv;
     this.subClientPid = spawnSubClient();
   }
 
   private int spawnSubClient() {
-    logger.info("Spawning client '{}' on {}", subNodeName, nodeName);
+    logger.info("Spawning client '{}' on {}", instanceId, nodeName);
     IgniteHelper.checkAgentHealth(ignite, nodeName);
     try {
-      final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@" + subNodeName, 100, new CollectionConfiguration());
+      final BlockingQueue<Object> queue = ignite.queue("file-transfer-queue@" + instanceId, 100, new CollectionConfiguration());
 
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadClient(instanceId, subNodeName));
+      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadClient(instanceId));
 
       uploadClasspath(queue);
       remoteDownloadFuture.get();
 
-      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, subNodeName, localhostOnly, tcEnv));
+      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, localhostOnly, tcEnv));
       int pid = results.iterator().next();
-      logger.info("client '{}' on {} started with PID {}", subNodeName, nodeName, pid);
+      logger.info("client '{}' on {} started with PID {}", instanceId, nodeName, pid);
 
       return pid;
     } catch (Exception e) {
@@ -143,7 +141,7 @@ public class Client implements Closeable {
 
   public Future<Void> submit(ClientJob clientJob) {
     IgniteHelper.checkAgentHealth(ignite, nodeName);
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", subNodeName);
+    ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
       clientJob.run(new Context(nodeName, ignite, instanceId));
       return null;
@@ -152,7 +150,7 @@ public class Client implements Closeable {
   }
 
   public RemoteFolder browse(String root) {
-    return new RemoteFolder(ignite, subNodeName, null, root);
+    return new RemoteFolder(ignite, instanceId.toString(), null, root);
   }
 
   @Override
@@ -163,10 +161,10 @@ public class Client implements Closeable {
     closed = true;
 
     if (!ClusterFactory.SKIP_UNINSTALL) {
-      logger.info("Wiping up client '{}' on {}", subNodeName, nodeName);
+      logger.info("Wiping up client '{}' on {}", instanceId, nodeName);
       IgniteHelper.checkAgentHealth(ignite, nodeName);
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.destroyClient(instanceId, subNodeName, subClientPid));
+      ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
     }
   }
 
