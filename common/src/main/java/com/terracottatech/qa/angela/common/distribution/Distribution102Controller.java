@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
@@ -146,20 +147,22 @@ public class Distribution102Controller extends DistributionController {
 
     String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory);
 
-    ProcessExecutor executor = new ProcessExecutor()
+    logger.info("Licensing commands: {}", (Object[])commands);
+    logger.info("Licensing command line environment: {}", tcEnv);
+
+    ProcessExecutor executor = new ProcessExecutor()  //.redirectOutput(Slf4jStream.ofCaller().asInfo())
         .command(commands).directory(location).environment(env);
 
     ProcessResult processResult;
     try {
-      StartedProcess startedProcess = executor.readOutput(true).start();
+      StartedProcess startedProcess = executor.start();
       processResult = startedProcess.getFuture().get();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
 
     if (processResult.getExitValue() != 0) {
-      throw new ClusterToolException("Error when installing the cluster license", processResult.outputString(), processResult
-          .getExitValue());
+      throw new ClusterToolException("Error when installing the cluster license", Arrays.toString(commands), processResult.getExitValue());
     }
   }
 

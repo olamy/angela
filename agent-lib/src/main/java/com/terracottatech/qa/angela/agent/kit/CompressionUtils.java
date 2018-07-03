@@ -33,6 +33,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -283,6 +285,7 @@ public class CompressionUtils implements Serializable {
 
     File licenseFile = license.writeToFile(new File(dest.getPath()));
 
+    int exit;
     try {
       PrintWriter writer = new PrintWriter(scriptFile, "UTF-8");
       writer.println("Username=latest");
@@ -305,13 +308,32 @@ public class CompressionUtils implements Serializable {
       writer.close();
 
       OutputStream out = new ByteArrayOutputStream();
-      new ProcessExecutor().command("java", "-jar", sagInstaller.getPath(), "-readScript", scriptFile.getPath(), "-console")
+      exit = new ProcessExecutor().command("java", "-jar", sagInstaller.getPath(), "-readScript", scriptFile.getPath(), "-console")
           .redirectOutput(out)
-          .execute();
-      System.out.println(out.toString());
+          .execute().getExitValue();
+      logger.info(out.toString());
       logger.info("kit installation path = {}", localInstallDir.getAbsolutePath());
     } catch (Exception e) {
+      try {
+        Files.walk(localInstallDir.toPath())
+            .map(Path::toFile)
+            .sorted((o1, o2) -> -o1.compareTo(o2))
+            .forEach(File::delete);
+      } catch (IOException e1) {
+        logger.error("Error when cleaning kit installation {} after a SAG installer execution error", localInstallDir.toPath(), e1);
+      }
       throw new RuntimeException("Problem when installing Terracotta from SAG installer script " + scriptFile.getPath());
+    }
+    if (exit != 0) {
+      try {
+        Files.walk(localInstallDir.toPath())
+            .map(Path::toFile)
+            .sorted((o1, o2) -> -o1.compareTo(o2))
+            .forEach(File::delete);
+      } catch (IOException e1) {
+        logger.error("Error when cleaning kit installation {} after a SAG installer returned a failure exit code", localInstallDir.toPath(), e1);
+      }
+      throw new RuntimeException("Error when installing with the sag installer. Check the file " + dest.getPath() + File.separatorChar + "installLog.txt");
     }
   }
 

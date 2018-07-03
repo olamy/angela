@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela;
 
 import com.terracottatech.qa.angela.test.Versions;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import java.nio.file.Path;
@@ -23,6 +24,7 @@ import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharacteristic.VALID;
 
+@Ignore("disabled due to TDB-3665")
 public class MultiStripeWithSecurityTest {
 
   @Rule
