@@ -18,7 +18,7 @@
   <properties>
     <terracotta.version>10.3.0.0.271</terracotta.version>
     <java.build.version>1.8</java.build.version>
-    <ignite.version>2.4.0</ignite.version>
+    <ignite.version>2.5.0</ignite.version>
   </properties>
 
   <modules>
