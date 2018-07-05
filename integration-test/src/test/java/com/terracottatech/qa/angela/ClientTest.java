@@ -1,9 +1,12 @@
 package com.terracottatech.qa.angela;
 
+import org.junit.Test;
+
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.tcconfig.License;
@@ -11,8 +14,8 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
-import org.junit.Test;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +36,22 @@ public class ClientTest {
         Future<Void> f = client.submit((context) -> System.out.println("hello world"));
         f.get();
       }
+    }
+  }
+
+  @Test
+  public void testMultipleRemoteClients() throws Exception {
+    System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", new SshRemoteAgentLauncher())) {
+      Client client1 = instance.client(InetAddress.getLocalHost().getHostName());
+      Client client2 = instance.client(InetAddress.getLocalHost().getHostName());
+      Future<Void> f1 = client1.submit((context) -> System.out.println("hello world 1"));
+      Future<Void> f2 = client2.submit((context) -> System.out.println("hello world 2"));
+      f1.get();
+      f2.get();
+    } finally {
+      System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "true");
     }
   }
 
@@ -70,7 +89,7 @@ public class ClientTest {
     final int clientCount = 2;
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testBarrier")) {
 
-      ClientJob clientJob = (ClientJob) context -> {
+      ClientJob clientJob = (ClientJob)context -> {
         Barrier daBarrier = context.barrier("daBarrier", clientCount);
         for (int i = 0; i < 20; i++) {
           daBarrier.await();

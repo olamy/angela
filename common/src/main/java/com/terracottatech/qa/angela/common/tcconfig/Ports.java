@@ -33,4 +33,14 @@ public class Ports implements Serializable {
   public int getJmxPort() {
     return jmxPort;
   }
+
+  @Override
+  public String toString() {
+    return "Ports{" +
+           "tsaPort=" + tsaPort +
+           ", groupPort=" + groupPort +
+           ", managementPort=" + managementPort +
+           ", jmxPort=" + jmxPort +
+           '}';
+  }
 }

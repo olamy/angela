@@ -198,7 +198,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     List<Exception> exceptions = new ArrayList<>();
 
     for (AutoCloseable controller : controllers) {
