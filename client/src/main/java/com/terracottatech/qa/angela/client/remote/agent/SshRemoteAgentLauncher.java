@@ -30,6 +30,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   private final Map<String, RemoteAgentHolder> clients = new HashMap<>();
   private final String remoteUserName;
+  private final String remoteUserNameKeyPath;
   private final File agentJarFile;
   private final boolean agentJarFileShouldBeRemoved;
 
@@ -48,6 +49,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   public SshRemoteAgentLauncher() {
     this.remoteUserName = System.getProperty("tc.qa.angela.ssh.user.name", System.getProperty("user.name"));
+    this.remoteUserNameKeyPath = System.getProperty("tc.qa.angela.ssh.user.name.key.path");
     Map.Entry<File, Boolean> agentJar = findAgentJarFile();
     this.agentJarFile = agentJar.getKey();
     this.agentJarFileShouldBeRemoved = agentJar.getValue();
@@ -71,7 +73,13 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       }
       ssh.loadKnownHosts();
       ssh.connect(targetServerName);
-      ssh.authPublickey(remoteUserName);
+
+      // load provided private key file, if available.
+      if (remoteUserNameKeyPath == null) {
+        ssh.authPublickey(remoteUserName);
+      } else {
+        ssh.authPublickey(remoteUserName, remoteUserNameKeyPath);
+      }
 
       exec(ssh, "mkdir -p $HOME/.angela/jars");
       if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e $HOME/.angela/jars/" + agentJarFile.getName() + " ]") != 0) {
