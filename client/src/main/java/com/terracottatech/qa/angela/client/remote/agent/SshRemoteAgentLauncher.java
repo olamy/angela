@@ -66,25 +66,27 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
     try {
       SSHClient ssh = new SSHClient();
-      if (!Boolean.parseBoolean(System.getProperty("tc.qa.angela.ssh.strictHostKeyChecking", "true"))) {
+      final String angelaHome = ".angela/" + targetServerName;
+
+      if (!Boolean.parseBoolean(System.getProperty("tc.qa" + angelaHome + ".ssh.strictHostKeyChecking", "true"))) {
         ssh.addHostKeyVerifier(new PromiscuousVerifier());
       }
       ssh.loadKnownHosts();
       ssh.connect(targetServerName);
       ssh.authPublickey(remoteUserName);
 
-      exec(ssh, "mkdir -p $HOME/.angela/jars");
-      if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e $HOME/.angela/jars/" + agentJarFile.getName() + " ]") != 0) {
+      exec(ssh, "mkdir -p $HOME/" + angelaHome + "/jars");
+      if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e $HOME/" + angelaHome + "/jars/" + agentJarFile.getName() + " ]") != 0) {
         // jar file is a snapshot or does not exist, upload it
         LOGGER.info("uploading agent jar {} ...", agentJarFile.getName());
-        uploadJar(ssh, agentJarFile, ".angela/jars");
+        uploadJar(ssh, agentJarFile, angelaHome + "/jars");
       }
 
       Session session = ssh.startSession();
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
-      Session.Command cmd = session.exec("java -Dtc.qa.nodeName=" + targetServerName + " -DkitsDir=$HOME/.angela -jar $HOME/.angela/jars/" +
-                                         agentJarFile.getName());
+      Session.Command cmd = session.exec("java -Dtc.qa.nodeName=" + targetServerName + " -DkitsDir=$HOME/" + angelaHome +
+                                         " -jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
       new StreamCopier(cmd.getInputStream(), sshLogOutputStream, net.schmizz.sshj.common.LoggerFactory.DEFAULT).bufSize(MAX_LINE_LENGTH)
