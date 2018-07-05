@@ -49,7 +49,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   public SshRemoteAgentLauncher() {
     this.remoteUserName = System.getProperty("tc.qa.angela.ssh.user.name", System.getProperty("user.name"));
-    this.remoteUserNameKeyPath = System.getProperty("tc.qa.angela.ssh.user.name.key.path", "");
+    this.remoteUserNameKeyPath = System.getProperty("tc.qa.angela.ssh.user.name.key.path");
     Map.Entry<File, Boolean> agentJar = findAgentJarFile();
     this.agentJarFile = agentJar.getKey();
     this.agentJarFileShouldBeRemoved = agentJar.getValue();
@@ -71,7 +71,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       ssh.connect(targetServerName);
 
       // load provided private key file, if available.
-      if (remoteUserNameKeyPath.isEmpty()) {
+      if (remoteUserNameKeyPath == null) {
         ssh.authPublickey(remoteUserName);
       } else {
         ssh.authPublickey(remoteUserName, remoteUserNameKeyPath);
