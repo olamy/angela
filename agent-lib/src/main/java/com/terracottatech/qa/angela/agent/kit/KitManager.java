@@ -36,7 +36,7 @@ public abstract class KitManager {
     String localWorkRootDir;
     final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
     if (dir == null || dir.isEmpty()) {
-      localWorkRootDir = new File("/data/tsamanager").getAbsolutePath();
+      localWorkRootDir = new File("/data/angela").getAbsolutePath();
     } else if (dir.startsWith(".")) {
       throw new IllegalArgumentException("Can not use relative path for the ROOT_DIR. Please use a fixed one.");
     } else {
