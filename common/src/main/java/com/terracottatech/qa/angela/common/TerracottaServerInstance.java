@@ -90,8 +90,8 @@ public class TerracottaServerInstance {
     }
   }
 
-  public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env) {
-    this.distributionController.configureLicense(clusterName, location, licensePath, tcConfigs, securityRootDirectory, env);
+  public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
+    this.distributionController.configureLicense(clusterName, location, licensePath, tcConfigs, securityRootDirectory, env, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {

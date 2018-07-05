@@ -169,7 +169,7 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
+  public void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     LOGGER.info("There is no licensing step in 4.x");
   }
 

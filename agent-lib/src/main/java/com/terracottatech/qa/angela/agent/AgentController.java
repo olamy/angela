@@ -438,13 +438,14 @@ public class AgentController {
   }
 
   public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs,
-                               String clusterName, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
+                               String clusterName, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv,
+                               boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     String licensePath = getLicensePath(instanceId);
     if (clusterName == null) {
       clusterName = instanceId.toString();
     }
-    serverInstance.configureLicense(clusterName, licensePath, tcConfigs, securityRootDirectory, tcEnv);
+    serverInstance.configureLicense(clusterName, licensePath, tcConfigs, securityRootDirectory, tcEnv, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
