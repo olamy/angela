@@ -142,15 +142,15 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv) {
+  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     Map<String, String> env = buildEnv(tcEnv);
 
-    String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory);
+    String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory, verbose);
 
-    logger.info("Licensing commands: {}", (Object[])commands);
+    logger.info("Licensing commands: {}", Arrays.toString(commands));
     logger.info("Licensing command line environment: {}", tcEnv);
 
-    ProcessExecutor executor = new ProcessExecutor()  //.redirectOutput(Slf4jStream.ofCaller().asInfo())
+    ProcessExecutor executor = new ProcessExecutor().redirectOutput(Slf4jStream.of(LoggerFactory.getLogger("cluster-tool")).asInfo())
         .command(commands).directory(location).environment(env);
 
     ProcessResult processResult;
@@ -166,7 +166,7 @@ public class Distribution102Controller extends DistributionController {
     }
   }
 
-  private synchronized String[] configureCommand(final File location, String licensePath, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory) {
+  private synchronized String[] configureCommand(final File location, String licensePath, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory, boolean verbose) {
     List<String> command = new ArrayList<>();
 
     StringBuilder sb = null;
@@ -186,7 +186,9 @@ public class Distribution102Controller extends DistributionController {
       command.add("-srd");
       command.add(securityRootDirectoryPath.toString());
     }
-    command.add("-v");
+    if (verbose) {
+      command.add("-v");
+    }
     command.add("configure");
     command.add("-n");
     command.add(clusterName);
