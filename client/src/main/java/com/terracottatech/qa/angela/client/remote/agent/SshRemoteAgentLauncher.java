@@ -58,6 +58,10 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   @Override
   public void remoteStartAgentOn(String targetServerName) {
+    if (clients.containsKey(targetServerName)) {
+      return;
+    }
+
     LOGGER.info("spawning {} agent via SSH", targetServerName);
 
     try {

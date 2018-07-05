@@ -346,8 +346,7 @@ public class AgentController {
           kitManager.deleteInstall(terracottaInstall.getInstallLocation());
           kitsInstalls.remove(instanceId);
         } catch (IOException ioe) {
-          throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation()
-              .getAbsolutePath(), ioe);
+          throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation().getAbsolutePath() + " on " + terracottaServer, ioe);
         }
       } else {
         logger.info("Kit install still in use by {} Terracotta servers",
