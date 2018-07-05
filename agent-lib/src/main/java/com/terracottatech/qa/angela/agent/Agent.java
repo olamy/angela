@@ -54,7 +54,7 @@ public class Agent {
 
   static {
     final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
-    final String DEFAULT_WORK_DIR = new File("/data/tsamanager").getAbsolutePath();
+    final String DEFAULT_WORK_DIR = new File("/data/angela").getAbsolutePath();
     if (dir == null || dir.isEmpty()) {
       ROOT_DIR = DEFAULT_WORK_DIR;
     } else if (dir.startsWith(".")) {
