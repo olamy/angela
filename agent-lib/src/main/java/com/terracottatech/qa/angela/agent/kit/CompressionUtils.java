@@ -80,6 +80,9 @@ public class CompressionUtils implements Serializable {
     untar.setCompression(method);
     untar.setDest(kitDest);
     untar.setSrc(kitInstaller);
+//    final CutDirsMapper mapper = new CutDirsMapper();
+//    mapper.setDirs(1);
+//    untar.add(mapper);
     untar.execute();
 
     cleanupPermissions(kitDest);
@@ -90,6 +93,7 @@ public class CompressionUtils implements Serializable {
     new ProcessExecutor().command("tar", "xzvf", kitInstaller.getPath()).directory(kitDest)
         .redirectOutput(out)
         .execute();
+    logger.debug("Extracting kit: {}", out);
   }
 
   private void extractTarGz2(final File kitInstaller, final File kitDest) throws IOException {

@@ -35,8 +35,7 @@ public class LocalKitManager extends KitManager {
     super(distribution);
   }
 
-  public void setupLocalInstall(License license, final boolean offline) {
-    String kitInstallationPath = System.getProperty("kitInstallationPath");
+  public void setupLocalInstall(final License license, final String kitInstallationPath, final boolean offline) {
     if (kitInstallationPath != null) {
       logger.info("Using kitInstallationPath: \"{}\"", kitInstallationPath);
       if (!new File(kitInstallationPath).isDirectory()) {

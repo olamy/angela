@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
@@ -29,7 +30,7 @@ public class RemoteKitManager extends KitManager {
     super(distribution);
 
     this.kitInstallationPath = new File(this.rootInstallationPath, kitInstallationName);
-    this.workingKitInstallationPath = rootInstallationPath + File.separator + "work" + File.separator + instanceId;
+    this.workingKitInstallationPath = Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId;
   }
 
   public boolean verifyKitAvailability(final boolean offline) {
