@@ -51,7 +51,10 @@ public class TerracottaInstall {
 
   public synchronized int removeServer(TerracottaServer terracottaServer) {
     synchronized (terracottaServerInstances) {
-      terracottaServerInstances.remove(terracottaServer.getServerSymbolicName());
+      TerracottaServerInstance instance = terracottaServerInstances.remove(terracottaServer.getServerSymbolicName());
+      if (instance != null){
+        instance.close();
+      }
       return terracottaServerInstances.size();
     }
   }

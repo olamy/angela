@@ -13,6 +13,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import org.zeroturnaround.process.PidProcess;
 import org.zeroturnaround.process.Processes;
 
+import java.io.Closeable;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
  *
  * @author Aurelien Broszniowski
  */
-public class TerracottaServerInstance {
+public class TerracottaServerInstance implements Closeable {
   private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
   private final ServerSymbolicName serverSymbolicName;
   private final DistributionController distributionController;
@@ -49,14 +50,12 @@ public class TerracottaServerInstance {
     this.netDisruptionEnabled = netDisruptionEnabled;
 
     this.tcConfig = TcConfig.copy(tcConfig);
-    if (this.netDisruptionEnabled && DISRUPTION_PROVIDER.isProxyBased()) {
-      constructNetDisruptionLinks();
-    }
+    constructNetDisruptionLinks();
     this.tcConfig.substituteToken(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
     String modifiedTcConfigName = this.tcConfig.getTcConfigName()
                                       .substring(0, this.tcConfig.getTcConfigName()
                                                         .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
-    this.tcConfig.writeTcConfigFile(location,modifiedTcConfigName);
+    this.tcConfig.writeTcConfigFile(location, modifiedTcConfigName);
   }
 
   public void create(TerracottaCommandLineEnvironment env) {
@@ -82,12 +81,13 @@ public class TerracottaServerInstance {
   }
 
   public void stop(TerracottaCommandLineEnvironment tcEnv) {
-    try {
-      this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess, tcEnv);
-    } finally {
-      //remove net disruption links with other servers
-      disruptionLinks.values().forEach(DISRUPTION_PROVIDER::removeLink);
-    }
+    this.distributionController.stop(serverSymbolicName, location, terracottaServerInstanceProcess, tcEnv);
+  }
+
+
+  @Override
+  public void close() {
+    removeDisruptionLinks();
   }
 
   public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
@@ -157,13 +157,23 @@ public class TerracottaServerInstance {
    * Construct net disruption link between this server and other servers in stripe
    */
   private void constructNetDisruptionLinks() {
-    List<GroupMember> members = tcConfig.retrieveGroupMembers(serverSymbolicName.getSymbolicName(), DISRUPTION_PROVIDER.isProxyBased());
-    GroupMember thisMember = members.get(0);
-    for(int i = 1; i < members.size(); ++i){
-      GroupMember otherMember = members.get(i);
-      final InetSocketAddress src = new InetSocketAddress(thisMember.getHost(), otherMember.isProxiedMember() ? otherMember.getProxyPort() : thisMember.getGroupPort());
-      final InetSocketAddress dest = new InetSocketAddress(otherMember.getHost(), otherMember.getGroupPort());
-      disruptionLinks.put(new ServerSymbolicName(otherMember.getServerName()), DISRUPTION_PROVIDER.createLink(src,dest));
+    if (this.netDisruptionEnabled) {
+      List<GroupMember> members = tcConfig.retrieveGroupMembers(serverSymbolicName.getSymbolicName(), DISRUPTION_PROVIDER
+          .isProxyBased());
+      GroupMember thisMember = members.get(0);
+      for (int i = 1; i < members.size(); ++i) {
+        GroupMember otherMember = members.get(i);
+        final InetSocketAddress src = new InetSocketAddress(thisMember.getHost(), otherMember.isProxiedMember() ? otherMember
+            .getProxyPort() : thisMember.getGroupPort());
+        final InetSocketAddress dest = new InetSocketAddress(otherMember.getHost(), otherMember.getGroupPort());
+        disruptionLinks.put(new ServerSymbolicName(otherMember.getServerName()), DISRUPTION_PROVIDER.createLink(src, dest));
+      }
+    }
+  }
+
+  private void removeDisruptionLinks() {
+    if (this.netDisruptionEnabled) {
+      disruptionLinks.values().forEach(DISRUPTION_PROVIDER::removeLink);
     }
   }
 }
