@@ -100,11 +100,10 @@ public class Distribution102Controller extends DistributionController {
 
   @Override
   public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
-    int[] pids = terracottaServerInstanceProcess.getPids();
     logger.info("Destroying L2 process for " + serverSymbolicName);
-    for (int pid : pids) {
+    for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
       } catch (Exception e) {
         logger.warn("Could not destroy process {}", pid, e);
       }
@@ -296,9 +295,8 @@ public class Distribution102Controller extends DistributionController {
 
   @Override
   public void stopTms(final File installLocation, final TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
-    Number[] pids = terracottaServerInstanceProcess.getPids();
     logger.info("Destroying TMS process");
-    for (Number pid : pids) {
+    for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
       } catch (Exception e) {

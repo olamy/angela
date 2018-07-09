@@ -3,6 +3,10 @@ package com.terracottatech.qa.angela.common;
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TerracottaManagementServerInstance {
@@ -32,7 +36,7 @@ public class TerracottaManagementServerInstance {
 
 
   public static class TerracottaManagementServerInstanceProcess {
-    private final Number[] pids;
+    private final Set<Number> pids;
     private final AtomicReference<TerracottaManagementServerState> state;
 
     public TerracottaManagementServerInstanceProcess(AtomicReference<TerracottaManagementServerState> state, Number... pids) {
@@ -41,7 +45,7 @@ public class TerracottaManagementServerInstance {
           throw new IllegalArgumentException("Pid cannot be < 1");
         }
       }
-      this.pids = pids;
+      this.pids = new HashSet<>(Arrays.asList(pids));
       this.state = state;
     }
 
@@ -49,8 +53,8 @@ public class TerracottaManagementServerInstance {
       return state.get();
     }
 
-    public Number[] getPids() {
-      return pids;
+    public Set<Number> getPids() {
+      return Collections.unmodifiableSet(pids);
     }
   }
 

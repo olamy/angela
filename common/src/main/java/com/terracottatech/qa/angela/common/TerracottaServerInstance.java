@@ -1,9 +1,6 @@
 package com.terracottatech.qa.angela.common;
 
 
-import org.zeroturnaround.process.PidProcess;
-import org.zeroturnaround.process.Processes;
-
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
@@ -13,19 +10,22 @@ import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.Processes;
 
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
-import static java.util.Arrays.stream;
 
 /**
  * Terracotta server instance
@@ -116,7 +116,7 @@ public class TerracottaServerInstance {
   }
 
   public static class TerracottaServerInstanceProcess {
-    private final Number[] pids;
+    private final Set<Number> pids;
     private final AtomicReference<TerracottaServerState> state;
 
     public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, Number... pids) {
@@ -125,7 +125,7 @@ public class TerracottaServerInstance {
           throw new IllegalArgumentException("Pid cannot be < 1");
         }
       }
-      this.pids = pids;
+      this.pids = new HashSet<>(Arrays.asList(pids));
       this.state = state;
     }
 
@@ -133,8 +133,8 @@ public class TerracottaServerInstance {
       return state.get();
     }
 
-    public int[] getPids() {
-      return stream(pids).mapToInt(Number::intValue).toArray();
+    public Set<Number> getPids() {
+      return Collections.unmodifiableSet(pids);
     }
 
     public boolean isAlive() {
@@ -148,7 +148,7 @@ public class TerracottaServerInstance {
         }
         return false;
       } catch (Exception e) {
-        throw new RuntimeException("Error checking liveness of a process instance with PIDs " + Arrays.toString(pids), e);
+        throw new RuntimeException("Error checking liveness of a process instance with PIDs " + pids, e);
       }
     }
   }

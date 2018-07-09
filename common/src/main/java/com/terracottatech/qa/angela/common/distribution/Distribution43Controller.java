@@ -101,11 +101,10 @@ public class Distribution43Controller extends DistributionController {
       throw new RuntimeException("Can not stop Terracotta server process " + serverSymbolicName, e);
     }
 
-    int[] pids = terracottaServerInstanceProcess.getPids();
     LOGGER.info("Destroying L2 process for {}", serverSymbolicName);
-    for (int pid : pids) {
+    for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
 
         for (int i = 0; i < 100; i++) {
           if (terracottaServerInstanceProcess.getState() == STOPPED) {
