@@ -171,12 +171,18 @@ public class Tms implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
 
     logger.info("Setting up locally the extracted install to be deployed remotely");
-    localKitManager.setupLocalInstall(license, offline);
+    String kitInstallationPath = System.getProperty("kitInstallationPath");
+    localKitManager.setupLocalInstall(license, kitInstallationPath, offline);
 
     logger.info("Attempting to remotely installing if existing install already exists on {}", tmsHostname);
-    boolean isRemoteInstallationSuccessful = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.attemptRemoteTmsInstallation(
-        instanceId, tmsHostname, distribution, offline, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv))
-        .get();
+    boolean isRemoteInstallationSuccessful;
+    if (kitInstallationPath == null) {
+      isRemoteInstallationSuccessful = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.attemptRemoteTmsInstallation(
+          instanceId, tmsHostname, distribution, offline, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv))
+          .get();
+    } else {
+      isRemoteInstallationSuccessful = false;
+    }
     if (!isRemoteInstallationSuccessful) {
       try {
         uploadKit(ignite, tmsHostname, instanceId, distribution,

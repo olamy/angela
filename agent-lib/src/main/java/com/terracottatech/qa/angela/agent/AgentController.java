@@ -121,8 +121,10 @@ public class AgentController {
 
       File kitDestDir = kitManager.getKitInstallationPath().getParentFile();
       logger.info("Downloading tsa jars into {}", kitDestDir);
-      if (!kitDestDir.mkdirs()) {
-        throw new RuntimeException("Cannot create client directory '" + kitDestDir);
+      if (!kitDestDir.exists()) {
+        if (!kitDestDir.mkdirs()) {
+          throw new RuntimeException("Cannot create TSA directory '" + kitDestDir + "'");
+        }
       }
 
       while (true) {
@@ -156,7 +158,7 @@ public class AgentController {
         }
       }
     } catch (Exception e) {
-      throw new RuntimeException("Cannot upload jar", e);
+      throw new RuntimeException("Cannot download TSA kit", e);
     }
   }
 

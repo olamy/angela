@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import static com.terracottatech.qa.angela.agent.Agent.ROOT_DIR;
 import static com.terracottatech.qa.angela.agent.Agent.ROOT_DIR_SYSPROP_NAME;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
@@ -36,7 +37,7 @@ public abstract class KitManager {
     String localWorkRootDir;
     final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
     if (dir == null || dir.isEmpty()) {
-      localWorkRootDir = new File("/data/tsamanager").getAbsolutePath();
+      localWorkRootDir = new File(ROOT_DIR).getAbsolutePath();
     } else if (dir.startsWith(".")) {
       throw new IllegalArgumentException("Can not use relative path for the ROOT_DIR. Please use a fixed one.");
     } else {

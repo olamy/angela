@@ -8,7 +8,6 @@ import com.terracottatech.qa.angela.common.util.AngelaVersion;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -77,14 +76,19 @@ public class IgniteHelper {
     IgniteFuture<Void> remoteDownloadFuture = executeRemotely(ignite, hostname,
         () -> Agent.CONTROLLER.downloadKit(instanceId, distribution, kitInstallationName));
 
-    final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
-    uploadFile(queue, kitInstallationPath, null);
-    queue.put(Boolean.TRUE); // end of upload marker
-
-    remoteDownloadFuture.get();
+    try {
+      final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
+      uploadFile(remoteDownloadFuture, queue, kitInstallationPath, null);
+      queue.put(Boolean.TRUE); // end of upload marker
+    } finally {
+      remoteDownloadFuture.get();
+    }
   }
 
-  private static void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
+  private static void uploadFile(IgniteFuture<Void> remoteDownloadFuture, BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
+    if (remoteDownloadFuture.isDone()) {
+      throw new RuntimeException("Download process failed, cancelling upload");
+    }
     FileMetadata fileMetadata = new FileMetadata(path, file);
     if (!file.exists()) {
       logger.debug("skipping upload of non-existent classpath entry {}", fileMetadata);
@@ -97,7 +101,7 @@ public class IgniteHelper {
       File[] files = file.listFiles();
       for (File _file : files) {
         String parentPath = path == null ? "" : path + "/";
-        uploadFile(queue, _file, parentPath + file.getName());
+        uploadFile(remoteDownloadFuture, queue, _file, parentPath + file.getName());
       }
     } else {
       byte[] buffer = new byte[64 * 1024];
@@ -120,6 +124,5 @@ public class IgniteHelper {
       logger.debug("uploaded {}", fileMetadata);
     }
   }
-
 
 }
