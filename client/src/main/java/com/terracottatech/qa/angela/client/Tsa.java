@@ -20,14 +20,15 @@ import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
@@ -201,7 +202,7 @@ public class Tsa implements AutoCloseable {
   }
 
   public void stopAll() {
-  List<Exception> exceptions = new ArrayList<>();
+    List<Exception> exceptions = new ArrayList<>();
 
     TcConfig[] tcConfigs = topology.getTcConfigs();
     for (final TcConfig tcConfig : tcConfigs) {
@@ -255,7 +256,8 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    TcConfig[] tcConfigs = topology.isNetDisruptionEnabled() ? disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) : topology.getTcConfigs();
+    TcConfig[] tcConfigs = topology.isNetDisruptionEnabled() ? disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) : topology
+        .getTcConfigs();
 
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
@@ -321,19 +323,15 @@ public class Tsa implements AutoCloseable {
   }
 
   public URI uri() {
-    StringBuilder sb = new StringBuilder("terracotta://");
-    for (TerracottaServer terracottaServer : topology.getServers().values()) {
-      sb.append(terracottaServer.getHostname()).append(":").append(terracottaServer.getPorts().getTsaPort());
-      sb.append(",");
-    }
-    if (!topology.getServers().isEmpty()) {
-      sb.deleteCharAt(sb.length() - 1);
-    }
-    try {
-      return new URI(sb.toString());
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
+    final Map<ServerSymbolicName, Integer> proxyTsaPorts = topology.isNetDisruptionEnabled() ? disruptionController.getProxyTsaPorts() : Collections
+        .emptyMap();
+    return URI.create(topology.getServers()
+        .values()
+        .stream()
+        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts()
+            .getTsaPort()))
+        .collect(Collectors
+            .joining(",", "terracotta://", "")));
   }
 
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {

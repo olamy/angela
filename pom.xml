@@ -16,7 +16,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <terracotta.version>10.3.0.0.310</terracotta.version>
+    <terracotta.version>10.3.0.0.331</terracotta.version>
     <java.build.version>1.8</java.build.version>
     <ignite.version>2.5.0</ignite.version>
   </properties>

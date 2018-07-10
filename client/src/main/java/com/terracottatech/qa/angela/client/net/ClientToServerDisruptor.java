@@ -60,17 +60,21 @@ public class ClientToServerDisruptor implements Disruptor {
   }
 
 
-  @Override
-  public void disrupt() {
+  public void disrupt(Collection<ServerSymbolicName> servers) {
     if (state != DisruptorState.UNDISRUPTED) {
       throw new IllegalStateException("Illegal state before disrupt: " + state);
     }
 
     LOGGER.debug("disrupting client to servers");
-    for (ServerSymbolicName server : links.keySet()) {
+    for (ServerSymbolicName server : servers) {
       links.get(server).disrupt();
     }
     state = DisruptorState.DISRUPTED;
+  }
+
+  @Override
+  public void disrupt(){
+    disrupt(links.keySet());
   }
 
   @Override

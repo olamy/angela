@@ -1,5 +1,9 @@
 package com.terracottatech.qa.angela.client.net;
 
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
@@ -8,9 +12,6 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -199,4 +200,9 @@ public class DisruptionController implements AutoCloseable {
       return configs;
     }
   }
+
+  public Map<ServerSymbolicName, Integer> getProxyTsaPorts() {
+    return proxyTsaPorts;
+  }
+
 }
