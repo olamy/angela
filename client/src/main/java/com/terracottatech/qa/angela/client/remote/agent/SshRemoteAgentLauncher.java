@@ -17,11 +17,15 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
@@ -59,7 +63,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
   }
 
   @Override
-  public void remoteStartAgentOn(String targetServerName) {
+  public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin) {
     if (clients.containsKey(targetServerName)) {
       return;
     }
@@ -93,8 +97,13 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Session session = ssh.startSession();
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
-      Session.Command cmd = session.exec("java -Dtc.qa.nodeName=" + targetServerName + " -DkitsDir=$HOME/" + angelaHome +
-                                         " -jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
+      Session.Command cmd = session.exec("java -Dtc.qa.nodeName=" + targetServerName + " -Dtc.qa.directjoin=" + nodesToJoin.stream().map(s -> {
+        try {
+          return String.format("%s:40000/%s", s, InetAddress.getByName(s).getHostAddress());
+        } catch (UnknownHostException e) {
+          throw new IllegalArgumentException(e);
+        }
+      }).collect(Collectors.joining(",")) + " -DkitsDir=$HOME/" + angelaHome + " -jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
       new StreamCopier(cmd.getInputStream(), sshLogOutputStream, net.schmizz.sshj.common.LoggerFactory.DEFAULT).bufSize(MAX_LINE_LENGTH)

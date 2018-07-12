@@ -20,6 +20,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.BasicAddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
@@ -32,6 +33,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,7 +79,25 @@ public class Agent {
     final Node node;
     if (directjoin != null) {
       String[] split = directjoin.split(",");
-      node = new Node(nodeName, Arrays.asList(split));
+
+      if (!directjoin.contains("/")) {
+        node = new Node(nodeName, Arrays.asList(split), null);
+      } else {
+        List<String> nodesToJoin = new ArrayList<>();
+        List<String> nodesToJoinPublicIps = new ArrayList<>();
+
+        // Extract nodesToJoin and corresponding public ips from directjoin system property value.
+        Arrays.asList(split).forEach(hostIpStr -> {
+          String[] hostIp = hostIpStr.split("/");
+          if (hostIp.length != 2) {
+            throw new IllegalArgumentException("Invalid tc.qa.directjoin system property.");
+          }
+          nodesToJoin.add(hostIp[0]);
+          nodesToJoinPublicIps.add(hostIp[1]);
+        });
+
+        node = new Node(nodeName, nodesToJoin, nodesToJoinPublicIps);
+      }
     } else {
       node = new Node(nodeName);
     }
@@ -87,21 +108,24 @@ public class Agent {
 
     // Do not use logger here as the marker is being grep'ed at and we do not want to depend upon the logger config
     System.out.println(AGENT_IS_READY_MARKER_LOG);
+    System.out.flush();
   }
 
   public static class Node {
 
     private final String nodeName;
     private final List<String> nodesToJoin;
+    private final List<String> nodesToJoinPublicIps;
     private volatile Ignite ignite;
 
     public Node(String nodeName) {
-      this(nodeName, null);
+      this(nodeName, null, null);
     }
 
-    public Node(String nodeName, List<String> nodesToJoin) {
+    public Node(String nodeName, List<String> nodesToJoin, List<String> nodesToJoinPublicIps) {
       this.nodeName = nodeName;
       this.nodesToJoin = nodesToJoin;
+      this.nodesToJoinPublicIps = nodesToJoinPublicIps;
     }
 
     public void init() {
@@ -142,6 +166,26 @@ public class Agent {
         spi.setIpFinder(ipFinder);
         spi.setJoinTimeout(10000);
         cfg.setDiscoverySpi(spi);
+
+        // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
+        if (nodesToJoinPublicIps != null) {
+          try {
+            Map<String, String> natMapping = new HashMap<>();
+            for (int i = 0; i < nodesToJoin.size(); i++) {
+              natMapping.put(nodesToJoin.get(i).split(":")[0], nodesToJoinPublicIps.get(i));
+            }
+            cfg.setAddressResolver(new BasicAddressResolver(natMapping));
+          } catch (UnknownHostException e) {
+            throw new IllegalArgumentException(e);
+          }
+
+          // only configure the localhost when joining other nodes with public IPs.
+          try {
+            cfg.setLocalHost(InetAddress.getLocalHost().getHostAddress());
+          } catch (UnknownHostException e) {
+            throw new IllegalStateException(e);
+          }
+        }
       } else if (nodeName.equals("localhost")) {
         LOGGER.info("Isolating cluster to localhost");
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
