@@ -15,6 +15,12 @@ It can execute functions that contain client code locally or remotely
 
 It supports TC DB and TC Ehcache
 
+== Initial setup
+
+For running tests on a node angela expects a directory at `/data/angela` to store all its metadata.
+So make sure that this directory exists or can be created before running any tests.
+For more details on what what that directory is used for, refer to <<directory-structure.adoc#, Angela Directory Structure>>
+
 == Tsa Cluster example
 
 Given the following cluster configuration:
