@@ -108,7 +108,10 @@ public class Agent {
       File workDirFile = new File(ROOT_DIR);
       LOGGER.info("Root directory is : " + workDirFile);
       if (!workDirFile.exists()) {
-        workDirFile.mkdirs();
+        if (!workDirFile.mkdirs()) {
+          throw new RuntimeException("Auto creation of root directory: " + workDirFile + " failed. " +
+                                     "Make sure that the provided directory is writable or create one manually.");
+        }
       }
       if (!workDirFile.isDirectory()) {
         throw new RuntimeException("Root directory is not a folder : " + workDirFile);
