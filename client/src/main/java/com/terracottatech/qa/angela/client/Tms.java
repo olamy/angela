@@ -1,10 +1,5 @@
 package com.terracottatech.qa.angela.client;
 
-import io.restassured.path.json.JsonPath;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
@@ -16,15 +11,14 @@ import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
+import io.restassured.path.json.JsonPath;
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.concurrent.BlockingQueue;
 
 import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
 import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
@@ -42,11 +36,11 @@ public class Tms implements AutoCloseable {
   private final Ignite ignite;
   private final License license;
   private final InstanceId instanceId;
-  private final TmsServerSecurityConfig securityConfig;
+  private final TmsServerSecurityConfig tmsServerSecurityConfig;
   private LocalKitManager localKitManager;
 
 
-  public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution, TmsServerSecurityConfig securityConfig, TerracottaCommandLineEnvironment tcEnv) {
+  public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution, TmsServerSecurityConfig tmsServerSecurityConfig, TerracottaCommandLineEnvironment tcEnv) {
     this.distribution = distribution;
     this.tcEnv = tcEnv;
     if (license == null) {
@@ -56,9 +50,13 @@ public class Tms implements AutoCloseable {
     this.instanceId = instanceId;
     this.ignite = ignite;
     this.tmsHostname = hostname;
-    this.securityConfig = securityConfig;
+    this.tmsServerSecurityConfig = tmsServerSecurityConfig;
     this.localKitManager = new LocalKitManager(distribution);
 
+  }
+
+  public String getTmsUrl() {
+    return  (tmsServerSecurityConfig != null ? "https://" : "http://") + tmsHostname + ":9480";
   }
 
   /**
@@ -94,7 +92,7 @@ public class Tms implements AutoCloseable {
     }
 
     // create connection
-    url = (tmsClientSecurityConfig != null ? "https://" : "http://") + tmsHostname + ":9480/api/connections";
+    url = getTmsUrl() + "/api/connections";
 
     response = HttpUtils.sendPostRequest(url, response, tmsClientSecurityConfig);
     logger.info("tms connect result :" + response);
@@ -113,15 +111,15 @@ public class Tms implements AutoCloseable {
     return probe(uri, API_CONNECTIONS_PROBE_NEW, securityConfig);
   }
 
-  private String probe(URI uri, String probeEndpoint, TmsClientSecurityConfig securityConfig) {
+  private String probe(URI uri, String probeEndpoint, TmsClientSecurityConfig tmsClientSecurityConfig) {
     String url;
     try {
-      url = (securityConfig != null ? "https://" : "http://") + tmsHostname + ":9480" + probeEndpoint +
+      url = getTmsUrl() + probeEndpoint +
             URLEncoder.encode(uri.toString(), "UTF-8");
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("Could not encode terracotta connection url", e);
     }
-    String response = HttpUtils.sendGetRequest(url, securityConfig);
+    String response = HttpUtils.sendGetRequest(url, tmsClientSecurityConfig);
     logger.info("tms probe result :" + response);
     return response;
   }
@@ -178,7 +176,7 @@ public class Tms implements AutoCloseable {
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
       isRemoteInstallationSuccessful = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.attemptRemoteTmsInstallation(
-          instanceId, tmsHostname, distribution, offline, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv))
+          instanceId, tmsHostname, distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv))
           .get();
     } else {
       isRemoteInstallationSuccessful = false;
@@ -189,7 +187,7 @@ public class Tms implements AutoCloseable {
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
         executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname,
-            distribution, license, securityConfig, localKitManager.getKitInstallationName(), tcEnv)).get();
+            distribution, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv)).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + tmsHostname, e);
       }
@@ -217,43 +215,6 @@ public class Tms implements AutoCloseable {
   public void start() {
     logger.info("starting TMS on {}", tmsHostname);
     executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.startTms(instanceId)).get();
-  }
-
-  private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
-    FileMetadata fileMetadata = new FileMetadata(path, file);
-    if (!file.exists()) {
-      logger.debug("skipping upload of non-existent classpath entry {}", fileMetadata);
-      return;
-    }
-    queue.put(fileMetadata);
-    logger.debug("uploading {}", fileMetadata);
-
-    if (file.isDirectory()) {
-      File[] files = file.listFiles();
-      for (File _file : files) {
-        String parentPath = path == null ? "" : path + "/";
-        uploadFile(queue, _file, parentPath + file.getName());
-      }
-    } else {
-      byte[] buffer = new byte[64 * 1024];
-      try (FileInputStream fis = new FileInputStream(file)) {
-        while (true) {
-          int read = fis.read(buffer);
-          if (read < 0) {
-            break;
-          }
-          byte[] toSend;
-          if (read != buffer.length) {
-            toSend = new byte[read];
-            System.arraycopy(buffer, 0, toSend, 0, read);
-          } else {
-            toSend = buffer;
-          }
-          queue.put(toSend);
-        }
-      }
-      logger.debug("uploaded {}", fileMetadata);
-    }
   }
 
 }
