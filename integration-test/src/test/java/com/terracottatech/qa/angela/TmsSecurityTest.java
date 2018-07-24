@@ -1,15 +1,5 @@
 package com.terracottatech.qa.angela;
 
-import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
@@ -27,6 +17,15 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
 import com.terracottatech.security.test.util.SecurityRootDirectory;
 import com.terracottatech.security.test.util.SecurityRootDirectoryBuilder;
+import org.hamcrest.Matchers;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.concurrent.Future;
@@ -89,7 +88,13 @@ public class TmsSecurityTest {
     TSA.startAll();
     TSA.licenseAll(securityRootDirectory(clientSecurityRootDirectory.getPath()));
 
-    TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig(clientSecurityRootDirectory.getPath(), serverSecurityRootDirectory.getPath());
+    TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
+        .with(config->{
+              config.tmsSecurityRootDirectory=clientSecurityRootDirectory.getPath().toString();
+              config.tmsSecurityRootDirectoryConnectionDefault=serverSecurityRootDirectory.getPath().toString();
+            }
+        ).build();
+
     TMS = factory.tms(distribution, license, TMS_HOSTNAME, securityConfig);
     TMS.install();
     TMS.start();

@@ -1,18 +1,5 @@
 package com.terracottatech.qa.angela.agent;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidProcess;
-import org.zeroturnaround.process.PidUtil;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
-
 import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
@@ -34,15 +21,23 @@ import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.PidUtil;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,6 +47,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -265,31 +261,24 @@ public class AgentController {
   }
 
   private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
-    String tmsSecurityRootDirectory = adaptToWindowsPaths(tmsServerSecurityConfig.getTmsSecurityRootDirectory());
-    String clusterSecurityRootDirectory = adaptToWindowsPaths(tmsServerSecurityConfig.getClusterSecurityRootDirectory());
 
-    List<String> lines = new ArrayList<>();
-    String line;
-    try (BufferedReader br = new BufferedReader(new FileReader(tmcProperties))) {
+    try (
+        FileInputStream inputStream = new FileInputStream(tmcProperties);
+        FileOutputStream outputStream = new FileOutputStream(tmcProperties);
+    ){
 
-      while ((line = br.readLine()) != null) {
-        if (line.startsWith("tms.security.root.directory=")) {
-          line = line.replace("tms.security.root.directory=", "tms.security.root.directory=" + tmsSecurityRootDirectory);
-        } else if (line.startsWith("tms.security.root.directory.connection.default=")) {
-          line = line.replace("tms.security.root.directory.connection.default=", "tms.security.root.directory.connection.default=" + clusterSecurityRootDirectory);
-        } else if (line.equals("tms.security.https.enabled=false")) {
-          line = line.replace("tms.security.https.enabled=false", "tms.security.https.enabled=true");
-        }
-        lines.add(line);
-      }
+      Properties properties = new Properties();
+      properties.load(inputStream);
+      inputStream.close();
 
-      try (BufferedWriter out = new BufferedWriter(new FileWriter(tmcProperties))) {
-        for (String s : lines) {
-          out.write(s);
-          out.newLine();
-        }
-        out.flush();
-      }
+      tmsServerSecurityConfig.toMap().entrySet().forEach(entry->{
+        if(entry.getValue()== null) properties.remove(entry.getKey());
+        else properties.put(entry.getKey(), entry.getValue());
+      });
+
+      properties.store(outputStream, null);
+      outputStream.close();
+
     } catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
