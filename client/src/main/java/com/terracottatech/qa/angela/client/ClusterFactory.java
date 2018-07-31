@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
@@ -57,7 +58,7 @@ public class ClusterFactory implements AutoCloseable {
   private final String idPrefix;
   private final AtomicInteger instanceIndex;
   private final TerracottaCommandLineEnvironment tcEnv;
-  private final Map<String, InstanceId> nodeToInstanceId = new HashMap<>();
+  private final Map<String, Collection<InstanceId>> nodeToInstanceId = new HashMap<>();
   private Ignite ignite;
   private boolean localhostOnly;
   private Agent.Node localhostAgent;
@@ -95,19 +96,23 @@ public class ClusterFactory implements AutoCloseable {
       if (!targetServerName.equals("localhost")) {
         remoteAgentLauncher.remoteStartAgentOn(targetServerName, targetServerNames);
       }
-      nodeToInstanceId.put(targetServerName, instanceId);
+      nodeToInstanceId.compute(targetServerName, (s, instanceIds) -> {
+        if (instanceIds == null) {
+          return Collections.singleton(instanceId);
+        }
+        List<InstanceId> list = new ArrayList<>(instanceIds);
+        list.add(instanceId);
+        return Collections.unmodifiableCollection(list);
+      });
     }
 
-    if (ignite != null) {
-      return instanceId;
-    }
-
-    if (isLocalhostOnly(targetServerNames)) {
-      LOGGER.info("spawning localhost agent");
-      localhostAgent = new Agent.Node("localhost");
-      localhostAgent.init();
-      localhostOnly = true;
-    }
+    if (ignite == null) {
+      if (isLocalhostOnly(targetServerNames)) {
+        LOGGER.info("spawning localhost agent");
+        localhostAgent = new Agent.Node("localhost");
+        localhostAgent.init();
+        localhostOnly = true;
+      }
 
     TcpDiscoverySpi spi = new TcpDiscoverySpi();
     TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
@@ -119,19 +124,20 @@ public class ClusterFactory implements AutoCloseable {
     spi.setJoinTimeout(10000);
     spi.setIpFinder(ipFinder);
 
-    IgniteConfiguration cfg = new IgniteConfiguration();
-    cfg.setDiscoverySpi(spi);
-    cfg.setClientMode(true);
-    cfg.setPeerClassLoadingEnabled(true);
-    boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
-    cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
-    cfg.setIgniteInstanceName("Instance@" + instanceId);
-    cfg.setMetricsLogFrequency(0);
+      IgniteConfiguration cfg = new IgniteConfiguration();
+      cfg.setDiscoverySpi(spi);
+      cfg.setClientMode(true);
+      cfg.setPeerClassLoadingEnabled(true);
+      boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
+      cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
+      cfg.setIgniteInstanceName("Instance@" + instanceId);
+      cfg.setMetricsLogFrequency(0);
 
-    try {
-      this.ignite = Ignition.start(cfg);
-    } catch (IgniteException e) {
-      throw new RuntimeException("Cannot start angela; error connecting to agents : " + targetServerNames, e);
+      try {
+        this.ignite = Ignition.start(cfg);
+      } catch (IgniteException e) {
+        throw new RuntimeException("Cannot start angela; error connecting to agents : " + targetServerNames, e);
+      }
     }
 
     return instanceId;
@@ -212,10 +218,8 @@ public class ClusterFactory implements AutoCloseable {
 
     for (String nodeName : nodeToInstanceId.keySet()) {
       try {
-        IgniteHelper.checkAgentHealth(ignite, nodeName);
         ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-        InstanceId instanceId = nodeToInstanceId.get(nodeName);
-        ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId));
+        nodeToInstanceId.get(nodeName).forEach(instanceId -> ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId)));
       } catch (Exception e) {
         exceptions.add(e);
       }
