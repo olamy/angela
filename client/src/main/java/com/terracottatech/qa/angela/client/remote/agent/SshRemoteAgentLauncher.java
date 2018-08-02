@@ -97,13 +97,19 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Session session = ssh.startSession();
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
-      Session.Command cmd = session.exec("java -Dtc.qa.nodeName=" + targetServerName + " -Dtc.qa.directjoin=" + nodesToJoin.stream().map(s -> {
+      String joinHosts = nodesToJoin.stream().map(node -> {
         try {
-          return String.format("%s:40000/%s", s, InetAddress.getByName(s).getHostAddress());
+          return node + ":40000/" + InetAddress.getByName(node).getHostAddress();
         } catch (UnknownHostException e) {
           throw new IllegalArgumentException(e);
         }
-      }).collect(Collectors.joining(",")) + " -DkitsDir=$HOME/" + angelaHome + " -jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
+      }).collect(Collectors.joining(","));
+
+      Session.Command cmd = session.exec("java " +
+          "-Dtc.qa.nodeName=" + targetServerName + " " +
+          "-Dtc.qa.directjoin=" + joinHosts + " " +
+          "-DkitsDir=$HOME/" + angelaHome + " " +
+          "-jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
       new StreamCopier(cmd.getInputStream(), sshLogOutputStream, net.schmizz.sshj.common.LoggerFactory.DEFAULT).bufSize(MAX_LINE_LENGTH)
@@ -133,6 +139,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
         File snapshot = new File(snapshotLocation);
         if (snapshot.isFile()) {
+          LOGGER.info("Found agent jar at " + snapshotLocation);
           return new HashMap.SimpleEntry<>(snapshot, false);
         }
 
@@ -145,6 +152,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
               ".jar";
           snapshot = new File(snapshotLocation);
           if (snapshot.isFile()) {
+            LOGGER.info("Found agent jar at " + snapshotLocation);
             return new HashMap.SimpleEntry<>(snapshot, false);
           }
         }
@@ -161,6 +169,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         try (InputStream jarIs = jarUrl.openStream(); FileOutputStream fileOutputStream = new FileOutputStream(agentFile)) {
           IOUtils.copy(jarIs, fileOutputStream);
         }
+        LOGGER.info("Installed agent jar from Nexus at " + agentFile.getAbsolutePath());
         return new HashMap.SimpleEntry<>(agentFile, true);
       }
     } catch (Exception e) {

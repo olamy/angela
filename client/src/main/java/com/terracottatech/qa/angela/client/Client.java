@@ -35,7 +35,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -52,21 +51,17 @@ public class Client implements Closeable {
   private final InstanceId instanceId;
   private final String nodeName;
   private final Ignite ignite;
-  private final boolean localhostOnly;
-  private final TerracottaCommandLineEnvironment tcEnv;
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, boolean localhostOnly, TerracottaCommandLineEnvironment tcEnv) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
-    this.localhostOnly = localhostOnly;
-    this.tcEnv = tcEnv;
-    this.subClientPid = spawnSubClient();
+    this.subClientPid = spawnSubClient(tcEnv);
   }
 
-  private int spawnSubClient() {
+  private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv) {
     logger.info("Spawning client '{}' on {}", instanceId, nodeName);
     IgniteHelper.checkAgentHealth(ignite, nodeName);
     try {
@@ -78,7 +73,7 @@ public class Client implements Closeable {
       uploadClasspath(queue);
       remoteDownloadFuture.get();
 
-      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, localhostOnly, tcEnv));
+      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
       int pid = results.iterator().next();
       logger.info("client '{}' on {} started with PID {}", instanceId, nodeName, pid);
 
@@ -140,7 +135,7 @@ public class Client implements Closeable {
   }
 
   public Future<Void> submit(ClientJob clientJob) {
-    IgniteHelper.checkAgentHealth(ignite, nodeName);
+    IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
       clientJob.run(new Context(nodeName, ignite, instanceId));

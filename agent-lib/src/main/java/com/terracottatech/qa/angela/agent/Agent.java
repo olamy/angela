@@ -35,7 +35,6 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -72,37 +71,19 @@ public class Agent {
 
   public static void main(String[] args) throws Exception {
     // the angela-agent jar may end up on the classpath, so its logback config cannot have the default filename
-    System.setProperty("logback.configurationFile", "/angela-logback.xml");
+    System.setProperty("logback.configurationFile", "angela-logback.xml");
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
     String directjoin = System.getProperty("tc.qa.directjoin");
 
-    final Node node;
+    List<String> nodesToJoin = new ArrayList<>();
     if (directjoin != null) {
-      String[] split = directjoin.split(",");
-
-      if (!directjoin.contains("/")) {
-        node = new Node(nodeName, Arrays.asList(split), null);
-      } else {
-        List<String> nodesToJoin = new ArrayList<>();
-        List<String> nodesToJoinPublicIps = new ArrayList<>();
-
-        // Extract nodesToJoin and corresponding public ips from directjoin system property value.
-        Arrays.asList(split).forEach(hostIpStr -> {
-          String[] hostIp = hostIpStr.split("/");
-          if (hostIp.length != 2) {
-            throw new IllegalArgumentException("Invalid tc.qa.directjoin system property.");
-          }
-          nodesToJoin.add(hostIp[0]);
-          nodesToJoinPublicIps.add(hostIp[1]);
-        });
-
-        node = new Node(nodeName, nodesToJoin, nodesToJoinPublicIps);
+      for (String node : directjoin.split(",")) {
+        if (!node.trim().isEmpty()) {
+          nodesToJoin.add(node);
+        }
       }
-    } else {
-      node = new Node(nodeName);
     }
-
-    node.init();
+    final Node node = new Node(nodeName, nodesToJoin);
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
@@ -113,22 +94,13 @@ public class Agent {
 
   public static class Node {
 
-    private final String nodeName;
-    private final List<String> nodesToJoin;
-    private final List<String> nodesToJoinPublicIps;
     private volatile Ignite ignite;
 
-    public Node(String nodeName) {
-      this(nodeName, null, null);
+    public Node(String nodeName, List<String> nodesToJoin) {
+      init(nodeName, nodesToJoin);
     }
 
-    public Node(String nodeName, List<String> nodesToJoin, List<String> nodesToJoinPublicIps) {
-      this.nodeName = nodeName;
-      this.nodesToJoin = nodesToJoin;
-      this.nodesToJoinPublicIps = nodesToJoinPublicIps;
-    }
-
-    public void init() {
+    private void init(String nodeName, List<String> nodesToJoin) {
       File workDirFile = new File(ROOT_DIR);
       LOGGER.info("Root directory is : " + workDirFile);
       if (!workDirFile.exists()) {
@@ -156,45 +128,44 @@ public class Agent {
       cfg.setPeerClassLoadingEnabled(true);
       cfg.setMetricsLogFrequency(0);
 
-      if (nodesToJoin != null) {
-        LOGGER.info("Joining isolated cluster : " + nodesToJoin);
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-        spi.setLocalPort(40000);
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-        ipFinder.setShared(true);
-        ipFinder.setAddresses(nodesToJoin);
-        spi.setIpFinder(ipFinder);
-        spi.setJoinTimeout(10000);
-        cfg.setDiscoverySpi(spi);
-
-        // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
-        if (nodesToJoinPublicIps != null) {
-          try {
-            Map<String, String> natMapping = new HashMap<>();
-            for (int i = 0; i < nodesToJoin.size(); i++) {
-              natMapping.put(nodesToJoin.get(i).split(":")[0], nodesToJoinPublicIps.get(i));
-            }
-            cfg.setAddressResolver(new BasicAddressResolver(natMapping));
-          } catch (UnknownHostException e) {
-            throw new IllegalArgumentException(e);
-          }
-
-          // only configure the localhost when joining other nodes with public IPs.
-          try {
-            cfg.setLocalHost(InetAddress.getLocalHost().getHostAddress());
-          } catch (UnknownHostException e) {
-            throw new IllegalStateException(e);
-          }
-        }
-      } else if (nodeName.equals("localhost")) {
-        LOGGER.info("Isolating cluster to localhost");
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-        spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(Collections.singleton("localhost")));
-        spi.setLocalPort(40000);
-        spi.setJoinTimeout(10000);
-        cfg.setDiscoverySpi(spi);
+      if (nodesToJoin.isEmpty()) {
+        LOGGER.info("'{}' creating new isolated cluster", nodeName);
       } else {
-        LOGGER.info("Joining multicast cluster");
+        LOGGER.info("'{}' joining isolated cluster on {}", nodeName, nodesToJoin);
+      }
+
+      List<String> nodesToJoinHostnames = new ArrayList<>();
+      Map<String, String> hostnameToIpMapping = new HashMap<>();
+
+      nodesToJoin.forEach(hostIpStr -> {
+        String[] hostIp = hostIpStr.split("/");
+        nodesToJoinHostnames.add(hostIp[0]);
+        if (hostIp.length > 1) {
+          hostnameToIpMapping.put(hostIp[0].split(":")[0], hostIp[1]);
+        }
+      });
+
+      TcpDiscoverySpi spi = new TcpDiscoverySpi();
+      spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(nodesToJoinHostnames));
+      spi.setLocalPort(40000);
+      spi.setJoinTimeout(10000);
+      cfg.setDiscoverySpi(spi);
+
+      // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
+      if (!hostnameToIpMapping.isEmpty()) {
+        LOGGER.info("Adding address resolver for : " + hostnameToIpMapping);
+        try {
+          cfg.setAddressResolver(new BasicAddressResolver(hostnameToIpMapping));
+        } catch (UnknownHostException e) {
+          throw new IllegalArgumentException(e);
+        }
+
+        // only configure the localhost when joining other nodes with public IPs.
+        try {
+          cfg.setLocalHost(InetAddress.getLocalHost().getHostAddress());
+        } catch (UnknownHostException e) {
+          throw new IllegalStateException(e);
+        }
       }
 
       try {
@@ -215,7 +186,7 @@ public class Agent {
         // expected
       }
 
-      CONTROLLER = new AgentController(ignite);
+      CONTROLLER = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(nodeName + ":40000") : nodesToJoin);
       LOGGER.info("Registered node '" + nodeName + "'");
     }
 

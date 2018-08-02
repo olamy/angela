@@ -33,7 +33,11 @@ public class ClientTest {
   public void testRemoteClient() throws Exception {
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
       try (Client client = instance.client("localhost")) {
-        Future<Void> f = client.submit((context) -> System.out.println("hello world"));
+        Future<Void> f = client.submit((context) -> System.out.println("hello world 1"));
+        f.get();
+      }
+      try (Client client = instance.client("localhost")) {
+        Future<Void> f = client.submit((context) -> System.out.println("hello world 2"));
         f.get();
       }
     }
@@ -42,7 +46,6 @@ public class ClientTest {
   @Test
   public void testMultipleRemoteClients() throws Exception {
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
-
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", new SshRemoteAgentLauncher())) {
       Client client1 = instance.client(InetAddress.getLocalHost().getHostName());
       Client client2 = instance.client(InetAddress.getLocalHost().getHostName());
@@ -51,7 +54,7 @@ public class ClientTest {
       f1.get();
       f2.get();
     } finally {
-      System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "true");
+      System.clearProperty("tc.qa.angela.ssh.strictHostKeyChecking");
     }
   }
 

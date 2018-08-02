@@ -71,9 +71,11 @@ public class AgentController {
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
   private final Ignite ignite;
+  private final Collection<String> joinedNodes;
 
-  AgentController(Ignite ignite) {
+  AgentController(Ignite ignite, Collection<String> joinedNodes) {
     this.ignite = ignite;
+    this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
   }
 
   public boolean attemptRemoteInstallation(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
@@ -465,7 +467,7 @@ public class AgentController {
     }
   }
 
-  public int spawnClient(InstanceId instanceId, boolean localhostOnly, TerracottaCommandLineEnvironment tcEnv) {
+  public int spawnClient(InstanceId instanceId, TerracottaCommandLineEnvironment tcEnv) {
     try {
       String javaHome = javaLocationResolver.resolveJavaLocation(tcEnv).getHome();
 
@@ -481,12 +483,7 @@ public class AgentController {
       }
       cmdLine.add("-classpath");
       cmdLine.add(buildClasspath(instanceId));
-      if (localhostOnly) {
-        cmdLine.add("-Dtc.qa.directjoin=localhost:40000");
-      } else if (System.getProperty("tc.qa.directjoin") != null) {
-        cmdLine.add("-Dtc.qa.directjoin=" + System.getProperty("tc.qa.directjoin"));
-      }
-
+      cmdLine.add("-Dtc.qa.directjoin=" + String.join(",", joinedNodes));
       cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
       cmdLine.add(Agent.class.getName());

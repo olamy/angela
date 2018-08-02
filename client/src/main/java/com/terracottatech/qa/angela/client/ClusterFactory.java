@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
@@ -60,7 +59,6 @@ public class ClusterFactory implements AutoCloseable {
   private final TerracottaCommandLineEnvironment tcEnv;
   private final Map<String, Collection<InstanceId>> nodeToInstanceId = new HashMap<>();
   private Ignite ignite;
-  private boolean localhostOnly;
   private Agent.Node localhostAgent;
 
   public ClusterFactory(String idPrefix) {
@@ -88,13 +86,39 @@ public class ClusterFactory implements AutoCloseable {
       throw new IllegalArgumentException("Cannot initialize with 0 server");
     }
 
+    boolean foundLocalhost = false;
+    boolean allLocalhost = true;
+    for (String targetServerName : targetServerNames) {
+      if ("localhost".equals(targetServerName)) {
+        foundLocalhost = true;
+      } else {
+        allLocalhost = false;
+      }
+    }
+    if (foundLocalhost && !allLocalhost) {
+      throw new IllegalArgumentException("Cannot mix localhost and non-localhost servers : " + targetServerNames);
+    }
+
+    if (!foundLocalhost && nodeToInstanceId.containsKey("localhost")) {
+      throw new IllegalArgumentException("localhost agent started, connection to remote agents '" + targetServerNames + "' is not possible");
+    }
+
+    if (foundLocalhost) {
+      if ( nodeToInstanceId.size() > 1 || (nodeToInstanceId.size() == 1 && !nodeToInstanceId.containsKey("localhost")) ) {
+        throw new IllegalArgumentException("remote agents '" + nodeToInstanceId.keySet() + "' already started, connecting to localhost is not possible");
+      }
+    }
+
     InstanceId instanceId = new InstanceId(idPrefix + "-" + instanceIndex.getAndIncrement(), type);
     for (String targetServerName : targetServerNames) {
       if (targetServerName == null) {
         throw new IllegalArgumentException("Cannot initialize with a null server name");
       }
       if (!targetServerName.equals("localhost")) {
-        remoteAgentLauncher.remoteStartAgentOn(targetServerName, targetServerNames);
+        Set<String> nodesToJoin = new HashSet<>();
+        nodesToJoin.addAll(nodeToInstanceId.keySet());
+        nodesToJoin.addAll(targetServerNames);
+        remoteAgentLauncher.remoteStartAgentOn(targetServerName, nodesToJoin);
       }
       nodeToInstanceId.compute(targetServerName, (s, instanceIds) -> {
         if (instanceIds == null) {
@@ -109,20 +133,14 @@ public class ClusterFactory implements AutoCloseable {
     if (ignite == null) {
       if (isLocalhostOnly(targetServerNames)) {
         LOGGER.info("spawning localhost agent");
-        localhostAgent = new Agent.Node("localhost");
-        localhostAgent.init();
-        localhostOnly = true;
+        localhostAgent = new Agent.Node("localhost", Collections.emptyList());
       }
 
-    TcpDiscoverySpi spi = new TcpDiscoverySpi();
-    TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-    if (localhostOnly || !(remoteAgentLauncher instanceof NoRemoteAgentLauncher)) {
+      TcpDiscoverySpi spi = new TcpDiscoverySpi();
+      TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
       ipFinder.setAddresses(targetServerNames.stream().map(targetServerName -> targetServerName + ":40000").collect(Collectors.toList()));
-    } else {
-      ipFinder.setAddresses(targetServerNames);
-    }
-    spi.setJoinTimeout(10000);
-    spi.setIpFinder(ipFinder);
+      spi.setJoinTimeout(10000);
+      spi.setIpFinder(ipFinder);
 
       IgniteConfiguration cfg = new IgniteConfiguration();
       cfg.setDiscoverySpi(spi);
@@ -180,13 +198,9 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Client client(String nodeName, TerracottaCommandLineEnvironment tcEnv) {
-    if (!"localhost".equals(nodeName) && localhostOnly) {
-      throw new IllegalArgumentException("localhost agent started, connection to remote agent '" + nodeName + "' is not possible");
-    }
-
     InstanceId instanceId = init(CLIENT, Collections.singleton(nodeName));
 
-    Client client = new Client(ignite, instanceId, nodeName, localhostOnly, tcEnv);
+    Client client = new Client(ignite, instanceId, nodeName, tcEnv);
     controllers.add(client);
     return client;
   }
