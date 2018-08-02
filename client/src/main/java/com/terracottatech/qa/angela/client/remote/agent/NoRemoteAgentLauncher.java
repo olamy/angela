@@ -1,8 +1,10 @@
 package com.terracottatech.qa.angela.client.remote.agent;
 
+import java.util.Collection;
+
 public class NoRemoteAgentLauncher implements RemoteAgentLauncher {
   @Override
-  public void remoteStartAgentOn(String targetServerName) {
+  public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin) {
 
   }
 

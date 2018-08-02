@@ -93,7 +93,7 @@ public class ClusterFactory implements AutoCloseable {
         throw new IllegalArgumentException("Cannot initialize with a null server name");
       }
       if (!targetServerName.equals("localhost")) {
-        remoteAgentLauncher.remoteStartAgentOn(targetServerName);
+        remoteAgentLauncher.remoteStartAgentOn(targetServerName, targetServerNames);
       }
       nodeToInstanceId.put(targetServerName, instanceId);
     }
@@ -111,7 +111,7 @@ public class ClusterFactory implements AutoCloseable {
 
     TcpDiscoverySpi spi = new TcpDiscoverySpi();
     TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-    if (localhostOnly) {
+    if (localhostOnly || !(remoteAgentLauncher instanceof NoRemoteAgentLauncher)) {
       ipFinder.setAddresses(targetServerNames.stream().map(targetServerName -> targetServerName + ":40000").collect(Collectors.toList()));
     } else {
       ipFinder.setAddresses(targetServerNames);

@@ -478,7 +478,10 @@ public class AgentController {
       cmdLine.add(buildClasspath(instanceId));
       if (localhostOnly) {
         cmdLine.add("-Dtc.qa.directjoin=localhost:40000");
+      } else if (System.getProperty("tc.qa.directjoin") != null) {
+        cmdLine.add("-Dtc.qa.directjoin=" + System.getProperty("tc.qa.directjoin"));
       }
+
       cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
       cmdLine.add(Agent.class.getName());
@@ -497,6 +500,7 @@ public class AgentController {
       StartedProcess startedProcess = processExecutor.start();
 
       while (startedProcess.getProcess().isAlive() && !started.get()) {
+        logger.debug("Waiting for spawned agent to be ready having PID: {}", PidUtil.getPid(startedProcess.getProcess()));
         Thread.sleep(100);
       }
       if (!startedProcess.getProcess().isAlive()) {
