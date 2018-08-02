@@ -216,17 +216,17 @@ public class ClusterFactory implements AutoCloseable {
     }
     controllers.clear();
 
-    for (String nodeName : nodeToInstanceId.keySet()) {
-      try {
-        ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-        nodeToInstanceId.get(nodeName).forEach(instanceId -> ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId)));
-      } catch (Exception e) {
-        exceptions.add(e);
-      }
-    }
-    nodeToInstanceId.clear();
-
     if (ignite != null) {
+      for (String nodeName : nodeToInstanceId.keySet()) {
+        try {
+          ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
+          nodeToInstanceId.get(nodeName).forEach(instanceId -> ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId)));
+        } catch (Exception e) {
+          exceptions.add(e);
+        }
+      }
+      nodeToInstanceId.clear();
+
       try {
         ignite.close();
       } catch (Exception e) {
