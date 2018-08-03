@@ -39,6 +39,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -262,26 +264,29 @@ public class AgentController {
 
   private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
 
-    try (
-        FileInputStream inputStream = new FileInputStream(tmcProperties);
-        FileOutputStream outputStream = new FileOutputStream(tmcProperties);
-    ){
+    Properties properties = new Properties();
 
-      Properties properties = new Properties();
+    try (InputStream inputStream = new FileInputStream(tmcProperties);)
+    {
       properties.load(inputStream);
-      inputStream.close();
-
-      tmsServerSecurityConfig.toMap().entrySet().forEach(entry->{
-        if(entry.getValue()== null) properties.remove(entry.getKey());
-        else properties.put(entry.getKey(), entry.getValue());
-      });
-
-      properties.store(outputStream, null);
-      outputStream.close();
-
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
+
+    tmsServerSecurityConfig.toMap().entrySet().forEach(entry-> {
+      if (entry.getValue() == null) properties.remove(entry.getKey());
+      else properties.put(entry.getKey(), entry.getValue());
+    } );
+
+    try (OutputStream outputStream = new FileOutputStream(tmcProperties);)
+    {
+      properties.store(outputStream, null);
+    }
+    catch (Exception ex) {
+      throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
+    }
+
   }
 
   private String adaptToWindowsPaths(Path path) {
