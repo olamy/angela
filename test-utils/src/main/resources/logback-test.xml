@@ -6,7 +6,7 @@
     </encoder>
   </appender>
 
-  <logger name="net.schmizz.sshj" level="WARN"/>
+  <logger name="net.schmizz.sshj" level="ERROR"/>
 
   <root level="INFO">
     <appender-ref ref="STDOUT" />
