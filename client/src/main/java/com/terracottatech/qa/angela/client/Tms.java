@@ -39,6 +39,14 @@ public class Tms implements AutoCloseable {
   private final TmsServerSecurityConfig tmsServerSecurityConfig;
   private LocalKitManager localKitManager;
 
+  @Deprecated
+  private static final String NONE = "none";
+  @Deprecated
+  private static final String BROWSER_SECURITY = "browser-security";
+  @Deprecated
+  private static final String CLUSTER_SECURITY = "cluster-security";
+  @Deprecated
+  public static final String FULL = "full";
 
   public Tms(Ignite ignite, InstanceId instanceId, License license, String hostname, Distribution distribution, TmsServerSecurityConfig tmsServerSecurityConfig, TerracottaCommandLineEnvironment tcEnv) {
     this.distribution = distribution;
@@ -56,7 +64,18 @@ public class Tms implements AutoCloseable {
   }
 
   public String getTmsUrl() {
-    return  (tmsServerSecurityConfig != null ? "https://" : "http://") + tmsHostname + ":9480";
+
+    boolean isHttps = false;
+
+    if(tmsServerSecurityConfig != null) {
+
+      isHttps = ("true".equals(tmsServerSecurityConfig.getTmsSecurityHttpsEnabled())
+                 || FULL.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
+                 || BROWSER_SECURITY.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
+      );
+    }
+
+    return  (isHttps ? "https://" : "http://") + tmsHostname + ":9480";
   }
 
   /**

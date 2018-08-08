@@ -54,8 +54,11 @@ public class HttpUtils {
       //secured
       SSLContext context = SSLContext.getInstance("TLS");
       context.init(null, tmsClientSecurityConfig.getTrustManagerFactory().getTrustManagers(), null);
-      con = (HttpsURLConnection) obj.openConnection();
-      ((HttpsURLConnection)con).setSSLSocketFactory(context.getSocketFactory());
+      con = (HttpURLConnection) obj.openConnection();
+
+      if(con instanceof HttpsURLConnection) {
+        ((HttpsURLConnection) con).setSSLSocketFactory(context.getSocketFactory());
+      }
     }
     return con;
   }
