@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.Future;
 
@@ -52,13 +53,14 @@ public class TcDBTest {
       tsa.licenseAll();
 
       Client client = factory.client("localhost");
+      final URI uri = tsa.uri();
       ClientJob clientJob = (context) -> {
         Barrier barrier = context.barrier("testConnection", 2);
         logger.info("client started and waiting on barrier");
         int rank = barrier.await();
 
         logger.info("all client sync'ed");
-        try (DatasetManager datasetManager = DatasetManager.clustered(tsa.uri()).build()) {
+        try (DatasetManager datasetManager = DatasetManager.clustered(uri).build()) {
           DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
               .offheap("primary-server-resource");
           Dataset<String> dataset = null;

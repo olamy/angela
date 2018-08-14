@@ -35,10 +35,6 @@ public class Topology {
   }
 
   public Topology(final Distribution distribution, final boolean netDisruptionEnabled, final TcConfig... tcConfigs) {
-    if (netDisruptionEnabled && tcConfigs.length > 1){
-      //No disruption testing with multi stripes for now(due to constraint on TopologyIgnoredConnectionService)
-      throw new IllegalArgumentException("Disruption tests doesn't support multi stripes");
-    }
     this.distribution = distribution;
     this.netDisruptionEnabled = netDisruptionEnabled;
     this.tcConfigs = tcConfigs;
