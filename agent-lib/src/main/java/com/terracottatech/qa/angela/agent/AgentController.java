@@ -483,6 +483,10 @@ public class AgentController {
       }
       cmdLine.add("-classpath");
       cmdLine.add(buildClasspath(instanceId));
+
+      if (System.getProperty("tc.qa.portrange") != null) {
+        cmdLine.add("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange"));
+      }
       cmdLine.add("-Dtc.qa.directjoin=" + String.join(",", joinedNodes));
       cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);

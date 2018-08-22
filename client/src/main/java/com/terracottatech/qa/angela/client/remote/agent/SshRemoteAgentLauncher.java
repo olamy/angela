@@ -109,6 +109,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
           "-Dtc.qa.nodeName=" + targetServerName + " " +
           "-Dtc.qa.directjoin=" + joinHosts + " " +
           "-DkitsDir=$HOME/" + angelaHome + " " +
+          (System.getProperty("tc.qa.portrange") == null ? "" : ("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange") + " ")) +
           "-jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);

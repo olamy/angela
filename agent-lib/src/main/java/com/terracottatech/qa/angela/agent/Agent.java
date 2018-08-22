@@ -26,6 +26,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
@@ -74,6 +75,7 @@ public class Agent {
     System.setProperty("logback.configurationFile", "angela-logback.xml");
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
     String directjoin = System.getProperty("tc.qa.directjoin");
+    String portRange = System.getProperty("tc.qa.portrange");
 
     List<String> nodesToJoin = new ArrayList<>();
     if (directjoin != null) {
@@ -83,7 +85,7 @@ public class Agent {
         }
       }
     }
-    final Node node = new Node(nodeName, nodesToJoin);
+    final Node node = new Node(nodeName, nodesToJoin, portRange == null ? 0 : Integer.parseInt(portRange));
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
@@ -97,10 +99,14 @@ public class Agent {
     private volatile Ignite ignite;
 
     public Node(String nodeName, List<String> nodesToJoin) {
-      init(nodeName, nodesToJoin);
+      this(nodeName, nodesToJoin, 0);
     }
 
-    private void init(String nodeName, List<String> nodesToJoin) {
+    public Node(String nodeName, List<String> nodesToJoin, int portRange) {
+      init(nodeName, nodesToJoin, portRange);
+    }
+
+    private void init(String nodeName, List<String> nodesToJoin, int portRange) {
       File workDirFile = new File(ROOT_DIR);
       LOGGER.info("Root directory is : " + workDirFile);
       if (!workDirFile.exists()) {
@@ -149,6 +155,13 @@ public class Agent {
       spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(nodesToJoinHostnames));
       spi.setLocalPort(40000);
       spi.setJoinTimeout(10000);
+
+      // Updating the port range, if supplied.
+      if (portRange > 0) {
+        spi.setLocalPortRange(portRange);
+        cfg.setCommunicationSpi(new TcpCommunicationSpi().setLocalPortRange(portRange));
+      }
+
       cfg.setDiscoverySpi(spi);
 
       // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
