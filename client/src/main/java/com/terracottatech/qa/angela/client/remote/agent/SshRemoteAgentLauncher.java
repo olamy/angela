@@ -7,6 +7,7 @@ import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.transport.TransportException;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
 import org.apache.commons.io.IOUtils;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +110,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
           "-Dtc.qa.nodeName=" + targetServerName + " " +
           "-Dtc.qa.directjoin=" + joinHosts + " " +
           "-DkitsDir=$HOME/" + angelaHome + " " +
+          "-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + TcpDiscoverySpi.DFLT_PORT_RANGE) + " " +
           "-jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
