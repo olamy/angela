@@ -25,6 +25,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -484,7 +485,7 @@ public class AgentController {
       cmdLine.add("-classpath");
       cmdLine.add(buildClasspath(instanceId));
 
-      cmdLine.add("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange"));
+      cmdLine.add("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + TcpDiscoverySpi.DFLT_PORT_RANGE));
       cmdLine.add("-Dtc.qa.directjoin=" + String.join(",", joinedNodes));
       cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
