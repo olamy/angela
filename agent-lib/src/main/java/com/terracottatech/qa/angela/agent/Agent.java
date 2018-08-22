@@ -75,7 +75,7 @@ public class Agent {
     System.setProperty("logback.configurationFile", "angela-logback.xml");
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
     String directjoin = System.getProperty("tc.qa.directjoin");
-    String portRange = System.getProperty("tc.qa.portrange");
+    String portRange = System.getProperty("tc.qa.portrange", "" + TcpDiscoverySpi.DFLT_PORT_RANGE);
 
     List<String> nodesToJoin = new ArrayList<>();
     if (directjoin != null) {
@@ -85,7 +85,7 @@ public class Agent {
         }
       }
     }
-    final Node node = new Node(nodeName, nodesToJoin, portRange == null ? 0 : Integer.parseInt(portRange));
+    final Node node = new Node(nodeName, nodesToJoin, Integer.parseInt(portRange));
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::shutdown));
 
@@ -99,7 +99,7 @@ public class Agent {
     private volatile Ignite ignite;
 
     public Node(String nodeName, List<String> nodesToJoin) {
-      this(nodeName, nodesToJoin, 0);
+      this(nodeName, nodesToJoin, TcpDiscoverySpi.DFLT_PORT_RANGE);
     }
 
     public Node(String nodeName, List<String> nodesToJoin, int portRange) {
@@ -155,13 +155,8 @@ public class Agent {
       spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(nodesToJoinHostnames));
       spi.setLocalPort(40000);
       spi.setJoinTimeout(10000);
-
-      // Updating the port range, if supplied.
-      if (portRange > 0) {
-        spi.setLocalPortRange(portRange);
-        cfg.setCommunicationSpi(new TcpCommunicationSpi().setLocalPortRange(portRange));
-      }
-
+      spi.setLocalPortRange(portRange);
+      cfg.setCommunicationSpi(new TcpCommunicationSpi().setLocalPortRange(portRange));
       cfg.setDiscoverySpi(spi);
 
       // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
