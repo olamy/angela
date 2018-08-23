@@ -323,6 +323,15 @@ public class Tsa implements AutoCloseable {
   }
 
   public URI uri() {
+    String prefix;
+    if (topology.getDistribution().getVersion().getMajor() == 10) {
+      prefix = "terracotta://";
+    } else if (topology.getDistribution().getVersion().getMajor() == 4) {
+      prefix = "";
+    } else {
+      throw new UnsupportedOperationException("Version " + topology.getDistribution()
+          .getVersion() + " is not supported");
+    }
     final Map<ServerSymbolicName, Integer> proxyTsaPorts = topology.isNetDisruptionEnabled() ? disruptionController.getProxyTsaPorts() : Collections
         .emptyMap();
     return URI.create(topology.getServers()
@@ -331,7 +340,7 @@ public class Tsa implements AutoCloseable {
         .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts()
             .getTsaPort()))
         .collect(Collectors
-            .joining(",", "terracotta://", "")));
+            .joining(",", prefix, "")));
   }
 
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
