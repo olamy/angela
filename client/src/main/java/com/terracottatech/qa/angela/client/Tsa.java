@@ -1,4 +1,4 @@
-  package com.terracottatech.qa.angela.client;
+package com.terracottatech.qa.angela.client;
 
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
