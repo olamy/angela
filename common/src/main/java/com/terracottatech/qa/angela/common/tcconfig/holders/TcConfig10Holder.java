@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -56,10 +57,17 @@ public class TcConfig10Holder extends TcConfigHolder {
       Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
 
       Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node securityWhiteListDeprectedNode = (Node) xPath.evaluate("//*[local-name()='white-list']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+
       if (securityRootDirectoryNode != null) {
         securityRootDirectoryNode.setTextContent(securityRootDirectory);
-      } else {
-        throw new RuntimeException("security-root-directory tag is not found");
+      }
+
+      if(securityWhiteListDeprectedNode != null){
+        securityWhiteListDeprectedNode.getAttributes()
+            .getNamedItem("path").setNodeValue(securityRootDirectory + "/"
+            + SecurityRootDirectory.WHITE_LIST_DEPRECATED_DIR_NAME + "/"
+            + SecurityRootDirectory.WHITE_LIST_DEPRECATED_FILE_NAME);
       }
 
       this.tcConfigContent = domToString(tcConfigXml);
