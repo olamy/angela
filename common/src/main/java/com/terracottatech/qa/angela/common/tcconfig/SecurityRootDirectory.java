@@ -21,10 +21,20 @@ public class SecurityRootDirectory implements Serializable {
   static final String IDENTITY_DIR_NAME = "identity";
   static final String ACCESS_CONTROL_DIR_NAME = "access-control";
 
+  @Deprecated
+  public static final String WHITE_LIST_DEPRECATED_DIR_NAME = "whitelist-deprecated";
+  @Deprecated
+  public static final String WHITE_LIST_DEPRECATED_FILE_NAME = "whitelist-deprecated.txt";
+
+  static final String WHITE_LIST_FILE_NAME = "whitelist.txt";
+
+
 
   private final Map<String, byte[]> identityMap;
   private final Map<String, byte[]> trustedAuthorityMap;
   private final Map<String, byte[]> accessControlMap;
+  private final Map<String, byte[]> whiteListDeprecatedMap;
+  private byte[] whiteListFileContent;
 
   private SecurityRootDirectory(Path securityRootDirectory) {
     Path identityDir = securityRootDirectory.resolve(IDENTITY_DIR_NAME);
@@ -51,6 +61,25 @@ public class SecurityRootDirectory implements Serializable {
       accessControlMap = null;
     }
 
+    Path whiteListDeprecatedDir = securityRootDirectory.resolve(WHITE_LIST_DEPRECATED_DIR_NAME);
+    if (Files.exists(whiteListDeprecatedDir)) {
+      whiteListDeprecatedMap = new HashMap<>();
+      storeContentsToMap(whiteListDeprecatedDir, whiteListDeprecatedMap);
+    } else {
+      whiteListDeprecatedMap = null;
+    }
+
+    Path whiteListFile = securityRootDirectory.resolve(WHITE_LIST_FILE_NAME);
+    if (Files.exists(whiteListFile)) {
+      try {
+        whiteListFileContent = IOUtils.toByteArray(Files.newInputStream(whiteListFile));
+      }
+      catch(IOException ioe){
+        throw new RuntimeException("Unable to read file " + whiteListFile , ioe);
+      }
+    } else {
+      whiteListFileContent = null;
+    }
   }
 
   public static SecurityRootDirectory securityRootDirectory(URL securityRootDirectoryUrl) {
@@ -126,5 +155,24 @@ public class SecurityRootDirectory implements Serializable {
       }
     }
 
+    Path whiteListDeprecatedDir = newSecurityRootDirectory.resolve(WHITE_LIST_DEPRECATED_DIR_NAME);
+    if (whiteListDeprecatedMap != null) {
+      try {
+        Files.createDirectories(whiteListDeprecatedDir);
+        storeContentsToDir(whiteListDeprecatedMap, whiteListDeprecatedDir);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create directory " + whiteListDeprecatedDir, e);
+      }
+    }
+
+    if(whiteListFileContent != null){
+      try {
+        Files.createDirectories(newSecurityRootDirectory);
+        Path whiteListFile = newSecurityRootDirectory.resolve(WHITE_LIST_FILE_NAME);
+        Files.write(whiteListFile, whiteListFileContent);
+      } catch (IOException e) {
+        throw new RuntimeException("Unable to create whitelist file ", e);
+      }
+    }
   }
 }
