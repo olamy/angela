@@ -1,18 +1,17 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-
 import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.File;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Terracotta config for Terracotta 4.0.x
@@ -23,9 +22,10 @@ import javax.xml.xpath.XPathExpressionException;
  */
 public class TcConfig8Holder extends TcConfigHolder {
 
-  public TcConfig8Holder(final TcConfig8Holder tcConfig8Holder){
+  public TcConfig8Holder(final TcConfig8Holder tcConfig8Holder) {
     super(tcConfig8Holder);
   }
+
   public TcConfig8Holder(final InputStream tcConfigInputStream) {
     super(tcConfigInputStream);
   }
@@ -58,6 +58,11 @@ public class TcConfig8Holder extends TcConfigHolder {
 
   @Override
   public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy) {
+    throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
+  public void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex) {
     throw new UnsupportedOperationException("Unimplemented");
   }
 }

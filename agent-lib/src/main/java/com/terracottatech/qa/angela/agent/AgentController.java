@@ -90,7 +90,7 @@ public class AgentController {
       if (isKitAvailable) {
         File kitDir = kitManager.installKit(license);
 
-        installSecurityRootDirectory(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
+        setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
 
         logger.info("Installing the tc-configs");
         for (TcConfig tcConfig : topology.getTcConfigs()) {
@@ -105,7 +105,7 @@ public class AgentController {
       }
     } else {
       logger.info("Kit for " + terracottaServer + " already installed");
-      installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
     }
 
     TcConfig tcConfig = topology.get(tcConfigIndex);
@@ -171,7 +171,7 @@ public class AgentController {
 
       File kitDir = kitManager.installKit(license);
 
-      installSecurityRootDirectory(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
+      setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
       logger.info("Installing the tc-configs");
       for (TcConfig tcConfig : topology.getTcConfigs()) {
         tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
@@ -182,7 +182,7 @@ public class AgentController {
       kitsInstalls.put(instanceId, terracottaInstall);
     } else {
       logger.info("Kit for " + terracottaServer + " already installed");
-      installSecurityRootDirectory(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
     }
 
     TcConfig tcConfig = topology.get(tcConfigIndex);
@@ -207,17 +207,30 @@ public class AgentController {
     return terracottaInstall.getLicenseFileLocation().getPath();
   }
 
+  private void setupSecurityDirectories(SecurityRootDirectory securityRootDirectory, File installLocation,
+                                        TerracottaServer terracottaServer,
+                                        Topology topology, int tcConfigIndex){
+    if(securityRootDirectory != null) {
+      installSecurityRootDirectory(securityRootDirectory, installLocation, terracottaServer, topology, tcConfigIndex);
+      createAuditDirectory(installLocation, topology, tcConfigIndex);
+    }
+  }
+
   private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
                                             TerracottaServer terracottaServer,
                                             Topology topology, int tcConfigIndex) {
-    if (securityRootDirectory != null) {
+
       final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
       Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory-" + serverName);
       logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
       securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
       topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.toString());
-    }
   }
+
+  private void createAuditDirectory(File installLocation,Topology topology, int tcConfigIndex) {
+    topology.get(tcConfigIndex).updateAuditDirectoryLocation(installLocation,tcConfigIndex);
+  }
+
 
   public boolean attemptRemoteTmsInstallation(final InstanceId instanceId, final String tmsHostname,
                                               final Distribution distribution, final boolean offline, final License license,

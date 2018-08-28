@@ -1,22 +1,13 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
+import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.net.PortChooser;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.net.PortChooser;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -24,6 +15,16 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Terracotta config for Terracotta 5.0
@@ -208,6 +209,28 @@ public class TcConfig10Holder extends TcConfigHolder {
 
       Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       return securityRootDirectoryNode != null ? securityRootDirectoryNode.getTextContent() : null;
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
+  @Override
+  public synchronized void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex) {
+    try {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+      Node auditLogNode = (Node) xPath.evaluate("//*[local-name()='audit-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      if (auditLogNode != null) {
+
+        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "audit-" + tcConfigIndex;
+
+        Files.createDirectories(Paths.get(logsPath));
+
+        auditLogNode.setTextContent(logsPath);
+
+        this.tcConfigContent = domToString(tcConfigXml);
+      }
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);
     }

@@ -122,6 +122,10 @@ public class TcConfig implements Serializable {
     tcConfigHolder.updateSecurityRootDirectoryLocation(securityRootDirectory);
   }
 
+  public void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex) {
+    tcConfigHolder.updateAuditDirectoryLocation(kitDir, tcConfigIndex);
+  }
+
   public void updateDataDirectory(final String rootId, final String newlocation) {
     tcConfigHolder.updateDataDirectory(rootId, newlocation);
   }
