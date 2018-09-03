@@ -1,12 +1,5 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.util.AngelaVersion;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -16,6 +9,15 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.agent.client.RemoteClientManager;
+import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.util.AngelaVersion;
+import com.terracottatech.qa.angela.common.util.FileMetadata;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +33,8 @@ public class IgniteHelper {
 
   public static void checkAgentHealth(Ignite ignite, String nodeName) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-    IgniteFuture<Collection<Map<String, ?>>> future = ignite.compute(location).broadcastAsync((IgniteCallable<Map<String, ?>>) () -> Agent.CONTROLLER.getNodeAttributes());
+    IgniteFuture<Collection<Map<String, ?>>> future = ignite.compute(location)
+        .broadcastAsync((IgniteCallable<Map<String, ?>>)() -> Agent.CONTROLLER.getNodeAttributes());
     try {
       Collection<Map<String, ?>> attributeMaps = future.get(10, TimeUnit.SECONDS);
       if (attributeMaps.size() != 1) {
@@ -43,7 +46,7 @@ public class IgniteHelper {
       }
       if (!AngelaVersion.getAngelaVersion().equals(attributeMap.get("angela.version"))) {
         throw new IllegalStateException("Agent " + nodeName + " is running version [" + attributeMap.get("angela.version") + "]" +
-            " but the expected version is [" + AngelaVersion.getAngelaVersion() + "]");
+                                        " but the expected version is [" + AngelaVersion.getAngelaVersion() + "]");
       }
     } catch (IgniteException e) {
       throw new IllegalStateException("Node with name '" + nodeName + "' not found in the cluster", e);
@@ -74,7 +77,9 @@ public class IgniteHelper {
   public static void uploadKit(final Ignite ignite, final String hostname, final InstanceId instanceId, final Distribution distribution,
                                final String kitInstallationName, final File kitInstallationPath) throws IOException, InterruptedException {
     IgniteFuture<Void> remoteDownloadFuture = executeRemotely(ignite, hostname,
-        () -> Agent.CONTROLLER.downloadKit(instanceId, distribution, kitInstallationName));
+        () -> Agent.CONTROLLER.downloadFiles(instanceId, new RemoteKitManager(instanceId, distribution, kitInstallationName)
+            .getKitInstallationPath()
+            .getParentFile()));
 
     try {
       final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
@@ -82,6 +87,26 @@ public class IgniteHelper {
       queue.put(Boolean.TRUE); // end of upload marker
     } finally {
       remoteDownloadFuture.get();
+    }
+  }
+
+  public static void uploadClientJars(final Ignite ignite, final String hostname, final InstanceId instanceId, final File[] filesToUpload) throws IOException, InterruptedException {
+    IgniteFuture<Void> remoteDownloadFuture = executeRemotely(ignite, hostname,
+        () -> Agent.CONTROLLER.downloadFiles(instanceId, new RemoteClientManager(instanceId).getClientInstallationPath()
+            .getParentFile()));
+
+    try {
+      final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@client", 100, new CollectionConfiguration());
+      uploadFiles(remoteDownloadFuture, queue, filesToUpload);
+      queue.put(Boolean.TRUE); // end of upload marker
+    } finally {
+      remoteDownloadFuture.get();
+    }
+  }
+
+  private static void uploadFiles(IgniteFuture<Void> remoteDownloadFuture, BlockingQueue<Object> queue, File[] files) throws InterruptedException, IOException {
+    for (File file : files) {
+      uploadFile(remoteDownloadFuture, queue, file, null);
     }
   }
 

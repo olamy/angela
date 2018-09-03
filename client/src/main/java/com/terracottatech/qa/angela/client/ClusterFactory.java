@@ -1,15 +1,5 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
-import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
-import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.client.Barrier;
-import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -22,6 +12,19 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
+import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
+import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.client.Barrier;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
+import com.terracottatech.qa.angela.common.topology.ClientTopology;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.topology.Topology;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -40,11 +43,11 @@ import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
   static final boolean SKIP_UNINSTALL = Boolean.getBoolean("tc.qa.angela.skipUninstall")
-      || Boolean.getBoolean("skipUninstall"); // legacy system prop name
+                                        || Boolean.getBoolean("skipUninstall"); // legacy system prop name
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
-  private static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("Oracle Corporation", "sun", "openjdk")));
-  private static final String DEFAULT_JDK_VERSION = "1.8";
+  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("Oracle Corporation", "sun", "openjdk")));
+  public static final String DEFAULT_JDK_VERSION = "1.8";
 
   private static final String TSA = "tsa";
   private static final String TMS = "tms";
@@ -104,7 +107,7 @@ public class ClusterFactory implements AutoCloseable {
     }
 
     if (foundLocalhost) {
-      if ( nodeToInstanceId.size() > 1 || (nodeToInstanceId.size() == 1 && !nodeToInstanceId.containsKey("localhost")) ) {
+      if (nodeToInstanceId.size() > 1 || (nodeToInstanceId.size() == 1 && !nodeToInstanceId.containsKey("localhost"))) {
         throw new IllegalArgumentException("remote agents '" + nodeToInstanceId.keySet() + "' already started, connecting to localhost is not possible");
       }
     }
@@ -197,10 +200,11 @@ public class ClusterFactory implements AutoCloseable {
     return client(nodeName, this.tcEnv);
   }
 
+  @Deprecated
   public Client client(String nodeName, TerracottaCommandLineEnvironment tcEnv) {
     InstanceId instanceId = init(CLIENT, Collections.singleton(nodeName));
 
-    Client client = new Client(ignite, instanceId, nodeName, tcEnv);
+    Client client = new Client(ignite, instanceId, nodeName, tcEnv, null);
     controllers.add(client);
     return client;
   }
@@ -234,7 +238,9 @@ public class ClusterFactory implements AutoCloseable {
       for (String nodeName : nodeToInstanceId.keySet()) {
         try {
           ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-          nodeToInstanceId.get(nodeName).forEach(instanceId -> ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.cleanup(instanceId)));
+          nodeToInstanceId.get(nodeName)
+              .forEach(instanceId -> ignite.compute(location)
+                  .broadcast((IgniteRunnable)() -> Agent.CONTROLLER.cleanup(instanceId)));
         } catch (Exception e) {
           exceptions.add(e);
         }
@@ -270,6 +276,18 @@ public class ClusterFactory implements AutoCloseable {
       exceptions.forEach(runtimeException::addSuppressed);
       throw runtimeException;
     }
+  }
+
+  public TcClients clients(final ClientTopology clientTopology) {
+   return clients(clientTopology, null);
+  }
+
+  public TcClients clients(final ClientTopology clientTopology, final License license) {
+    init(CLIENT, clientTopology.getClientsHostnames());
+
+    TcClients tcClients = new TcClients(ignite, () -> init(CLIENT, clientTopology.getClientsHostnames()), clientTopology, license);
+    controllers.add(tcClients);
+    return tcClients;
   }
 
 }

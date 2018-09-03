@@ -5,20 +5,25 @@ import org.junit.Test;
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
+import com.terracottatech.qa.angela.client.TcClients;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Barrier;
+import com.terracottatech.qa.angela.common.clientconfig.ClientsConfig;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.topology.ClientTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -111,6 +116,52 @@ public class ClientTest {
       for (Future<Void> future : futures) {
         future.get(30, TimeUnit.SECONDS);
       }
+    }
+  }
+
+  @Test
+  public void testUploadClientJars() throws Exception {
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
+
+//      Map<ClientSymbolicName, String > clientSymbolicNames = ClientsConfig.newClientsConfig().client("client1", "tc-perf-001")
+//          .client("client2", "tc-perf-002").client("client2-2", "tc-perf-002");
+//      ClientTopology ct  = new ClientTopology(distribution, clientSymbolicNames);
+
+      ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+          new ClientsConfig("tc-perf-010", "tc-perf-011"));
+
+      ClientJob clientJob = (context) -> {
+        System.out.println("hello");
+        Thread.sleep(1000);
+        System.out.println("again");
+      };
+
+      { // executeAll
+        TcClients tcClients = factory.clients(ct, license);
+        tcClients.installAll();
+
+        List<Future<Void>> futures = tcClients.executeAll(clientJob);
+        futures.forEach(voidFuture -> {
+          try {
+            voidFuture.get();
+          } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+          }
+        });
+        Client rc = tcClients.getClients().get(0);
+        rc.browse(".").downloadTo(new File("/tmp"));
+      }
+//      TODO : test + change subspawn to uplaod only jars from kit
+//      { // execute 1 client
+//        TcClients clientHerd = factory.clients(ct, license);
+//        TerracottaClient rc = ct.getClient(0);
+//        Future<Void> f = clientHerd.execute("cli-1"), clientJob);
+//        f.get();
+//        rc.browse(".").downloadTo("/tmp");
+//      }
+
     }
   }
 
