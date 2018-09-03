@@ -323,6 +323,9 @@ public class Tsa implements AutoCloseable {
   }
 
   public URI uri() {
+    if (disruptionController == null) {
+      throw new IllegalStateException("uri cannot be built from a client lambda - please call uri() from the test code instead");
+    }
     String prefix;
     if (topology.getDistribution().getVersion().getMajor() == 10) {
       prefix = "terracotta://";
@@ -337,10 +340,8 @@ public class Tsa implements AutoCloseable {
     return URI.create(topology.getServers()
         .values()
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts()
-            .getTsaPort()))
-        .collect(Collectors
-            .joining(",", prefix, "")));
+        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts().getTsaPort()))
+        .collect(Collectors.joining(",", prefix, "")));
   }
 
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
