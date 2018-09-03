@@ -50,6 +50,7 @@ public class Agent {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
 
+  public static final int DFLT_ANGELA_PORT_RANGE = 1000;
   public static final String ROOT_DIR;
   public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
@@ -75,7 +76,7 @@ public class Agent {
     System.setProperty("logback.configurationFile", "angela-logback.xml");
     String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
     String directjoin = System.getProperty("tc.qa.directjoin");
-    String portRange = System.getProperty("tc.qa.portrange", "" + TcpDiscoverySpi.DFLT_PORT_RANGE);
+    String portRange = System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE);
 
     List<String> nodesToJoin = new ArrayList<>();
     if (directjoin != null) {
@@ -99,7 +100,7 @@ public class Agent {
     private volatile Ignite ignite;
 
     public Node(String nodeName, List<String> nodesToJoin) {
-      this(nodeName, nodesToJoin, TcpDiscoverySpi.DFLT_PORT_RANGE);
+      this(nodeName, nodesToJoin, DFLT_ANGELA_PORT_RANGE);
     }
 
     public Node(String nodeName, List<String> nodesToJoin, int portRange) {

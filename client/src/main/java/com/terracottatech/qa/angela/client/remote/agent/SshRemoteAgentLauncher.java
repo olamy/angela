@@ -28,6 +28,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.terracottatech.qa.angela.agent.Agent.DFLT_ANGELA_PORT_RANGE;
+
 public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SshRemoteAgentLauncher.class);
@@ -110,7 +112,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
           "-Dtc.qa.nodeName=" + targetServerName + " " +
           "-Dtc.qa.directjoin=" + joinHosts + " " +
           "-DkitsDir=$HOME/" + angelaHome + " " +
-          "-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + TcpDiscoverySpi.DFLT_PORT_RANGE) + " " +
+          "-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE) + " " +
           "-jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
