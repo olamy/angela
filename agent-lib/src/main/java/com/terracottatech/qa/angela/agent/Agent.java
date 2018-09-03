@@ -50,7 +50,7 @@ public class Agent {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
 
-  private static final int DFLT_ANGELA_PORT_RANGE = 1000;
+  public static final int DFLT_ANGELA_PORT_RANGE = 1000;
   public static final String ROOT_DIR;
   public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
