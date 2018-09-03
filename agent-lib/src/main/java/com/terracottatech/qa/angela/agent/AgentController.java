@@ -1,5 +1,18 @@
 package com.terracottatech.qa.angela.agent;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.PidUtil;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
+
 import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
@@ -21,19 +34,6 @@ import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidProcess;
-import org.zeroturnaround.process.PidUtil;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
