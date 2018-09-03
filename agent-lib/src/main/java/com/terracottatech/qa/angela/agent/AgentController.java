@@ -58,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static com.terracottatech.qa.angela.agent.Agent.DFLT_ANGELA_PORT_RANGE;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -498,7 +499,7 @@ public class AgentController {
       cmdLine.add("-classpath");
       cmdLine.add(buildClasspath(instanceId));
 
-      cmdLine.add("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + TcpDiscoverySpi.DFLT_PORT_RANGE));
+      cmdLine.add("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE));
       cmdLine.add("-Dtc.qa.directjoin=" + String.join(",", joinedNodes));
       cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
       cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
