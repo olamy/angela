@@ -129,8 +129,11 @@ public class ClientTest {
 //          .client("client2", "tc-perf-002").client("client2-2", "tc-perf-002");
 //      ClientTopology ct  = new ClientTopology(distribution, clientSymbolicNames);
 
+//      ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+//          new ClientsConfig("tc-perf-010", "tc-perf-011"));
+
       ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-          new ClientsConfig("tc-perf-010", "tc-perf-011"));
+          new ClientsConfig("localhost"));
 
       ClientJob clientJob = (context) -> {
         System.out.println("hello");
