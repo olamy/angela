@@ -129,13 +129,12 @@ public class ClientTest {
       final Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
 
       final ClientsConfig clientsConfig1 = ClientsConfig.newClientsConfig()
-          .client("client1", "localhost")
-          .client("client2", InetAddress.getLocalHost().getHostName())
-          .client("client2-2", InetAddress.getLocalHost().getHostName());
+          .client("client2", "localhost")
+          .client("client2-2", "localhost");
 
       final ClientsConfig clientsConfig2 = ClientsConfig.newClientsConfig()
-          .clientSerie( 2, "localhost")
-          .clientSerie( 2, InetAddress.getLocalHost().getHostName());
+          .clientSerie( 2, "tc-perf-001")
+          .clientSerie( 2, "tc-perf-002");
 
       ClientTopology ct = new ClientTopology(distribution, clientsConfig1);
 
