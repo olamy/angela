@@ -23,7 +23,7 @@ public class ClientTopology {
     this.clientsConfig = clientsConfig;
   }
 
-  public Map<ClientSymbolicName, TerracottaClient> getClients() {
+  public Collection<TerracottaClient> getClients() {
     return clientsConfig.getTerracottaClients();
   }
 
@@ -49,8 +49,8 @@ public class ClientTopology {
 
   public Collection<String> getClientsHostnames() {
     List<String> hostnames = new ArrayList<>();
-    final Map<ClientSymbolicName, TerracottaClient> terracottaClients = clientsConfig.getTerracottaClients();
-    for (TerracottaClient terracottaClient : terracottaClients.values()) {
+    final Collection<TerracottaClient> terracottaClients = clientsConfig.getTerracottaClients();
+    for (TerracottaClient terracottaClient : terracottaClients) {
       hostnames.add(terracottaClient.getHostname());
     }
     return hostnames;

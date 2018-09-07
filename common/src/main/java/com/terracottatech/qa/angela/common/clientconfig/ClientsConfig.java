@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela.common.clientconfig;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,23 +11,7 @@ import java.util.Map;
 
 public class ClientsConfig {
 
-  Map<ClientSymbolicName, TerracottaClient> terracottaClients = new HashMap<>();
-
-  public ClientsConfig(final String hostname) {
-    final ClientSymbolicName clientSymbolicName = new ClientSymbolicName(hostname);
-    this.terracottaClients.put(clientSymbolicName, new TerracottaClient(clientSymbolicName, hostname));
-  }
-
-  public ClientsConfig(final String... hostnames) {
-    for (String hostname : hostnames) {
-      final ClientSymbolicName clientSymbolicName = new ClientSymbolicName(hostname);
-      if (this.terracottaClients.containsKey(clientSymbolicName)) {
-        // TODO : what the hell did this mean?
-        throw new IllegalArgumentException("If you want to add multiple clients on the same hostname, you need to use");
-      }
-      this.terracottaClients.put(clientSymbolicName, new TerracottaClient(clientSymbolicName, hostname));
-    }
-  }
+  private final Map<ClientSymbolicName, TerracottaClient> terracottaClients = new HashMap<>();
 
   private ClientsConfig() {}
 
@@ -33,20 +19,29 @@ public class ClientsConfig {
     return new ClientsConfig();
   }
 
-  public ClientsConfig client(ClientSymbolicName clientSymbolicName, String hostname) {
-    if (this.terracottaClients.containsKey(clientSymbolicName)) {
+  public ClientsConfig client(String clientSymbolicName, String hostname) {
+    final ClientSymbolicName key = new ClientSymbolicName(clientSymbolicName);
+    if (this.terracottaClients.containsKey(key)) {
       throw new IllegalArgumentException("Client with ClientSymbolicName = " + clientSymbolicName + " already present in the ClientsConfig");
     }
-    this.terracottaClients.put(clientSymbolicName, new TerracottaClient(clientSymbolicName, hostname));
+    this.terracottaClients.put(key, new TerracottaClient(key, hostname));
 
     return this;
   }
 
-  public Map<ClientSymbolicName, TerracottaClient> getTerracottaClients() {
-    return this.terracottaClients;
+  public Collection<  TerracottaClient> getTerracottaClients() {
+    return Collections.unmodifiableCollection(this.terracottaClients.values());
   }
 
   public TerracottaClient getTerracottaClient(final ClientSymbolicName clientSymbolicName) {
     return this.terracottaClients.get(clientSymbolicName);
+  }
+
+  public ClientsConfig clientSerie(final int serieLength, final String hostname) {
+    for (int i = 0; i < serieLength; i++) {
+      String clientSymbolicName =  hostname + "." + i;
+      client(clientSymbolicName, hostname);
+    }
+    return this;
   }
 }

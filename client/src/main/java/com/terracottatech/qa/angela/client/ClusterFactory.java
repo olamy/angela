@@ -14,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
@@ -278,14 +277,14 @@ public class ClusterFactory implements AutoCloseable {
     }
   }
 
-  public TcClients clients(final ClientTopology clientTopology) {
-   return clients(clientTopology, null);
+  public ClientArray clientArray(final ClientTopology clientTopology) {
+   return clientArray(clientTopology, null);
   }
 
-  public TcClients clients(final ClientTopology clientTopology, final License license) {
+  public ClientArray clientArray(final ClientTopology clientTopology, final License license) {
     init(CLIENT, clientTopology.getClientsHostnames());
 
-    TcClients tcClients = new TcClients(ignite, () -> init(CLIENT, clientTopology.getClientsHostnames()), clientTopology, license);
+    ClientArray tcClients = new ClientArray(ignite, () -> init(CLIENT, clientTopology.getClientsHostnames()), clientTopology, license);
     controllers.add(tcClients);
     return tcClients;
   }

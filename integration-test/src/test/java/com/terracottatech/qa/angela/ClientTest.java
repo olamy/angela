@@ -5,12 +5,13 @@ import org.junit.Test;
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
-import com.terracottatech.qa.angela.client.TcClients;
+import com.terracottatech.qa.angela.client.ClientArray;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.clientconfig.ClientsConfig;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.ClientTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -125,15 +126,18 @@ public class ClientTest {
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
 
-//      Map<ClientSymbolicName, String > clientSymbolicNames = ClientsConfig.newClientsConfig().client("client1", "tc-perf-001")
-//          .client("client2", "tc-perf-002").client("client2-2", "tc-perf-002");
-//      ClientTopology ct  = new ClientTopology(distribution, clientSymbolicNames);
+      final Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
 
-//      ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-//          new ClientsConfig("tc-perf-010", "tc-perf-011"));
+      final ClientsConfig clientsConfig1 = ClientsConfig.newClientsConfig()
+          .client("client1", "localhost")
+          .client("client2", InetAddress.getLocalHost().getHostName())
+          .client("client2-2", InetAddress.getLocalHost().getHostName());
 
-      ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-          new ClientsConfig("localhost"));
+      final ClientsConfig clientsConfig2 = ClientsConfig.newClientsConfig()
+          .clientSerie( 2, "localhost")
+          .clientSerie( 2, InetAddress.getLocalHost().getHostName());
+
+      ClientTopology ct = new ClientTopology(distribution, clientsConfig1);
 
       ClientJob clientJob = (context) -> {
         System.out.println("hello");
@@ -142,10 +146,9 @@ public class ClientTest {
       };
 
       { // executeAll
-        TcClients tcClients = factory.clients(ct, license);
-        tcClients.installAll();
+        ClientArray clientArray = factory.clientArray(ct, license);
 
-        List<Future<Void>> futures = tcClients.executeAll(clientJob);
+        List<Future<Void>> futures = clientArray.executeAll(clientJob);
         futures.forEach(voidFuture -> {
           try {
             voidFuture.get();
@@ -153,17 +156,10 @@ public class ClientTest {
             e.printStackTrace();
           }
         });
-        Client rc = tcClients.getClients().get(0);
+        Client rc = clientArray.getClients().get(0);
+
         rc.browse(".").downloadTo(new File("/tmp"));
       }
-//      TODO : test + change subspawn to uplaod only jars from kit
-//      { // execute 1 client
-//        TcClients clientHerd = factory.clients(ct, license);
-//        TerracottaClient rc = ct.getClient(0);
-//        Future<Void> f = clientHerd.execute("cli-1"), clientJob);
-//        f.get();
-//        rc.browse(".").downloadTo("/tmp");
-//      }
 
     }
   }

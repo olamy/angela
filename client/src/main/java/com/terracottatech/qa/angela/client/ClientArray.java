@@ -27,9 +27,9 @@ import static com.terracottatech.qa.angela.client.ClusterFactory.DEFAULT_JDK_VER
  * @author Aurelien Broszniowski
  */
 
-public class TcClients implements AutoCloseable {
+public class ClientArray implements AutoCloseable {
 
-  private final static Logger logger = LoggerFactory.getLogger(TcClients.class);
+  private final static Logger logger = LoggerFactory.getLogger(ClientArray.class);
 
   private final Ignite ignite;
   private final Supplier<InstanceId> instanceIdSupplier;
@@ -39,7 +39,7 @@ public class TcClients implements AutoCloseable {
   private LocalKitManager localKitManager;
   private Map<TerracottaClient, Client> clients = new HashMap<>();
 
-  public TcClients(Ignite ignite, Supplier<InstanceId> instanceIdSupplier, ClientTopology topology, License license) {
+  public ClientArray(Ignite ignite, Supplier<InstanceId> instanceIdSupplier, ClientTopology topology, License license) {
     if (!topology.getLicenseType().isOpenSource() && license == null) {
       throw new IllegalArgumentException("LicenseType " + topology.getLicenseType() + " requires a license.");
     }
@@ -48,10 +48,11 @@ public class TcClients implements AutoCloseable {
     this.instanceIdSupplier = instanceIdSupplier;
     this.ignite = ignite;
     this.localKitManager = new LocalKitManager(topology.getDistribution());
+    installAll();
   }
 
-  public void installAll() {
-    final Collection<TerracottaClient> terracottaClients = topology.getClients().values();
+  private void installAll() {
+    final Collection<TerracottaClient> terracottaClients = topology.getClients();
     for (TerracottaClient terracottaClient : terracottaClients) {
       install(terracottaClient);
     }
@@ -78,8 +79,8 @@ public class TcClients implements AutoCloseable {
     }
   }
 
-  public void uninstallAll() throws IOException {
-    final Collection<TerracottaClient> terracottaClients = topology.getClients().values();
+  private void uninstallAll() throws IOException {
+    final Collection<TerracottaClient> terracottaClients = topology.getClients();
     for (TerracottaClient terracottaClient : terracottaClients) {
       uninstall(terracottaClient);
     }
@@ -87,7 +88,6 @@ public class TcClients implements AutoCloseable {
 
   private void uninstall(final TerracottaClient terracottaClient) throws IOException {
     logger.info("uninstalling from {}", terracottaClient.getHostname());
-    // TODO: do what client.close does
     final Client client = clients.get(terracottaClient);
     if (client != null) { client.close();}
     clients.remove(terracottaClient);
@@ -95,14 +95,14 @@ public class TcClients implements AutoCloseable {
 
   public List<Future<Void>> executeAll(final ClientJob clientJob) {
     List<Future<Void>> futures = new ArrayList<>();
-    final Collection<TerracottaClient> terracottaClients = topology.getClients().values();
+    final Collection<TerracottaClient> terracottaClients = topology.getClients();
     for (TerracottaClient terracottaClient : terracottaClients) {
       futures.add(execute(terracottaClient, clientJob));
     }
     return futures;
   }
 
-  private Future<Void> execute(final TerracottaClient terracottaClient, final ClientJob clientJob) {
+  public Future<Void> execute(final TerracottaClient terracottaClient, final ClientJob clientJob) {
     final Future<Void> submit = clients.get(terracottaClient).submit(clientJob);
     return submit;
   }

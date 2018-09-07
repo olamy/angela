@@ -58,7 +58,7 @@ public class Client implements Closeable {
 
   Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
     if (localKitManager == null) {
-      logger.warn("Detected use of deprecated ClusterFactory.client(String nodename). Please use ClusterFactory.clients(ClientTopology clientTopology, License license) instead");
+      logger.warn("Detected use of deprecated ClusterFactory.client(String nodename). Please use ClusterFactory.clientArray(ClientTopology clientTopology, License license) instead");
     }
     this.instanceId = instanceId;
     this.nodeName = nodeName;
