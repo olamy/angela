@@ -18,7 +18,9 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
@@ -254,4 +256,21 @@ public class LocalKitManager extends KitManager {
     }
   }
 
+  public File getFile(final String filename) {
+    String fileToFind = new File(filename).getName();
+    final AtomicReference<File> returnFile = new AtomicReference<>(null);
+    try {
+      Files.walk(this.kitInstallationPath.toPath())
+          .filter(Files::isRegularFile)
+          .forEach((f) -> {
+            String file = f.toString();
+            if (file.endsWith(fileToFind))
+              returnFile.set(new File(file));
+          });
+    } catch (IOException e) {
+      return null;
+    }
+    logger.debug(" Looking for " + fileToFind + " in " + kitInstallationPath + " and found " + returnFile.get());
+    return returnFile.get();
+  }
 }

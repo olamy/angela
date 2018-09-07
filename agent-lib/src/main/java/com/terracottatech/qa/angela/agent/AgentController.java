@@ -116,23 +116,20 @@ public class AgentController {
     return true;
   }
 
-  public void downloadKit(final InstanceId instanceId, Distribution distribution, final String kitInstallationName) {
+  public void downloadFiles(final InstanceId instanceId, final File installDir) {
     final BlockingQueue<Object> queue = ignite.queue(instanceId + "@file-transfer-queue@tsa", 100, new CollectionConfiguration());
     try {
-      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
-
-      File kitDestDir = kitManager.getKitInstallationPath().getParentFile();
-      logger.info("Downloading tsa jars into {}", kitDestDir);
-      if (!kitDestDir.exists()) {
-        if (!kitDestDir.mkdirs()) {
-          throw new RuntimeException("Cannot create TSA directory '" + kitDestDir + "'");
+      logger.info("Downloading files into {}", installDir);
+      if (!installDir.exists()) {
+        if (!installDir.mkdirs()) {
+          throw new RuntimeException("Cannot create TSA directory '" + installDir + "'");
         }
       }
 
       while (true) {
         Object read = queue.take();
         if (read.equals(Boolean.TRUE)) {
-          logger.info("Downloaded jar into {}", kitDestDir);
+          logger.info("Downloaded files into {}", installDir);
           break;
         }
 
@@ -140,7 +137,7 @@ public class AgentController {
         logger.debug("downloading " + fileMetadata);
         if (!fileMetadata.isDirectory()) {
           long readFileLength = 0L;
-          File file = new File(kitDestDir + File.separator + fileMetadata.getPathName());
+          File file = new File(installDir + File.separator + fileMetadata.getPathName());
           file.getParentFile().mkdirs();
           try (FileOutputStream fos = new FileOutputStream(file)) {
             while (true) {
@@ -160,7 +157,7 @@ public class AgentController {
         }
       }
     } catch (Exception e) {
-      throw new RuntimeException("Cannot download TSA kit", e);
+      throw new RuntimeException("Cannot download files to " + installDir.getAbsolutePath(), e);
     }
   }
 

@@ -15,12 +15,6 @@
  */
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
-import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.client.Context;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -29,6 +23,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.client.Context;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.util.FileMetadata;
 
 import java.io.Closeable;
 import java.io.File;
@@ -54,26 +56,34 @@ public class Client implements Closeable {
   private final int subClientPid;
   private boolean closed = false;
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv) {
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
+    if (localKitManager == null) {
+      logger.warn("Detected use of deprecated ClusterFactory.client(String nodename). Please use ClusterFactory.clientArray(ClientTopology clientTopology, License license) instead");
+    }
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
-    this.subClientPid = spawnSubClient(tcEnv);
+    if (tcEnv == null) {
+      throw new IllegalArgumentException("JDK info must be passed");
+    }
+    this.subClientPid = spawnSubClient(tcEnv, localKitManager);
   }
 
-  private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv) {
+  private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
     logger.info("Spawning client '{}' on {}", instanceId, nodeName);
     IgniteHelper.checkAgentHealth(ignite, nodeName);
     try {
       final BlockingQueue<Object> queue = ignite.queue("file-transfer-queue@" + instanceId, 100, new CollectionConfiguration());
 
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location).broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadClient(instanceId));
+      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location)
+          .broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadClient(instanceId));
 
-      uploadClasspath(queue);
+      uploadClasspath(queue, localKitManager);
       remoteDownloadFuture.get();
 
-      Collection<Integer> results = ignite.compute(location).broadcast((IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
+      Collection<Integer> results = ignite.compute(location)
+          .broadcast((IgniteCallable<Integer>)() -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
       int pid = results.iterator().next();
       logger.info("client '{}' on {} started with PID {}", instanceId, nodeName, pid);
 
@@ -83,18 +93,34 @@ public class Client implements Closeable {
     }
   }
 
-  private void uploadClasspath(BlockingQueue<Object> queue) throws InterruptedException, IOException {
+  private void uploadClasspath(BlockingQueue<Object> queue, final LocalKitManager localKitManager) throws InterruptedException, IOException {
     File javaHome = new File(System.getProperty("java.home"));
     String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
     for (String classpathJarName : classpathJarNames) {
-      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile().getPath())) {
+      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile()
+          .getPath())) {
         logger.debug("skipping {}", classpathJarName);
         continue; // part of the JVM, skip it
       }
 
-      uploadFile(queue, new File(classpathJarName), null);
+      File fileToUpload = checkKitContents(localKitManager, classpathJarName);
+      logger.debug("file uploading to remote : {}", fileToUpload);
+
+      uploadFile(queue, fileToUpload, null);
     }
     queue.put(Boolean.TRUE); // end of upload marker
+  }
+
+  private File checkKitContents(final LocalKitManager localKitManager, final String classpathJarName) {
+    if (localKitManager == null) {  // LocalKitManager is null when legacy ClusterFactory.client(String nodename) is used
+      return new File(classpathJarName);
+    }
+    File fileInKit = localKitManager.getFile(classpathJarName);
+    if (fileInKit != null) {
+      return fileInKit;
+    } else {
+      return new File(classpathJarName);
+    }
   }
 
   private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
@@ -137,7 +163,7 @@ public class Client implements Closeable {
   public Future<Void> submit(ClientJob clientJob) {
     IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
-    IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>) () -> {
+    IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>)() -> {
       clientJob.run(new Context(nodeName, ignite, instanceId));
       return null;
     });
@@ -159,12 +185,14 @@ public class Client implements Closeable {
       logger.info("Wiping up client '{}' on {}", instanceId, nodeName);
       IgniteHelper.checkAgentHealth(ignite, nodeName);
       ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      ignite.compute(location).broadcast((IgniteRunnable) () -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
+      ignite.compute(location)
+          .broadcast((IgniteRunnable)() -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
     }
   }
 
   static class ClientJobFuture<V> implements Future<V> {
     private final IgniteFuture<V> igniteFuture;
+
     ClientJobFuture(IgniteFuture<V> igniteFuture) {
       this.igniteFuture = igniteFuture;
     }
