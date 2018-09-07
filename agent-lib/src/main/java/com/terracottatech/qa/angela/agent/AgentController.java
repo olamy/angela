@@ -188,10 +188,6 @@ public class AgentController {
     terracottaInstall.addServer(terracottaServer, tcConfig);
   }
 
-  public void installClient() {
-
-  }
-
   public String getInstallPath(InstanceId instanceId, TerracottaServer terracottaServer) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     TerracottaServerInstance terracottaServerInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
