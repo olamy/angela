@@ -185,7 +185,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
     try (Session session = ssh.startSession()) {
       Session.Command cmd = session.exec(line);
       try {
-        cmd.join(100, TimeUnit.MILLISECONDS);
+        cmd.join(10, TimeUnit.SECONDS);
       } finally {
         cmd.close();
       }
