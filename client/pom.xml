@@ -24,6 +24,10 @@
     </dependency>
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
+      <artifactId>angela-system-prop</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-agent-lib</artifactId>
     </dependency>
     <dependency>

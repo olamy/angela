@@ -29,6 +29,7 @@
     <module>integration-test</module>
     <module>docs</module>
     <module>test-utils</module>
+    <module>system-prop</module>
   </modules>
 
   <dependencyManagement>
@@ -36,6 +37,11 @@
       <dependency>
         <groupId>com.terracottatech.qa</groupId>
         <artifactId>angela-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.terracottatech.qa</groupId>
+        <artifactId>angela-system-prop</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
