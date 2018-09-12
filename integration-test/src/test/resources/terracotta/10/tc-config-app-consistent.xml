@@ -55,6 +55,5 @@
     <property name="l2.healthcheck.l2.ping.probes" value="2"/>
     <property name="l2.healthcheck.l2.socketConnectTimeout" value="2000"/>
     <property name="l2.healthcheck.l2.socketConnectCount" value="2"/>
-    <property name="topology.validate" value="false"/>
   </tc-properties>
 </tc-config>

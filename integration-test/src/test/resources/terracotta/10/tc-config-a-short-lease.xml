@@ -30,8 +30,4 @@
     </server>
   </servers>
 
-  <tc-properties>
-    <property name="topology.validate" value="false"/>
-  </tc-properties>
-
 </tc-config>
