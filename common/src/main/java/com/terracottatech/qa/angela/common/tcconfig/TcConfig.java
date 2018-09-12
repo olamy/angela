@@ -81,10 +81,6 @@ public class TcConfig implements Serializable {
     return tcConfigHolder.getServers();
   }
 
-  public Object getTcProperty(final String key) {
-    return tcConfigHolder.getTcProperty(key);
-  }
-
   public TerracottaServer getTerracottaServer(int index) {
     return this.tcConfigHolder.getServers().values().toArray(new TerracottaServer[0])[index];
   }
@@ -93,9 +89,8 @@ public class TcConfig implements Serializable {
     return tcConfigName;
   }
 
-
-  public void updateTcProperties(final Properties tcProperties) {
-    tcConfigHolder.setTcProperties(tcProperties);
+  public void createOrUpdateTcProperty(String name, String value) {
+    tcConfigHolder.createOrUpdateTcProperty(name, value);
   }
 
   public void writeTcConfigFile(File kitDir) {

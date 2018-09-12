@@ -8,8 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,7 +49,6 @@ public abstract class TcConfigHolder {
 
   protected volatile String tcConfigContent;        // tc config content
   private volatile String installedTcConfigPath;
-  private volatile Properties tcProperties = null;
   private final List<String> logsPathList = new ArrayList<String>();
 
   public TcConfigHolder() {
@@ -56,9 +57,6 @@ public abstract class TcConfigHolder {
   public TcConfigHolder(TcConfigHolder tcConfigHolder){
     this.tcConfigContent = tcConfigHolder.tcConfigContent;
     this.installedTcConfigPath = tcConfigHolder.installedTcConfigPath;
-    if (tcConfigHolder.tcProperties != null){
-      this.tcProperties = new Properties(tcConfigHolder.tcProperties);
-    }
     this.logsPathList.addAll(tcConfigHolder.logsPathList);
   }
 
@@ -145,24 +143,8 @@ public abstract class TcConfigHolder {
     return this.installedTcConfigPath;
   }
 
-  public void setTcProperties(final Properties tcProperties) {
-    this.tcProperties = tcProperties;
-  }
-
-  public Object getTcProperty(final String key) {
-    if (tcProperties == null) {
-      return null;
-    } else {
-      return tcProperties.get(key);
-    }
-  }
-
   public synchronized void updateLogsLocation(final File kitDir, final int tcConfigIndex) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       int cnt = 1;
       for (int i=0; i<serversList.getLength(); i++) {
@@ -182,17 +164,11 @@ public abstract class TcConfigHolder {
 
         this.tcConfigContent = domToString(tcConfigXml);
       }
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
   }
 
   public void updateServerHost(int serverIndex, String newServerHost) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       if (serverIndex > serversList.getLength()) {
         throw new ArrayIndexOutOfBoundsException("Server index " + serverIndex + " out of bounds: " + serversList.getLength());
@@ -202,12 +178,61 @@ public abstract class TcConfigHolder {
       Attr attribute = tcConfigXml.createAttribute("host");
       attribute.setValue(newServerHost);
       server.getAttributes().setNamedItem(attribute);
-
-      this.tcConfigContent = domToString(tcConfigXml);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
   }
+
+  public void createOrUpdateTcProperty(String name, String value) {
+    modifyXml((tcConfigXml, xPath) -> {
+      String indentation = guessIndentation(tcConfigXml);
+      Node tcProperties = (Node) xPath.evaluate("//*[name()='tc-properties']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      boolean createdTcProperties = false;
+
+      if (tcProperties == null) {
+        tcProperties = tcConfigXml.createElement("tc-properties");
+        tcProperties.appendChild(tcConfigXml.createTextNode("\n"));
+        tcConfigXml.getDocumentElement().appendChild(tcConfigXml.createTextNode(indentation));
+        tcConfigXml.getDocumentElement().appendChild(tcProperties);
+        tcConfigXml.getDocumentElement().appendChild(tcConfigXml.createTextNode("\n"));
+        createdTcProperties = true;
+      }
+
+      Element existingProperty = null;
+
+      NodeList tcPropertiesChildren = tcProperties.getChildNodes();
+      for (int i = 0; i < tcPropertiesChildren.getLength(); i++) {
+        Node tcProperty = tcPropertiesChildren.item(i);
+        NamedNodeMap attributes = tcProperty.getAttributes();
+        Node nameAttribute = attributes != null ? attributes.getNamedItem("name") : null;
+        if (nameAttribute != null && nameAttribute.getNodeValue().equals(name)) {
+          existingProperty = (Element) tcProperty;
+          break;
+        }
+      }
+
+      if (existingProperty == null) {
+        tcProperties.appendChild(tcConfigXml.createTextNode(indentation + (createdTcProperties ? indentation : "")));
+        Element newProperty = tcConfigXml.createElement("property");
+        newProperty.setAttribute("name", name);
+        newProperty.setAttribute("value", value);
+        tcProperties.appendChild(newProperty);
+        tcProperties.appendChild(tcConfigXml.createTextNode("\n" + indentation));
+      } else {
+        existingProperty.setAttribute("value", value);
+      }
+
+    });
+  }
+
+  private String guessIndentation(Document document) {
+    Element documentElement = document.getDocumentElement();
+    Node item = documentElement.getChildNodes().item(0);
+    if (item.getNodeType() == Node.TEXT_NODE) {
+      Text text = (Text)item;
+      return text.getTextContent().replace("\n", "").replace("\r", "");
+    }
+    return "  ";
+  }
+
 
   public List<String> getLogsLocation() {
     return this.logsPathList;
@@ -227,6 +252,25 @@ public abstract class TcConfigHolder {
 
   public void substituteToken(String token, String value){
       this.tcConfigContent = this.tcConfigContent.replaceAll(token, value);
+  }
+
+  protected void modifyXml(XmlModifier xmlModifier) {
+    try {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      xmlModifier.modify(tcConfigXml, xPath);
+
+      this.tcConfigContent = domToString(tcConfigXml);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot modify tc-config xml", e);
+    }
+  }
+
+  @FunctionalInterface
+  protected interface XmlModifier {
+    void modify(Document tcConfigXml, XPath xPath) throws Exception;
   }
 
   protected static String domToString(Document document) throws TransformerException, IOException {
