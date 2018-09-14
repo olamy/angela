@@ -54,8 +54,8 @@ public class ClientToServerDisruptionTest {
         try (ClientToServerDisruptor disruptor = tsa.disruptionController().newClientToServerDisruptor()) {
           //use proxied URI from disruptor to make connection
           DatasetManager datasetManager = DatasetManager.clustered(disruptor.uri())
-              .withConnectionTimeout(1, TimeUnit.SECONDS)
-              .withReconnectTimeout(5, TimeUnit.SECONDS)
+              .withConnectionTimeout(5, TimeUnit.SECONDS)
+              .withReconnectTimeout(20, TimeUnit.SECONDS)
               .build();
           Assert.assertTrue(datasetManager.newDataset("store-0", Type.INT, datasetManager.datasetConfiguration()
               .offheap("primary-server-resource").build()));
@@ -96,8 +96,8 @@ public class ClientToServerDisruptionTest {
         tsa.licenseAll();
         try (ClientToServerDisruptor disruptor = tsa.disruptionController().newClientToServerDisruptor()) {
           try (DatasetManager datasetManager = DatasetManager.clustered(disruptor.uri())
-              .withConnectionTimeout(1, TimeUnit.SECONDS)
-              .withReconnectTimeout(10, TimeUnit.SECONDS)
+              .withConnectionTimeout(5, TimeUnit.SECONDS)
+              .withReconnectTimeout(20, TimeUnit.SECONDS)
               .build()) {
             System.out.println("before newDataset");
             Assert.assertTrue(datasetManager.newDataset("store-0", Type.INT, datasetManager.datasetConfiguration()
@@ -110,7 +110,7 @@ public class ClientToServerDisruptionTest {
             disruptor.disrupt();
             CompletableFuture.runAsync(() -> {
               try {
-                Thread.sleep(5_000);
+                Thread.sleep(10_000);
               } catch (InterruptedException e) {}
               disruptor.undisrupt();
             });
