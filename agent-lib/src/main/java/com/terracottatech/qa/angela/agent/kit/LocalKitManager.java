@@ -190,20 +190,14 @@ public class LocalKitManager extends KitManager {
           }
         }
       } else if (packageType == SAG_INSTALLER) {
-        if (version.getMajor() == 10) {
-          if (version.getMinor() == 1) {
-            if (licenseType == LicenseType.TC_DB) {
-              return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller101_LATEST.jar");
-            }
-          } else if (version.getMinor() == 2) {
-            if (licenseType == LicenseType.TC_DB) {
-              return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller102_LATEST.jar");
-            }
-          } else if (version.getMinor() == 3) {
-            if (licenseType == LicenseType.TC_DB) {
-              return new URL("http://aquarius_va.ame.ad.sag/PDShare/SoftwareAGInstaller103_LATEST.jar");
-            }
-
+        if (version.getMajor() >= 10) {
+          if (licenseType == LicenseType.TC_DB) {
+            StringBuilder sb = new StringBuilder("http://aquarius_va.ame.ad.sag/PDShare/");
+            sb.append("SoftwareAGInstaller")
+                .append(version.getMajor())
+                .append(version.getMinor())
+                .append("_LATEST.jar");
+            return new URL(sb.toString());
           }
         }
       }
@@ -235,7 +229,7 @@ public class LocalKitManager extends KitManager {
           return compressionUtils.getParentDirFromTarGz(localInstaller);
         }
       } else if (distribution.getPackageType() == SAG_INSTALLER) {
-        if (distribution.getVersion().getMajor() == 10) {
+        if (distribution.getVersion().getMajor() >= 10) {
           return "TDB";
         }
       }
