@@ -395,7 +395,7 @@ public class AgentController {
     }
   }
 
-  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, final HardwareStats hardwareStats) {
+  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, final HardwareStats.STAT hardwareStats) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.create(tcEnv, hardwareStats);
   }

@@ -60,7 +60,7 @@ public class TerracottaServerInstance implements Closeable {
     this.tcConfig.writeTcConfigFile(location, modifiedTcConfigName);
   }
 
-  public void create(TerracottaCommandLineEnvironment env, final HardwareStats hardwareStats) {
+  public void create(TerracottaCommandLineEnvironment env, final HardwareStats.STAT hardwareStats) {
     this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig, env, hardwareStats);
   }
 

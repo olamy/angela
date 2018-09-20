@@ -39,7 +39,6 @@ public class ClientArray implements AutoCloseable {
   private boolean closed = false;
   private LocalKitManager localKitManager;
   private Map<TerracottaClient, Client> clients = new HashMap<>();
-  private HardwareStats hardwareStats;
 
   public ClientArray(Ignite ignite, Supplier<InstanceId> instanceIdSupplier, ClientTopology topology, License license) {
     if (!topology.getLicenseType().isOpenSource() && license == null) {
@@ -50,7 +49,6 @@ public class ClientArray implements AutoCloseable {
     this.instanceIdSupplier = instanceIdSupplier;
     this.ignite = ignite;
     this.localKitManager = new LocalKitManager(topology.getDistribution());
-    this.hardwareStats = new HardwareStats();
     installAll();
   }
 
@@ -106,7 +104,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public Future<Void> execute(final TerracottaClient terracottaClient, final ClientJob clientJob) {
-    final Future<Void> submit = clients.get(terracottaClient).submit(clientJob);
+    final Future<Void> submit = clients.get(terracottaClient).submit(clientJob, HardwareStats.parse());
     return submit;
   }
 

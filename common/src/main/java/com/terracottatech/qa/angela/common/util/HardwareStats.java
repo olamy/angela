@@ -22,44 +22,40 @@ public class HardwareStats {
 
   public static enum STAT {vmstat, none;}
 
-  ;
-  private final STAT stats;
   private SimpleProcess process = null;
 
-  public HardwareStats() {
+  public static STAT parse() {
     final String stats = System.getProperty("stats");
     if (stats == null) {
-      this.stats = STAT.none;
+      return STAT.none;
     } else {
-      this.stats = STAT.valueOf(stats);
+      return STAT.valueOf(stats);
     }
   }
 
-  public boolean shouldMonitor() {
-    return this.stats != STAT.none;
-  }
-
-  public String[] startCommand() {
+  public String[] startCommand(final STAT stats) {
     OS os = OS.INSTANCE;
 
     String command[] = null;
-    switch (this.stats) {
+    switch (stats) {
       case vmstat:
         if (os.isUnix()) {
           command = new String[] { "/usr/bin/vmstat", "-td", "15" };
         } else if (os.isMac()) {
           command = new String[] { "/usr/bin/vm_stat", "15" };
+        } else {
+          throw new UnsupportedOperationException("Monitoring with vmstat on OS " + os.toString() + " is not supported");
         }
         break;
     }
     if (command == null) {
-      throw new RuntimeException("Call to HardwareStats.startCommand() while there should be no monitoring");
+      throw new RuntimeException("Call to HardwareStats.startCommand() while no monitoring is defined.");
     }
     return command;
   }
 
-  public void startMonitoring(final File installLocation) {
-    if (shouldMonitor()) {
+  public void startMonitoring(final File installLocation, final STAT stats) {
+    if (stats != STAT.none) {
 
       final FileOutputStream output;
       try {
@@ -67,14 +63,13 @@ public class HardwareStats {
         statsDirectory.mkdirs();
         final File logFile = new File(statsDirectory, "vmstat.log");
         logger.info("stat log file: {}" , logFile.getAbsolutePath());
-        System.out.println("stat log file: {}" + logFile.getAbsolutePath());
         output = new FileOutputStream(logFile);
       } catch (FileNotFoundException e) {
         throw new RuntimeException(e);
       }
 
       process = new SimpleProcess(new ProcessExecutor()
-          .command(startCommand())
+          .command(startCommand(stats))
           .directory(installLocation)
           .redirectError(System.err)
           .redirectOutput(output));

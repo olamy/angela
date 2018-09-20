@@ -57,13 +57,15 @@ public class Distribution102Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
+  private final HardwareStats hardwareStats = new HardwareStats();
+
   public Distribution102Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
   }
 
   @Override
   public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation,
-                                                                         final TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv, final HardwareStats hardwareStats) {
+                                                                         final TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv, final HardwareStats.STAT stats) {
     Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
@@ -82,7 +84,7 @@ public class Distribution102Controller extends DistributionController {
         tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + mr.group())
     );
 
-    hardwareStats.startMonitoring(installLocation);
+    hardwareStats.startMonitoring(installLocation, stats);
 
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, tcConfig, installLocation))

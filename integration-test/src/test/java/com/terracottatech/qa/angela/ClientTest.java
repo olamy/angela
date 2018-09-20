@@ -29,6 +29,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import junit.framework.AssertionFailedError;
+
 import static com.terracottatech.qa.angela.common.clientconfig.ClientsConfig.*;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -67,7 +69,7 @@ public class ClientTest {
 
       ClientJob clientJob = (context) -> {
         System.out.println("hello");
-        Thread.sleep(30000);
+        Thread.sleep(16000);
         System.out.println("again");
       };
 
@@ -79,7 +81,7 @@ public class ClientTest {
           try {
             voidFuture.get();
           } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           }
         });
         Client rc = clientArray.getClients().get(0);
@@ -210,7 +212,7 @@ public class ClientTest {
           try {
             voidFuture.get();
           } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           }
         });
         Client rc = clientArray.getClients().get(0);
