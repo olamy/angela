@@ -41,6 +41,7 @@ public class Topology {
     if (netDisruptionEnabled) {
       for (TcConfig tcConfig : tcConfigs) {
         tcConfig.createOrUpdateTcProperty("topology.validate", "false");
+        tcConfig.createOrUpdateTcProperty("l1redirect.enabled", "false");
       }
     }
   }
