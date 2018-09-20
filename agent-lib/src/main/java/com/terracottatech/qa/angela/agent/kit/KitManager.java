@@ -140,25 +140,14 @@ public abstract class KitManager {
         }
       }
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      if (version.getMajor() == 10) {
-        if (version.getMinor() == 1) {
-          if (distribution.getLicenseType() == LicenseType.TC_DB) {
-            sb.append("SoftwareAGInstaller101_LATEST.jar");
-            logger.debug("Kit name: {}", sb.toString());
-            return sb.toString();
-          }
-        } else if (version.getMinor() == 2) {
-          if (distribution.getLicenseType() == LicenseType.TC_DB) {
-            sb.append("SoftwareAGInstaller102_LATEST.jar");
-            logger.debug("Kit name: {}", sb.toString());
-            return sb.toString();
-          }
-        } else if (version.getMinor() == 3) {
-          if (distribution.getLicenseType() == LicenseType.TC_DB) {
-            sb.append("SoftwareAGInstaller103_LATEST.jar");
-            logger.debug("Kit name: {}", sb.toString());
-            return sb.toString();
-          }
+      if (version.getMajor() >= 10) {
+        if (distribution.getLicenseType() == LicenseType.TC_DB) {
+          sb.append("SoftwareAGInstaller")
+              .append(version.getMajor())
+              .append(version.getMinor())
+              .append("_LATEST.jar");
+          logger.debug("Kit name: {}", sb.toString());
+          return sb.toString();
         }
       }
     }
