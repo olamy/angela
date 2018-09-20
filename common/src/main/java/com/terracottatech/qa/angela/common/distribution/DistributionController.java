@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
@@ -8,9 +11,8 @@ import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.HardwareStats;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.HashMap;
@@ -50,7 +52,7 @@ public abstract class DistributionController {
     return env;
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, TerracottaCommandLineEnvironment env);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess create(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv, HardwareStats hardwareStats);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
 

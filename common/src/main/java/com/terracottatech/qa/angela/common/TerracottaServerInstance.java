@@ -10,6 +10,8 @@ import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.util.HardwareStats;
+
 import org.zeroturnaround.process.PidProcess;
 import org.zeroturnaround.process.Processes;
 
@@ -39,7 +41,7 @@ public class TerracottaServerInstance implements Closeable {
   private final DistributionController distributionController;
   private final File location;
   private final TcConfig tcConfig;
-  private volatile TerracottaServerInstanceProcess terracottaServerInstanceProcess = new TerracottaServerInstanceProcess(new AtomicReference<>(TerracottaServerState.STOPPED));
+  private volatile TerracottaServerInstanceProcess terracottaServerInstanceProcess;
   private final Map<ServerSymbolicName, Disruptor> disruptionLinks = new ConcurrentHashMap<>();
   private final boolean netDisruptionEnabled;
 
@@ -58,8 +60,8 @@ public class TerracottaServerInstance implements Closeable {
     this.tcConfig.writeTcConfigFile(location, modifiedTcConfigName);
   }
 
-  public void create(TerracottaCommandLineEnvironment env) {
-    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig, env);
+  public void create(TerracottaCommandLineEnvironment env, final HardwareStats hardwareStats) {
+    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig, env, hardwareStats);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
@@ -112,19 +114,25 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public TerracottaServerState getTerracottaServerState() {
-    return this.terracottaServerInstanceProcess.getState();
+    if (this.terracottaServerInstanceProcess == null) {
+      return TerracottaServerState.STOPPED;
+    } else {
+      return this.terracottaServerInstanceProcess.getState();
+    }
   }
 
   public static class TerracottaServerInstanceProcess {
     private final Set<Number> pids;
     private final AtomicReference<TerracottaServerState> state;
+    private final HardwareStats hardwareStats;
 
-    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, Number... pids) {
+    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, final HardwareStats hardwareStats, Number... pids) {
       for (Number pid : pids) {
         if (pid.intValue() < 1) {
           throw new IllegalArgumentException("Pid cannot be < 1");
         }
       }
+      this.hardwareStats = hardwareStats;
       this.pids = new HashSet<>(Arrays.asList(pids));
       this.state = state;
     }
@@ -135,6 +143,10 @@ public class TerracottaServerInstance implements Closeable {
 
     public Set<Number> getPids() {
       return Collections.unmodifiableSet(pids);
+    }
+
+    public HardwareStats getHardwareStats() {
+      return hardwareStats;
     }
 
     public boolean isAlive() {
