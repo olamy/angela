@@ -18,6 +18,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.HardwareStats;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ public class Tsa implements AutoCloseable {
   private final transient DisruptionController disruptionController;
   private boolean closed = false;
   private LocalKitManager localKitManager;
+  private HardwareStats hardwareStats;
 
   Tsa(Ignite ignite, InstanceId instanceId, Topology topology, License license, TerracottaCommandLineEnvironment tcEnv) {
     this.tcEnv = tcEnv;
@@ -67,6 +69,7 @@ public class Tsa implements AutoCloseable {
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, topology);
     this.localKitManager = new LocalKitManager(topology.getDistribution());
+    this.hardwareStats = new HardwareStats();
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {
@@ -177,7 +180,7 @@ public class Tsa implements AutoCloseable {
         return;
       case STOPPED:
         logger.info("creating on {}", terracottaServer.getHostname());
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tcEnv)).get(TIMEOUT);
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tcEnv, hardwareStats)).get(TIMEOUT);
         return;
     }
     throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
@@ -261,13 +264,13 @@ public class Tsa implements AutoCloseable {
 
     TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
     logger.info("Licensing all");
-    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tcEnv, verbose))
-        .get();
+    executeRemotely(ignite, terracottaServer,
+        () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tcEnv, verbose)).get();
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
-    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer))
-        .get();
+    return executeRemotely(ignite, terracottaServer,
+        () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer)).get();
   }
 
   public Collection<TerracottaServer> getPassives() {

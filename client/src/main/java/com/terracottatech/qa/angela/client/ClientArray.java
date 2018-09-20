@@ -10,6 +10,7 @@ import com.terracottatech.qa.angela.common.clientconfig.TerracottaClient;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.ClientTopology;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.util.HardwareStats;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class ClientArray implements AutoCloseable {
   private boolean closed = false;
   private LocalKitManager localKitManager;
   private Map<TerracottaClient, Client> clients = new HashMap<>();
+  private HardwareStats hardwareStats;
 
   public ClientArray(Ignite ignite, Supplier<InstanceId> instanceIdSupplier, ClientTopology topology, License license) {
     if (!topology.getLicenseType().isOpenSource() && license == null) {
@@ -48,6 +50,7 @@ public class ClientArray implements AutoCloseable {
     this.instanceIdSupplier = instanceIdSupplier;
     this.ignite = ignite;
     this.localKitManager = new LocalKitManager(topology.getDistribution());
+    this.hardwareStats = new HardwareStats();
     installAll();
   }
 

@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
@@ -12,12 +15,12 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
-import org.junit.Ignore;
-import org.junit.Test;
 
-import java.util.Arrays;
-
+import java.io.File;
 import java.net.InetAddress;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.UUID;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -36,6 +39,34 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 
 public class InstallTest {
+
+  @Test
+  public void testHardwareStatsLogs() throws Exception {
+    System.setProperty("stats", "vmstat");
+    final File resultPath = new File(UUID.randomUUID().toString());
+
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs")) {
+      Tsa tsa = factory.tsa(topology, license);
+      tsa.installAll();
+
+      TerracottaServer server = topology.get(0).getTerracottaServer(0);
+      tsa.create(server);
+
+      Thread.sleep(30000);
+
+      tsa.browse(server, "stats" ).downloadTo(resultPath);
+    }
+
+    assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
+    resultPath.delete();
+  }
+
+
 
   @Test
   public void testSsh() throws Exception {

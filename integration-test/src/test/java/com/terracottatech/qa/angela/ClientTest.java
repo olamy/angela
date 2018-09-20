@@ -24,13 +24,17 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.terracottatech.qa.angela.common.clientconfig.ClientsConfig.*;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ClientTest {
@@ -48,6 +52,60 @@ public class ClientTest {
       }
     }
   }
+
+  @Test
+  public void testClientHardwareStatsLog() throws Exception {
+    System.setProperty("stats", "vmstat");
+    final File resultPath = new File(UUID.randomUUID().toString());
+
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
+
+      ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+          newClientsConfig().client("client1", "localhost"));
+
+      ClientJob clientJob = (context) -> {
+        System.out.println("hello");
+        Thread.sleep(30000);
+        System.out.println("again");
+      };
+
+      { // executeAll
+        ClientArray clientArray = factory.clientArray(ct, license);
+
+        List<Future<Void>> futures = clientArray.executeAll(clientJob);
+        futures.forEach(voidFuture -> {
+          try {
+            voidFuture.get();
+          } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+          }
+        });
+        Client rc = clientArray.getClients().get(0);
+
+        rc.browse("stats").downloadTo(resultPath);
+      }
+
+    }
+/*
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
+      try (Client client = instance.client("localhost")) {
+        Future<Void> f = client.submit((context) -> {
+          System.out.println("start");
+          Thread.sleep(30000);
+        });
+        f.get();
+        client.browse("stats").downloadTo(resultPath);
+      }
+    }
+*/
+
+    assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
+    resultPath.delete();
+  }
+
 
   @Test
   public void testMultipleRemoteClients() throws Exception {
@@ -128,11 +186,11 @@ public class ClientTest {
 
       final Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
 
-      final ClientsConfig clientsConfig1 = ClientsConfig.newClientsConfig()
+      final ClientsConfig clientsConfig1 = newClientsConfig()
           .client("client2", "localhost")
           .client("client2-2", "localhost");
 
-      final ClientsConfig clientsConfig2 = ClientsConfig.newClientsConfig()
+      final ClientsConfig clientsConfig2 = newClientsConfig()
           .clientSerie( 2, "tc-perf-001")
           .clientSerie( 2, "tc-perf-002");
 
