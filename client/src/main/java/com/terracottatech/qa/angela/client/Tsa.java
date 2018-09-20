@@ -56,7 +56,7 @@ public class Tsa implements AutoCloseable {
   private final transient DisruptionController disruptionController;
   private boolean closed = false;
   private LocalKitManager localKitManager;
-  private HardwareStats hardwareStats;
+  private HardwareStats.STAT hardwareStats;
 
   Tsa(Ignite ignite, InstanceId instanceId, Topology topology, License license, TerracottaCommandLineEnvironment tcEnv) {
     this.tcEnv = tcEnv;
@@ -69,7 +69,7 @@ public class Tsa implements AutoCloseable {
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, topology);
     this.localKitManager = new LocalKitManager(topology.getDistribution());
-    this.hardwareStats = new HardwareStats();
+    this.hardwareStats = HardwareStats.parse();
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {

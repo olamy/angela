@@ -45,7 +45,9 @@ public class Distribution43Controller extends DistributionController {
 
   private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
 
-  private final static Logger LOGGER = LoggerFactory.getLogger(Distribution43Controller.class);
+  private final static Logger logger = LoggerFactory.getLogger(Distribution43Controller.class);
+
+  private final HardwareStats hardwareStats = new HardwareStats();
 
   public Distribution43Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
@@ -53,7 +55,7 @@ public class Distribution43Controller extends DistributionController {
 
   @Override
   public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, final TcConfig tcConfig,
-                                                                         final TerracottaCommandLineEnvironment tcEnv, final HardwareStats hardwareStats) {
+                                                                         final TerracottaCommandLineEnvironment tcEnv, final HardwareStats.STAT stats) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -68,7 +70,7 @@ public class Distribution43Controller extends DistributionController {
             .getSymbolicName() + "] " + mr.group())
     );
 
-    hardwareStats.startMonitoring(installLocation);
+    hardwareStats.startMonitoring(installLocation, stats);
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, tcConfig, installLocation))
@@ -92,7 +94,7 @@ public class Distribution43Controller extends DistributionController {
         .redirectOutput(System.out);  // TODO
 
     try {
-      LOGGER.info("Calling stop command for server {}", serverSymbolicName);
+      logger.info("Calling stop command for server {}", serverSymbolicName);
       executor.start();
 
       for (int i = 0; i < 100; i++) {
@@ -106,7 +108,7 @@ public class Distribution43Controller extends DistributionController {
       throw new RuntimeException("Can not stop Terracotta server process " + serverSymbolicName, e);
     }
 
-    LOGGER.info("Destroying L2 process for {}", serverSymbolicName);
+    logger.info("Destroying L2 process for {}", serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
@@ -118,7 +120,7 @@ public class Distribution43Controller extends DistributionController {
           Thread.sleep(100);
         }
       } catch (Exception e) {
-        LOGGER.warn("Could not destroy process {}", pid, e);
+        logger.warn("Could not destroy process {}", pid, e);
       }
     }
 
@@ -174,7 +176,7 @@ public class Distribution43Controller extends DistributionController {
 
   @Override
   public void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
-    LOGGER.info("There is no licensing step in 4.x");
+    logger.info("There is no licensing step in 4.x");
   }
 
   @Override
@@ -224,7 +226,7 @@ public class Distribution43Controller extends DistributionController {
     for (String option : options) {
       sb.append(option).append(" ");
     }
-    LOGGER.info(" Start command = {}", sb.toString());
+    logger.info(" Start command = {}", sb.toString());
 
     return options.toArray(new String[options.size()]);
   }

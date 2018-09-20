@@ -57,7 +57,7 @@ public class InstallTest {
       TerracottaServer server = topology.get(0).getTerracottaServer(0);
       tsa.create(server);
 
-      Thread.sleep(30000);
+      Thread.sleep(16000);
 
       tsa.browse(server, "stats" ).downloadTo(resultPath);
     }

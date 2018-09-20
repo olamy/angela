@@ -51,11 +51,14 @@ public class Client implements Closeable {
 
   private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
+  private HardwareStats hardwareStats;
+
   private final InstanceId instanceId;
   private final String nodeName;
   private final Ignite ignite;
   private final int subClientPid;
   private boolean closed = false;
+
 
   Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
     if (localKitManager == null) {
@@ -67,6 +70,7 @@ public class Client implements Closeable {
     if (tcEnv == null) {
       throw new IllegalArgumentException("JDK info must be passed");
     }
+    this.hardwareStats = new HardwareStats();
     this.subClientPid = spawnSubClient(tcEnv, localKitManager);
   }
 
@@ -162,14 +166,14 @@ public class Client implements Closeable {
   }
 
   public Future<Void> submit(ClientJob clientJob) {
-    return submit(clientJob, new HardwareStats());
+    return submit(clientJob, HardwareStats.parse());
   }
 
-  public Future<Void> submit(ClientJob clientJob, HardwareStats hardwareStats) {
+  public Future<Void> submit(ClientJob clientJob, HardwareStats.STAT stats) {
     IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>)() -> {
-      hardwareStats.startMonitoring(new File("."));
+      hardwareStats.startMonitoring(new File("."), stats);
       clientJob.run(new Context(nodeName, ignite, instanceId));
       hardwareStats.stopMonitoring();
       return null;
