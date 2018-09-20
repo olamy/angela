@@ -52,11 +52,7 @@ public class TcConfig10Holder extends TcConfigHolder {
 
   @Override
   public void updateSecurityRootDirectoryLocation(final String securityRootDirectory) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    modifyXml((tcConfigXml, xPath) -> {
       Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       Node securityWhiteListDeprectedNode = (Node) xPath.evaluate("//*[local-name()='white-list']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
@@ -70,20 +66,12 @@ public class TcConfig10Holder extends TcConfigHolder {
             + SecurityRootDirectory.WHITE_LIST_DEPRECATED_DIR_NAME + "/"
             + SecurityRootDirectory.WHITE_LIST_DEPRECATED_FILE_NAME);
       }
-
-      this.tcConfigContent = domToString(tcConfigXml);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
   }
 
   @Override
   public void updateDataDirectory(final String rootId, final String newlocation) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       for (int i=0; i<serversList.getLength(); i++) {
         Node server = serversList.item(i);
@@ -95,21 +83,13 @@ public class TcConfig10Holder extends TcConfigHolder {
             datarootNode.setTextContent(newlocation);
           }
         }
-
-        this.tcConfigContent = domToString(tcConfigXml);
       }
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
   }
 
   @Override
   public void updateHostname(final String serverName, final String hostname) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       for (int i=0; i<serversList.getLength(); i++) {
         Node server = serversList.item(i);
@@ -121,22 +101,14 @@ public class TcConfig10Holder extends TcConfigHolder {
             ((Element)server).setAttribute("host", hostname);
           }
         }
-
-        this.tcConfigContent = domToString(tcConfigXml);
       }
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
   }
 
 
   public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy){
-    try {
-      List<GroupMember> members = new ArrayList<>();
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    List<GroupMember> members = new ArrayList<>();
+    modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
 
       for(int i = 0; i < serversList.getLength(); i++) {
@@ -145,7 +117,7 @@ public class TcConfig10Holder extends TcConfigHolder {
         String name = nameNode.getTextContent();
         Node hostNode = (Node) xPath.evaluate("@host", server, XPathConstants.NODE);
         String host = hostNode.getTextContent();
-        
+
         Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
         int groupPort = Integer.parseInt(tsaGroupPortNode.getTextContent().trim());
         GroupMember member = null;
@@ -158,29 +130,21 @@ public class TcConfig10Holder extends TcConfigHolder {
         }
         if (name.equals(serverName)){
           members.add(0, member);
-        }else {
+        } else {
           members.add(member);
         }
       }
-      this.tcConfigContent = domToString(tcConfigXml);
-      return members;
-
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
+    return members;
   }
 
   @Override
-  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy){
-    try {
-      Map<ServerSymbolicName, Integer> tsaPorts = new HashMap<>();
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy) {
+    Map<ServerSymbolicName, Integer> tsaPorts = new HashMap<>();
+    modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
 
-      for(int i = 0; i < serversList.getLength(); i++) {
+      for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
         Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
         String name = nameNode.getTextContent();
@@ -193,12 +157,8 @@ public class TcConfig10Holder extends TcConfigHolder {
         }
         tsaPorts.put(new ServerSymbolicName(name), tsaPort);
       }
-      this.tcConfigContent = domToString(tcConfigXml);
-      return tsaPorts;
-
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
+    return tsaPorts;
   }
 
   String getSecurityRootDirectory() {
@@ -216,10 +176,7 @@ public class TcConfig10Holder extends TcConfigHolder {
 
   @Override
   public synchronized void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+    modifyXml((tcConfigXml, xPath) -> {
       Node auditLogNode = (Node) xPath.evaluate("//*[local-name()='audit-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       if (auditLogNode != null) {
 
@@ -228,12 +185,8 @@ public class TcConfig10Holder extends TcConfigHolder {
         Files.createDirectories(Paths.get(logsPath));
 
         auditLogNode.setTextContent(logsPath);
-
-        this.tcConfigContent = domToString(tcConfigXml);
       }
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
-    }
+    });
   }
 
 }

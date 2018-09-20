@@ -38,7 +38,12 @@ public class Topology {
     this.distribution = distribution;
     this.netDisruptionEnabled = netDisruptionEnabled;
     this.tcConfigs = tcConfigs;
-
+    if (netDisruptionEnabled) {
+      for (TcConfig tcConfig : tcConfigs) {
+        tcConfig.createOrUpdateTcProperty("topology.validate", "false");
+        tcConfig.createOrUpdateTcProperty("l1redirect.enabled", "false");
+      }
+    }
   }
 
   public DistributionController createDistributionController(TcConfig tcConfig) {
