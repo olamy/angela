@@ -40,7 +40,7 @@ public class HardwareStats {
     switch (stats) {
       case vmstat:
         if (os.isUnix()) {
-          command = new String[] { "/usr/bin/vmstat", "-td", "15" };
+          command = new String[] { "/usr/bin/vmstat", "-t", "15" };
         } else if (os.isMac()) {
           command = new String[] { "/usr/bin/vm_stat", "15" };
         } else {
