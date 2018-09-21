@@ -21,7 +21,7 @@ public class SystemProperties {
       return null;
     }
 
-    // Otherwise spit the hostnames provided in the system property.
+    // Otherwise split the hostnames provided in the system property.
     return Arrays.asList(hostnames.split(","));
   }
 

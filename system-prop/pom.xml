@@ -16,6 +16,16 @@
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-common</artifactId>
     </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.terracottatech.qa</groupId>
+      <artifactId>test-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>
