@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 
+// TODO: This class is temporary till we have a permanant solution to deal with system properties and injection.
 class HostnamesContext {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HostnamesContext.class);
