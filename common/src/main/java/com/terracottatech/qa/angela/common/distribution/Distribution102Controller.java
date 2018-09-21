@@ -1,5 +1,14 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
+
 import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
@@ -12,16 +21,9 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.ProcessResult;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -55,12 +57,15 @@ public class Distribution102Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
+  private final HardwareMetricsCollector hardwareMetricsCollector = new HardwareMetricsCollector();
+
   public Distribution102Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, final TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation,
+                                                                         final TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv, final HardwareMetricsCollector.TYPE type) {
     Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
@@ -78,6 +83,9 @@ public class Distribution102Controller extends DistributionController {
     ).andTriggerOn(
         tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + mr.group())
     );
+
+    hardwareMetricsCollector.startMonitoring(installLocation, type);
+
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, tcConfig, installLocation))
         .directory(installLocation)
@@ -89,18 +97,22 @@ public class Distribution102Controller extends DistributionController {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
+        hardwareMetricsCollector.stopMonitoring();
         throw new RuntimeException(e);
       }
     }
+
     if (!watchedProcess.isAlive()) {
+      hardwareMetricsCollector.stopMonitoring();
       throw new RuntimeException("Terracotta server process died in its infancy : " + serverSymbolicName);
     }
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
+    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, hardwareMetricsCollector, watchedProcess.getPid(), javaPid);
   }
 
   @Override
   public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     logger.info("Destroying L2 process for " + serverSymbolicName);
+    terracottaServerInstanceProcess.getHardwareMetricsCollector().stopMonitoring();
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);

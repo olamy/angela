@@ -31,6 +31,7 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Context;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 
 import java.io.Closeable;
 import java.io.File;
@@ -55,6 +56,7 @@ public class Client implements Closeable {
   private final Ignite ignite;
   private final int subClientPid;
   private boolean closed = false;
+
 
   Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
     if (localKitManager == null) {
@@ -161,10 +163,20 @@ public class Client implements Closeable {
   }
 
   public Future<Void> submit(ClientJob clientJob) {
+    return submit(clientJob, HardwareMetricsCollector.parse());
+  }
+
+  public Future<Void> submit(ClientJob clientJob, HardwareMetricsCollector.TYPE type) {
     IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>)() -> {
-      clientJob.run(new Context(nodeName, ignite, instanceId));
+      HardwareMetricsCollector metricsCollector = new HardwareMetricsCollector();
+      metricsCollector.startMonitoring(new File("."), type);
+      try {
+        clientJob.run(new Context(nodeName, ignite, instanceId));
+      } finally {
+        metricsCollector.stopMonitoring();
+      }
       return null;
     });
     return new ClientJobFuture(igniteFuture);

@@ -10,6 +10,7 @@ import com.terracottatech.qa.angela.common.clientconfig.TerracottaClient;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.ClientTopology;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -103,7 +104,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public Future<Void> execute(final TerracottaClient terracottaClient, final ClientJob clientJob) {
-    final Future<Void> submit = clients.get(terracottaClient).submit(clientJob);
+    final Future<Void> submit = clients.get(terracottaClient).submit(clientJob, HardwareMetricsCollector.parse());
     return submit;
   }
 
