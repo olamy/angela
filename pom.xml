@@ -40,11 +40,6 @@
       </dependency>
       <dependency>
         <groupId>com.terracottatech.qa</groupId>
-        <artifactId>angela-system-prop</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.terracottatech.qa</groupId>
         <artifactId>angela-client</artifactId>
         <version>${project.version}</version>
       </dependency>
