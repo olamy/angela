@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
+import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Barrier;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
@@ -60,6 +61,7 @@ public class ClusterFactory implements AutoCloseable {
   private final AtomicInteger instanceIndex;
   private final TerracottaCommandLineEnvironment tcEnv;
   private final Map<String, Collection<InstanceId>> nodeToInstanceId = new HashMap<>();
+  private final HostnamesContext hostnamesContext;
   private Ignite ignite;
   private Agent.Node localhostAgent;
 
@@ -78,9 +80,10 @@ public class ClusterFactory implements AutoCloseable {
   public ClusterFactory(String idPrefix, RemoteAgentLauncher remoteAgentLauncher, TerracottaCommandLineEnvironment tcEnv) {
     // Using UTC to have consistent layout even in case of timezone skew between client and server.
     this.idPrefix = idPrefix + "-" + LocalDateTime.now(ZoneId.of("UTC")).format(PATH_FORMAT);
-    this.remoteAgentLauncher = remoteAgentLauncher;
+    this.remoteAgentLauncher = HostnamesContext.SystemProperties.sshRemoteAgentLauncherEnabled() ? new SshRemoteAgentLauncher() : remoteAgentLauncher;
     this.tcEnv = tcEnv;
     this.instanceIndex = new AtomicInteger();
+    this.hostnamesContext = new HostnamesContext();
   }
 
   private InstanceId init(String type, Collection<String> targetServerNames) {
@@ -180,6 +183,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tsa tsa(Topology topology) {
+    hostnamesContext.injectHostnames(topology);
     InstanceId instanceId = init(TSA, topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, null, tcEnv);
@@ -188,6 +192,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tsa tsa(Topology topology, License license) {
+    hostnamesContext.injectHostnames(topology);
     InstanceId instanceId = init(TSA, topology.getServersHostnames());
 
     Tsa tsa = new Tsa(ignite, instanceId, topology, license, tcEnv);
@@ -201,6 +206,7 @@ public class ClusterFactory implements AutoCloseable {
 
   @Deprecated
   public Client client(String nodeName, TerracottaCommandLineEnvironment tcEnv) {
+    nodeName = hostnamesContext.getInjectedHostName(nodeName);
     InstanceId instanceId = init(CLIENT, Collections.singleton(nodeName));
 
     Client client = new Client(ignite, instanceId, nodeName, tcEnv, null);
@@ -213,6 +219,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
+    hostname = hostnamesContext.getInjectedHostName(hostname);
     InstanceId instanceId = init(TMS, Collections.singletonList(hostname));
 
     Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig, tcEnv);
