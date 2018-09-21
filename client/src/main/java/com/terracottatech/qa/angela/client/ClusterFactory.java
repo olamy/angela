@@ -25,8 +25,6 @@ import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurity
 import com.terracottatech.qa.angela.common.topology.ClientTopology;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.context.HostnamesContext;
-import com.terracottatech.qa.angela.systemprop.SystemProperties;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -82,7 +80,7 @@ public class ClusterFactory implements AutoCloseable {
   public ClusterFactory(String idPrefix, RemoteAgentLauncher remoteAgentLauncher, TerracottaCommandLineEnvironment tcEnv) {
     // Using UTC to have consistent layout even in case of timezone skew between client and server.
     this.idPrefix = idPrefix + "-" + LocalDateTime.now(ZoneId.of("UTC")).format(PATH_FORMAT);
-    this.remoteAgentLauncher = SystemProperties.sshRemoteAgentLauncherEnabled() ? new SshRemoteAgentLauncher() : remoteAgentLauncher;
+    this.remoteAgentLauncher = HostnamesContext.SystemProperties.sshRemoteAgentLauncherEnabled() ? new SshRemoteAgentLauncher() : remoteAgentLauncher;
     this.tcEnv = tcEnv;
     this.instanceIndex = new AtomicInteger();
     this.hostnamesContext = new HostnamesContext();

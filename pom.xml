@@ -29,7 +29,6 @@
     <module>integration-test</module>
     <module>docs</module>
     <module>test-utils</module>
-    <module>system-prop</module>
   </modules>
 
   <dependencyManagement>

@@ -1,18 +1,17 @@
-package com.terracottatech.qa.angela.context;
+package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.systemprop.SystemProperties;
 import com.terracottatech.qa.angela.test.Versions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 
@@ -22,13 +21,13 @@ public class HostnamesContextTest {
 
   @Before
   public void setUp() {
-    System.setProperty(SystemProperties.SYSTEM_PROP_HOSTNAMES, "server1.eur.ad.sag,server2.eur.ad.sag");
+    System.setProperty("tc.qa.angela.hostnames", "server1.eur.ad.sag,server2.eur.ad.sag");
     hostnamesContext = new HostnamesContext();
   }
 
   @After
   public void tearDown() {
-    System.clearProperty(SystemProperties.SYSTEM_PROP_HOSTNAMES);
+    System.clearProperty("tc.qa.angela.hostnames");
     hostnamesContext = null;
   }
 
