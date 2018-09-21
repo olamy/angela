@@ -1,39 +1,41 @@
-package com.terracottatech.qa.angela.common.util;
+package com.terracottatech.qa.angela.common.metrics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
-import com.terracottatech.qa.angela.common.distribution.SimpleProcess;
+import com.terracottatech.qa.angela.common.util.OS;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * @author Aurelien Broszniowski
  */
 
-public class HardwareStats {
+public class HardwareMetricsCollector {
 
-  private final static Logger logger = LoggerFactory.getLogger(HardwareStats.class);
+  private final static Logger logger = LoggerFactory.getLogger(HardwareMetricsCollector.class);
 
-  public static enum STAT {vmstat, none;}
+  public enum TYPE {vmstat, none;}
 
-  private SimpleProcess process = null;
+  private StartedProcess process = null;
 
-  public static STAT parse() {
+  public static TYPE parse() {
     final String stats = System.getProperty("stats");
     if (stats == null) {
-      return STAT.none;
+      return TYPE.none;
     } else {
-      return STAT.valueOf(stats);
+      return TYPE.valueOf(stats);
     }
   }
 
-  public String[] startCommand(final STAT stats) {
+  public String[] startCommand(final TYPE stats) {
     OS os = OS.INSTANCE;
 
     String command[] = null;
@@ -54,8 +56,8 @@ public class HardwareStats {
     return command;
   }
 
-  public void startMonitoring(final File installLocation, final STAT stats) {
-    if (stats != STAT.none) {
+  public void startMonitoring(final File installLocation, final TYPE stats) {
+    if (stats != TYPE.none) {
 
       final FileOutputStream output;
       try {
@@ -68,18 +70,22 @@ public class HardwareStats {
         throw new RuntimeException(e);
       }
 
-      process = new SimpleProcess(new ProcessExecutor()
-          .command(startCommand(stats))
-          .directory(installLocation)
-          .redirectError(System.err)
-          .redirectOutput(output));
+      try {
+        process = new ProcessExecutor()
+            .command(startCommand(stats))
+            .directory(installLocation)
+            .redirectError(System.err)
+            .redirectOutput(output).start();
+      } catch (IOException e) {
+        throw new RuntimeException("Can not start hardware monitoring process",e);
+      }
     }
   }
 
   public void stopMonitoring() {
     if (this.process != null) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(process.getPid()));
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(process.getProcess()));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

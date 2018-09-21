@@ -3,9 +3,9 @@ package com.terracottatech.qa.angela;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.Client;
+import com.terracottatech.qa.angela.client.ClientArray;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
-import com.terracottatech.qa.angela.client.ClientArray;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
@@ -29,9 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.AssertionFailedError;
-
-import static com.terracottatech.qa.angela.common.clientconfig.ClientsConfig.*;
+import static com.terracottatech.qa.angela.common.clientconfig.ClientsConfig.newClientsConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -58,54 +56,45 @@ public class ClientTest {
   @Test
   public void testClientHardwareStatsLog() throws Exception {
     System.setProperty("stats", "vmstat");
-    final File resultPath = new File(UUID.randomUUID().toString());
+    try {
+      final File resultPath = new File(UUID.randomUUID().toString());
 
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+      License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
+      try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
 
-      ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-          newClientsConfig().client("client1", "localhost"));
+        ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            newClientsConfig().client("client1", "localhost"));
 
-      ClientJob clientJob = (context) -> {
-        System.out.println("hello");
-        Thread.sleep(16000);
-        System.out.println("again");
-      };
+        ClientJob clientJob = (context) -> {
+          System.out.println("hello");
+          Thread.sleep(3000);
+          System.out.println("again");
+        };
 
-      { // executeAll
-        ClientArray clientArray = factory.clientArray(ct, license);
+        { // executeAll
+          ClientArray clientArray = factory.clientArray(ct, license);
 
-        List<Future<Void>> futures = clientArray.executeAll(clientJob);
-        futures.forEach(voidFuture -> {
-          try {
-            voidFuture.get();
-          } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-          }
-        });
-        Client rc = clientArray.getClients().get(0);
+          List<Future<Void>> futures = clientArray.executeAll(clientJob);
+          futures.forEach(voidFuture -> {
+            try {
+              voidFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+              throw new RuntimeException(e);
+            }
+          });
+          Client rc = clientArray.getClients().get(0);
 
-        rc.browse("stats").downloadTo(resultPath);
+          rc.browse("stats").downloadTo(resultPath);
+        }
+
       }
 
+      assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
+      resultPath.delete();
+    } finally {
+      System.clearProperty("stats");
     }
-/*
-
-    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
-      try (Client client = instance.client("localhost")) {
-        Future<Void> f = client.submit((context) -> {
-          System.out.println("start");
-          Thread.sleep(30000);
-        });
-        f.get();
-        client.browse("stats").downloadTo(resultPath);
-      }
-    }
-*/
-
-    assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
-    resultPath.delete();
   }
 
 
@@ -193,8 +182,8 @@ public class ClientTest {
           .client("client2-2", "localhost");
 
       final ClientsConfig clientsConfig2 = newClientsConfig()
-          .clientSerie( 2, "tc-perf-001")
-          .clientSerie( 2, "tc-perf-002");
+          .clientSerie(2, "tc-perf-001")
+          .clientSerie(2, "tc-perf-002");
 
       ClientTopology ct = new ClientTopology(distribution, clientsConfig1);
 

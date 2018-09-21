@@ -43,27 +43,31 @@ public class InstallTest {
   @Test
   public void testHardwareStatsLogs() throws Exception {
     System.setProperty("stats", "vmstat");
-    final File resultPath = new File(UUID.randomUUID().toString());
+    try {
+      final File resultPath = new File(UUID.randomUUID().toString());
 
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+      Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+          tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+      License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
 
-    try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
+      try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs")) {
+        Tsa tsa = factory.tsa(topology, license);
+        tsa.installAll();
 
-      TerracottaServer server = topology.get(0).getTerracottaServer(0);
-      tsa.create(server);
+        TerracottaServer server = topology.get(0).getTerracottaServer(0);
+        tsa.create(server);
 
-      Thread.sleep(16000);
+        Thread.sleep(3000);
 
-      tsa.browse(server, "stats" ).downloadTo(resultPath);
+        tsa.browse(server, "stats").downloadTo(resultPath);
+      }
+
+      assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
+      resultPath.delete();
+    } finally {
+      System.clearProperty("stats");
     }
-
-    assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
-    resultPath.delete();
   }
 
 

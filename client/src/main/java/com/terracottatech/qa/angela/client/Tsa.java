@@ -18,7 +18,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.common.util.HardwareStats;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -56,7 +56,7 @@ public class Tsa implements AutoCloseable {
   private final transient DisruptionController disruptionController;
   private boolean closed = false;
   private LocalKitManager localKitManager;
-  private HardwareStats.STAT hardwareStats;
+  private HardwareMetricsCollector.TYPE hardwareStats;
 
   Tsa(Ignite ignite, InstanceId instanceId, Topology topology, License license, TerracottaCommandLineEnvironment tcEnv) {
     this.tcEnv = tcEnv;
@@ -69,7 +69,7 @@ public class Tsa implements AutoCloseable {
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, topology);
     this.localKitManager = new LocalKitManager(topology.getDistribution());
-    this.hardwareStats = HardwareStats.parse();
+    this.hardwareStats = HardwareMetricsCollector.parse();
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {

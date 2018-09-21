@@ -31,7 +31,7 @@ import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurity
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
-import com.terracottatech.qa.angela.common.util.HardwareStats;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -395,7 +395,7 @@ public class AgentController {
     }
   }
 
-  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, final HardwareStats.STAT hardwareStats) {
+  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, final HardwareMetricsCollector.TYPE hardwareStats) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.create(tcEnv, hardwareStats);
   }

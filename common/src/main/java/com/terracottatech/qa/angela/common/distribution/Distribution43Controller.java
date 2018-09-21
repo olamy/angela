@@ -17,7 +17,7 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
-import com.terracottatech.qa.angela.common.util.HardwareStats;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 
@@ -47,7 +47,7 @@ public class Distribution43Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution43Controller.class);
 
-  private final HardwareStats hardwareStats = new HardwareStats();
+  private final HardwareMetricsCollector hardwareMetricsCollector = new HardwareMetricsCollector();
 
   public Distribution43Controller(final Distribution distribution, final Topology topology) {
     super(distribution, topology);
@@ -55,7 +55,7 @@ public class Distribution43Controller extends DistributionController {
 
   @Override
   public TerracottaServerInstance.TerracottaServerInstanceProcess create(final ServerSymbolicName serverSymbolicName, final File installLocation, final TcConfig tcConfig,
-                                                                         final TerracottaCommandLineEnvironment tcEnv, final HardwareStats.STAT stats) {
+                                                                         final TerracottaCommandLineEnvironment tcEnv, final HardwareMetricsCollector.TYPE type) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -70,7 +70,7 @@ public class Distribution43Controller extends DistributionController {
             .getSymbolicName() + "] " + mr.group())
     );
 
-    hardwareStats.startMonitoring(installLocation, stats);
+    hardwareMetricsCollector.startMonitoring(installLocation, type);
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startCommand(serverSymbolicName, tcConfig, installLocation))
@@ -80,12 +80,12 @@ public class Distribution43Controller extends DistributionController {
         .redirectOutput(serverLogOutputStream), stateRef, STOPPED);
 
     int wrapperPid = watchedProcess.getPid();
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, hardwareStats, wrapperPid);
+    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, hardwareMetricsCollector, wrapperPid);
   }
 
   @Override
   public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
-    terracottaServerInstanceProcess.getHardwareStats().stopMonitoring();
+    terracottaServerInstanceProcess.getHardwareMetricsCollector().stopMonitoring();
     ProcessExecutor executor = new ProcessExecutor()
         .command(stopCommand(serverSymbolicName, topology, installLocation))
         .directory(installLocation)

@@ -31,7 +31,7 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.client.Context;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
-import com.terracottatech.qa.angela.common.util.HardwareStats;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 
 import java.io.Closeable;
 import java.io.File;
@@ -51,8 +51,6 @@ public class Client implements Closeable {
 
   private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
-  private HardwareStats hardwareStats;
-
   private final InstanceId instanceId;
   private final String nodeName;
   private final Ignite ignite;
@@ -70,7 +68,6 @@ public class Client implements Closeable {
     if (tcEnv == null) {
       throw new IllegalArgumentException("JDK info must be passed");
     }
-    this.hardwareStats = new HardwareStats();
     this.subClientPid = spawnSubClient(tcEnv, localKitManager);
   }
 
@@ -166,16 +163,20 @@ public class Client implements Closeable {
   }
 
   public Future<Void> submit(ClientJob clientJob) {
-    return submit(clientJob, HardwareStats.parse());
+    return submit(clientJob, HardwareMetricsCollector.parse());
   }
 
-  public Future<Void> submit(ClientJob clientJob, HardwareStats.STAT stats) {
+  public Future<Void> submit(ClientJob clientJob, HardwareMetricsCollector.TYPE type) {
     IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>)() -> {
-      hardwareStats.startMonitoring(new File("."), stats);
-      clientJob.run(new Context(nodeName, ignite, instanceId));
-      hardwareStats.stopMonitoring();
+      HardwareMetricsCollector metricsCollector = new HardwareMetricsCollector();
+      metricsCollector.startMonitoring(new File("."), type);
+      try {
+        clientJob.run(new Context(nodeName, ignite, instanceId));
+      } finally {
+        metricsCollector.stopMonitoring();
+      }
       return null;
     });
     return new ClientJobFuture(igniteFuture);
