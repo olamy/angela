@@ -1,29 +1,37 @@
 package com.terracottatech.qa.angela.client.remote.agent;
 
+import com.terracottatech.qa.angela.client.ClusterFactory;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.util.AngelaVersions;
+import com.terracottatech.qa.angela.common.util.JDK;
+import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.common.StreamCopier;
 import net.schmizz.sshj.connection.ConnectionException;
 import net.schmizz.sshj.connection.channel.direct.Session;
 import net.schmizz.sshj.transport.TransportException;
 import net.schmizz.sshj.transport.verification.PromiscuousVerifier;
+import net.schmizz.sshj.xfer.InMemoryDestFile;
+import net.schmizz.sshj.xfer.scp.SCPRemoteException;
 import org.apache.commons.io.IOUtils;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.common.util.AngelaVersions;
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -34,12 +42,14 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SshRemoteAgentLauncher.class);
   private static final int MAX_LINE_LENGTH = 1024;
+  private static final TerracottaCommandLineEnvironment DEFAULT_TC_ENV = new TerracottaCommandLineEnvironment(ClusterFactory.DEFAULT_JDK_VERSION, ClusterFactory.DEFAULT_ALLOWED_JDK_VENDORS, null);
 
   private final Map<String, RemoteAgentHolder> clients = new HashMap<>();
   private final String remoteUserName;
   private final String remoteUserNameKeyPath;
   private final File agentJarFile;
   private final boolean agentJarFileShouldBeRemoved;
+  private final TerracottaCommandLineEnvironment tcEnv;
 
   static class RemoteAgentHolder {
     RemoteAgentHolder(SSHClient sshClient, Session session, Session.Command command) {
@@ -55,6 +65,11 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
 
   public SshRemoteAgentLauncher() {
+    this(DEFAULT_TC_ENV);
+  }
+
+  public SshRemoteAgentLauncher(TerracottaCommandLineEnvironment tcEnv) {
+    this.tcEnv = tcEnv;
     this.remoteUserName = System.getProperty("tc.qa.angela.ssh.user.name", System.getProperty("user.name"));
     this.remoteUserNameKeyPath = System.getProperty("tc.qa.angela.ssh.user.name.key.path");
     Map.Entry<File, Boolean> agentJar = findAgentJarFile();
@@ -97,6 +112,9 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         uploadJar(ssh, agentJarFile, angelaHome + "/jars");
       }
 
+      LOGGER.info("looking up remote JDK ...");
+      String remoteJavaHome = findJavaHomeFromRemoteToolchains(ssh);
+
       Session session = ssh.startSession();
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
@@ -108,7 +126,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         }
       }).collect(Collectors.joining(","));
 
-      Session.Command cmd = session.exec("java " +
+      Session.Command cmd = session.exec(remoteJavaHome + "/bin/java " +
           "-Dtc.qa.nodeName=" + targetServerName + " " +
           "-Dtc.qa.directjoin=" + joinHosts + " " +
           "-DkitsDir=$HOME/" + angelaHome + " " +
@@ -195,6 +213,33 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   private void uploadJar(SSHClient ssh, File agentJarFile, String targetFolder) throws IOException {
     ssh.newSCPFileTransfer().upload(agentJarFile.getPath(), targetFolder + "/" + agentJarFile.getName());
+  }
+
+  private String findJavaHomeFromRemoteToolchains(SSHClient ssh) throws IOException {
+    InMemoryDestFile localFile = new InMemoryDestFile() {
+      private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      @Override
+      public OutputStream getOutputStream() {
+        return baos;
+      }
+    };
+    try {
+      ssh.newSCPFileTransfer().download("$HOME/.m2/toolchains.xml", localFile);
+    } catch (SCPRemoteException sre) {
+      throw new RuntimeException("Remote does not have $HOME/.m2/toolchains.xml file");
+    }
+    byte[] bytes = ((ByteArrayOutputStream) localFile.getOutputStream()).toByteArray();
+    JavaLocationResolver javaLocationResolver = new JavaLocationResolver(new ByteArrayInputStream(bytes));
+    List<JDK> jdks = javaLocationResolver.resolveJavaLocations(tcEnv, false);
+    // check JDK validity remotely
+    for (JDK jdk : jdks) {
+      String remoteHome = jdk.getHome();
+      if (exec(ssh, "[ -d \"" + remoteHome + "\" ]") == 0) {
+        LOGGER.info("found remote JDK : home='{}' version='{}' vendor='{}'", jdk.getHome(), jdk.getVersion(), jdk.getVendor());
+        return remoteHome;
+      }
+    }
+    throw new RuntimeException("No JDK configured in remote toolchains.xml is valid; wanted : " + tcEnv + ", found : " + jdks);
   }
 
   @Override
