@@ -58,4 +58,14 @@
       <jdkHome>target</jdkHome>
     </configuration>
   </toolchain>
+  <toolchain>
+    <type>jdk</type>
+    <provides>
+      <version>1.8</version>
+      <vendor>zulu</vendor>
+    </provides>
+    <configuration>
+      <jdkHome>target</jdkHome>
+    </configuration>
+  </toolchain>
 </toolchains>

@@ -3,15 +3,15 @@ package com.terracottatech.qa.angela;
 import com.terracotta.connection.api.DetailedConnectionException;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.net.ClientToServerDisruptor;
-import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
-
 import com.terracottatech.store.Dataset;
 import com.terracottatech.store.DatasetReader;
 import com.terracottatech.store.DatasetWriterReader;
@@ -49,17 +49,17 @@ public class MultistripesTest {
     tcConfig1.updateServerHost(0, local.getHostName());
     TcConfig tcConfig2 = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"));
     tcConfig2.updateServerHost(0, local.getHostAddress());
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig1,
-        tcConfig2);
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), tcConfig1, tcConfig2))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
-    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2StripesSsh", new SshRemoteAgentLauncher())) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
-      tsa.licenseAll();
+    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2StripesSsh", configContext)) {
+      factory.tsa()
+          .startAll()
+          .licenseAll();
     } finally {
       System.clearProperty("tc.qa.angela.ssh.strictHostKeyChecking");
     }
@@ -67,31 +67,33 @@ public class MultistripesTest {
 
   @Test
   public void test2Stripes() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
-    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
-      tsa.licenseAll();
+    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes", configContext)) {
+      factory.tsa()
+          .startAll()
+          .licenseAll();
     }
   }
 
   @Test
   public void test2StripesDisrupt() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
-    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
-      tsa.licenseAll();
+    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes", configContext)) {
+      Tsa tsa = factory.tsa()
+          .startAll()
+          .licenseAll();
 
       ClientToServerDisruptor clientToServerDisruptor = tsa.disruptionController().newClientToServerDisruptor();
       clientToServerDisruptor.disrupt();

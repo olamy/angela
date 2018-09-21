@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.test.Versions;
 
 import org.junit.Ignore;
@@ -37,21 +39,22 @@ public class MultiStripeWithSecurityTest {
         .withKeystore(VALID)
         .build()
         .getPath();
-    Topology topology =
-        new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-                     secureTcConfig(version(Versions.TERRACOTTA_VERSION),
-                                    getClass().getResource("/terracotta/10/tc-config-multistripes1-with-security.xml"),
-                                    withSecurityFor(new ServerSymbolicName("Server1-1"), securityRootDirectory(securityRootDirectory))),
-                     secureTcConfig(version(Versions.TERRACOTTA_VERSION),
-                                    getClass().getResource("/terracotta/10/tc-config-multistripes2-with-security.xml"),
-                                    withSecurityFor(new ServerSymbolicName("Server1-2"), securityRootDirectory(securityRootDirectory))));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-    try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
-      tsa.licenseAll(securityRootDirectory(securityRootDirectory));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                secureTcConfig(version(Versions.TERRACOTTA_VERSION),
+                    getClass().getResource("/terracotta/10/tc-config-multistripes1-with-security.xml"),
+                    withSecurityFor(new ServerSymbolicName("Server1-1"), securityRootDirectory(securityRootDirectory))),
+                secureTcConfig(version(Versions.TERRACOTTA_VERSION),
+                    getClass().getResource("/terracotta/10/tc-config-multistripes2-with-security.xml"),
+                    withSecurityFor(new ServerSymbolicName("Server1-2"), securityRootDirectory(securityRootDirectory)))))
+                .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
+
+    try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity", configContext)) {
+      Tsa tsa = factory.tsa()
+          .startAll()
+          .licenseAll(securityRootDirectory(securityRootDirectory));
     }
   }
 }

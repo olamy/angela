@@ -3,6 +3,8 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.ClusterTool;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
@@ -33,18 +35,16 @@ public class ClusterToolTest {
 
   @Test
   public void testExecute() throws Exception {
-    Distribution distribution = Distribution.distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(
+                Distribution.distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
-    Topology topology = new Topology(
-        distribution,
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
-
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
-
-    try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testExecute")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
+    try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testExecute", configContext)) {
+      Tsa tsa = factory.tsa()
+          .startAll();
 
       ClusterTool clusterTool = tsa.clusterTool(tsa.getActive());
 
@@ -70,18 +70,16 @@ public class ClusterToolTest {
 
   @Test
   public void testFailsOn4x() throws Exception {
-    Distribution distribution = Distribution.distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX);
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(
+            Distribution.distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
+            tcConfig(version(Versions.TERRACOTTA_VERSION_4X), getClass().getResource("/terracotta/4/tc-config-a.xml"))))
+            .license(new License(getClass().getResource("/terracotta/4/terracotta-license.key")))
+        );
 
-    Topology topology = new Topology(
-        distribution,
-        tcConfig(version(Versions.TERRACOTTA_VERSION_4X), getClass().getResource("/terracotta/4/tc-config-a.xml")));
-
-    License license = new License(getClass().getResource("/terracotta/4/terracotta-license.key"));
-
-    try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testFailsOn4x")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
+    try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testFailsOn4x", configContext)) {
+      Tsa tsa = factory.tsa()
+          .startAll();
 
       ClusterTool clusterTool = tsa.clusterTool(tsa.getActive());
 

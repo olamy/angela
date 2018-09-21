@@ -1,16 +1,20 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.Client;
+import com.terracottatech.qa.angela.client.ClientArray;
+import com.terracottatech.qa.angela.client.ClientArrayFuture;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tms;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.http.HttpUtils;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
+import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -22,7 +26,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runners.MethodSorters;
@@ -30,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.concurrent.Future;
 
+import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
@@ -70,36 +73,45 @@ public class TmsSecurityTest {
     clientTruststoreUri = clientSecurityRootDirectory.getTruststorePaths().iterator().next().toUri();
 
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
-    Topology topology =
-        new Topology(
-            distribution(
-                version(Versions.TERRACOTTA_VERSION),
-                PackageType.KIT, LicenseType.TC_DB
-            ),
-            secureTcConfig(
-                version(Versions.TERRACOTTA_VERSION),
-                TmsSecurityTest.class.getResource("/terracotta/10/tc-config-a-with-security.xml"),
-                withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(serverSecurityRootDirectory.getPath()))
-            ));
 
     License license = new License(TmsSecurityTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-    factory = new ClusterFactory("TmsSecurityTest::testSecureConnection");
-    TSA = factory.tsa(topology, license);
-    TSA.installAll();
-    TSA.startAll();
-    TSA.licenseAll(securityRootDirectory(clientSecurityRootDirectory.getPath()));
-
     TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
-        .with(config -> {
+        .with(config->{
               config.tmsSecurityRootDirectory = clientSecurityRootDirectory.getPath().toString();
               config.tmsSecurityRootDirectoryConnectionDefault = serverSecurityRootDirectory.getPath().toString();
               config.tmsSecurityHttpsEnabled = "true";
             }
         ).build();
 
-    TMS = factory.tms(distribution, license, TMS_HOSTNAME, securityConfig);
-    TMS.install();
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(
+                distribution(
+                    version(Versions.TERRACOTTA_VERSION),
+                    PackageType.KIT, LicenseType.TC_DB
+                ),
+                secureTcConfig(
+                    version(Versions.TERRACOTTA_VERSION),
+                    TmsSecurityTest.class.getResource("/terracotta/10/tc-config-a-with-security.xml"),
+                    withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(serverSecurityRootDirectory.getPath()))
+                )))
+                .license(license)
+        ).tms(tms -> tms.distribution(distribution)
+                .license(license)
+                .hostname(TMS_HOSTNAME)
+                .securityConfig(securityConfig)
+        ).clientArray(clientArray -> clientArray.license(license)
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+        );
+
+
+
+    factory = new ClusterFactory("TmsSecurityTest::testSecureConnection", configContext);
+    TSA = factory.tsa()
+        .startAll()
+        .licenseAll(securityRootDirectory(clientSecurityRootDirectory.getPath()));
+
+    TMS = factory.tms();
     TMS.start();
   }
 
@@ -113,7 +125,7 @@ public class TmsSecurityTest {
   @Test
   public void http_client_connects_to_tms_using_ssl_test() throws Exception {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri);
-    Client client = factory.client("localhost");
+    ClientArray clientArray = factory.clientArray();
 
     ClientJob clientJobTms = (context) -> {
       String url = "https://" + TMS_HOSTNAME + ":9480/api/connections";
@@ -133,7 +145,7 @@ public class TmsSecurityTest {
 
     };
 
-    Future<Void> fTms = client.submit(clientJobTms);
+    ClientArrayFuture fTms = clientArray.executeOnAll(clientJobTms);
     fTms.get();
     LOGGER.info("---> Stop");
   }

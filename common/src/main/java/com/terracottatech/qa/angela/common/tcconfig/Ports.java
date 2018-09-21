@@ -1,11 +1,9 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
-import java.io.Serializable;
-
 /**
  * @author Tim Eck
  */
-public class Ports implements Serializable {
+public class Ports {
   private final int tsaPort;
   private final int groupPort;
   private final int managementPort;

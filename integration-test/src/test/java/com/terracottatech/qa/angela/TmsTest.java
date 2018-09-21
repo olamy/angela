@@ -1,12 +1,16 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.Client;
+import com.terracottatech.qa.angela.client.ClientArray;
+import com.terracottatech.qa.angela.client.ClientArrayFuture;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tms;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -25,8 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.concurrent.Future;
 
+import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.http.HttpUtils.sendGetRequest;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -50,19 +54,27 @@ public class TmsTest {
   @BeforeClass
   public static void setUp() {
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
-    Topology topology = new Topology(distribution,
-        tcConfig(version(Versions.TERRACOTTA_VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml")));
     License license = new License(TmsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-    factory = new ClusterFactory("TmsTest::testConnection");
-    Tsa tsa = factory.tsa(topology, license);
-    tsa.installAll();
-    tsa.startAll();
-    tsa.licenseAll();
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution,
+            tcConfig(version(Versions.TERRACOTTA_VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml"))))
+            .license(license)
+        ).tms(tms -> tms.distribution(distribution)
+            .license(license)
+            .hostname(TMS_HOSTNAME)
+        ).clientArray(clientArray -> clientArray.license(license)
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+        );
+
+
+    factory = new ClusterFactory("TmsTest::testConnection", configContext);
+    Tsa tsa = factory.tsa()
+        .startAll()
+        .licenseAll();
     tsaUri = tsa.uri();
-    Tms tms = factory.tms(distribution, license, TMS_HOSTNAME);
-    tms.install();
-    tms.start();
+    Tms tms = factory.tms()
+        .start();
     connectionName = tms.connectToCluster(tsaUri);
   }
 
@@ -74,8 +86,8 @@ public class TmsTest {
   @Test
   public void testTmsConnection() throws Exception {
     URI tsaUri = TmsTest.tsaUri;
-    Client client = factory.client("localhost");
-    ClientJob clientJob = (context) -> {
+    ClientArray clientArray = factory.clientArray();
+    ClientJob clientJob = (cluster) -> {
       try (DatasetManager datasetManager = DatasetManager.clustered(tsaUri).build()) {
         DatasetConfigurationBuilder builder = datasetManager.datasetConfiguration()
             .offheap("primary-server-resource");
@@ -87,7 +99,6 @@ public class TmsTest {
           DatasetWriterReader<String> writerReader = dataset.writerReader();
           writerReader.add("ONE", CellDefinition.defineLong("val").newCell(1L));
           LOGGER.info("Value created for key ONE");
-          dataset.close();
         }
 
       }
@@ -95,16 +106,16 @@ public class TmsTest {
     };
 
 
-    ClientJob clientJobTms = (context) -> {
+    ClientJob clientJobTms = (cluster) -> {
       String url = "http://" + TMS_HOSTNAME + ":9480/api/connections";
       String response = sendGetRequest(url, null);
       LOGGER.info("tms list connections result :" + response.toString());
       assertThat(response.toString(), Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
     };
 
-    Future<Void> f1 = client.submit(clientJob);
+    ClientArrayFuture f1 = clientArray.executeOnAll(clientJob);
     f1.get();
-    Future<Void> fTms = client.submit(clientJobTms);
+    ClientArrayFuture fTms = clientArray.executeOnAll(clientJobTms);
     fTms.get();
     LOGGER.info("---> Stop");
   }

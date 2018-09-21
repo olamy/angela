@@ -1,4 +1,4 @@
-package com.terracottatech.qa.angela.common.client;
+package com.terracottatech.qa.angela.common.cluster;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
@@ -15,7 +15,7 @@ public class Barrier {
   private volatile IgniteCountDownLatch countDownLatch;
   private volatile int resetCount;
 
-  public Barrier(Ignite ignite, final int count, final String name) {
+  Barrier(Ignite ignite, int count, String name) {
     this.ignite = ignite;
     this.count = count;
     IgniteAtomicLong igniteCounter = ignite.atomicLong("Barrier-Counter-" + name, 0, true);

@@ -1,11 +1,9 @@
 package com.terracottatech.qa.angela.common.topology;
 
-import java.io.Serializable;
-
 /**
  * @author Aurelien Broszniowski
  */
-public enum LicenseType implements Serializable {
+public enum LicenseType {
 
   OS(true), TC_EHC(false), TC_DB(false),    // for 5.x
   GO(false), MAX(false);    // for 4.x
