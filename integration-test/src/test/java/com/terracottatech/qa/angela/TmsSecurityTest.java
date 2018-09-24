@@ -21,9 +21,11 @@ import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +41,7 @@ import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharac
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@Ignore("disabled due to TDB-3665")
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TmsSecurityTest {
 
   private final static Logger LOGGER = LoggerFactory.getLogger(TmsSecurityTest.class);
@@ -89,9 +91,10 @@ public class TmsSecurityTest {
     TSA.licenseAll(securityRootDirectory(clientSecurityRootDirectory.getPath()));
 
     TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
-        .with(config->{
-              config.tmsSecurityRootDirectory=clientSecurityRootDirectory.getPath().toString();
-              config.tmsSecurityRootDirectoryConnectionDefault=serverSecurityRootDirectory.getPath().toString();
+        .with(config -> {
+              config.tmsSecurityRootDirectory = clientSecurityRootDirectory.getPath().toString();
+              config.tmsSecurityRootDirectoryConnectionDefault = serverSecurityRootDirectory.getPath().toString();
+              config.tmsSecurityHttpsEnabled = "true";
             }
         ).build();
 
@@ -101,14 +104,14 @@ public class TmsSecurityTest {
   }
 
   @Test
-  public void testSecureClusterConnection() {
+  public void could_create_connection_to_secure_cluster_test() {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri);
     String connectionName = TMS.connectToCluster(TSA.uri(), tmsClientSecurityConfig);
     assertThat(connectionName, startsWith("TmsSecurityTest"));
   }
 
   @Test
-  public void testSecureBrowserTmsConnection() throws Exception {
+  public void http_client_connects_to_tms_using_ssl_test() throws Exception {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri);
     Client client = factory.client("localhost");
 
@@ -116,7 +119,18 @@ public class TmsSecurityTest {
       String url = "https://" + TMS_HOSTNAME + ":9480/api/connections";
       String response = HttpUtils.sendGetRequest(url, tmsClientSecurityConfig);
       LOGGER.info("tms list connections result :" + response);
-      assertThat(response, Matchers.containsString("{}"));
+      assertThat(response, Matchers.containsString("TmsSecurityTest"));
+
+      String infoUrl = "https://" + TMS_HOSTNAME + ":9480/api/info";
+      String infoResponse = HttpUtils.sendGetRequest(infoUrl, tmsClientSecurityConfig);
+      LOGGER.info("tms info :" + response);
+
+      assertThat(infoResponse, Matchers.containsString("\"connection_certificateAuthenticationEnabled\":true"));
+      assertThat(infoResponse, Matchers.containsString("\"connection_secured\":true"));
+      assertThat(infoResponse, Matchers.containsString("\"connection_sslEnabled\":true"));
+      assertThat(infoResponse, Matchers.containsString("\"connection_certificateAuthenticationEnabled\":true"));
+      assertThat(infoResponse, Matchers.containsString("\"connection_hasPasswordToPresent\":false"));
+
     };
 
     Future<Void> fTms = client.submit(clientJobTms);
