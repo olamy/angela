@@ -1,5 +1,13 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
+import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -13,24 +21,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.remote.agent.NoRemoteAgentLauncher;
-import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
-import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
-import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.client.Barrier;
-import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
-import com.terracottatech.qa.angela.common.topology.ClientTopology;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.topology.Topology;
-
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,44 +41,28 @@ public class ClusterFactory implements AutoCloseable {
                                         || Boolean.getBoolean("skipUninstall"); // legacy system prop name
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
-  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("Oracle Corporation", "sun", "openjdk")));
-  public static final String DEFAULT_JDK_VERSION = "1.8";
 
   private static final String TSA = "tsa";
   private static final String TMS = "tms";
-  private static final String CLIENT = "client";
+  private static final String CLIENT_ARRAY = "clientArray";
   private static final DateTimeFormatter PATH_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-hhmmss");
 
-
-  private transient final RemoteAgentLauncher remoteAgentLauncher;
   private final List<AutoCloseable> controllers = new ArrayList<>();
   private final String idPrefix;
   private final AtomicInteger instanceIndex;
-  private final TerracottaCommandLineEnvironment tcEnv;
   private final Map<String, Collection<InstanceId>> nodeToInstanceId = new HashMap<>();
-  private final HostnamesContext hostnamesContext;
+  private final ConfigurationContext configurationContext;
+
   private Ignite ignite;
   private Agent.Node localhostAgent;
+  private transient RemoteAgentLauncher remoteAgentLauncher;
 
-  public ClusterFactory(String idPrefix) {
-    this(idPrefix, new NoRemoteAgentLauncher(), new TerracottaCommandLineEnvironment(DEFAULT_JDK_VERSION, DEFAULT_ALLOWED_JDK_VENDORS, null));
-  }
-
-  public ClusterFactory(String idPrefix, RemoteAgentLauncher remoteAgentLauncher) {
-    this(idPrefix, remoteAgentLauncher, new TerracottaCommandLineEnvironment(DEFAULT_JDK_VERSION, DEFAULT_ALLOWED_JDK_VENDORS, null));
-  }
-
-  public ClusterFactory(String idPrefix, TerracottaCommandLineEnvironment tcEnv) {
-    this(idPrefix, new NoRemoteAgentLauncher(), tcEnv);
-  }
-
-  public ClusterFactory(String idPrefix, RemoteAgentLauncher remoteAgentLauncher, TerracottaCommandLineEnvironment tcEnv) {
+  public ClusterFactory(String idPrefix, ConfigurationContext configurationContext) {
     // Using UTC to have consistent layout even in case of timezone skew between client and server.
     this.idPrefix = idPrefix + "-" + LocalDateTime.now(ZoneId.of("UTC")).format(PATH_FORMAT);
-    this.remoteAgentLauncher = HostnamesContext.SystemProperties.sshRemoteAgentLauncherEnabled() ? new SshRemoteAgentLauncher() : remoteAgentLauncher;
-    this.tcEnv = tcEnv;
     this.instanceIndex = new AtomicInteger();
-    this.hostnamesContext = new HostnamesContext();
+    this.configurationContext = configurationContext;
+    this.remoteAgentLauncher = configurationContext.remoting().buildRemoteAgentLauncher();
   }
 
   private InstanceId init(String type, Collection<String> targetServerNames) {
@@ -175,60 +154,42 @@ public class ClusterFactory implements AutoCloseable {
     return true;
   }
 
-  public Barrier barrier(String name, int count) {
+  public Cluster cluster() {
     if (ignite == null) {
-      throw new IllegalStateException("No cluster component started; cannot create a barrier");
+      throw new IllegalStateException("No cluster component started");
     }
-    return new Barrier(ignite, count, name);
+    return new Cluster(ignite);
   }
 
-  public Tsa tsa(Topology topology) {
-    hostnamesContext.injectHostnames(topology);
-    InstanceId instanceId = init(TSA, topology.getServersHostnames());
+  public Tsa tsa() {
+    TsaConfigurationContext tsaConfigurationContext = configurationContext.tsa();
+    InstanceId instanceId = init(TSA, tsaConfigurationContext.getTopology().getServersHostnames());
 
-    Tsa tsa = new Tsa(ignite, instanceId, topology, null, tcEnv);
+    Tsa tsa = new Tsa(ignite, instanceId, tsaConfigurationContext);
     controllers.add(tsa);
     return tsa;
   }
 
-  public Tsa tsa(Topology topology, License license) {
-    hostnamesContext.injectHostnames(topology);
-    InstanceId instanceId = init(TSA, topology.getServersHostnames());
+  public Tms tms() {
+    TmsConfigurationContext tmsConfigurationContext = configurationContext.tms();
+    InstanceId instanceId = init(TMS, Collections.singletonList(tmsConfigurationContext.getHostname()));
 
-    Tsa tsa = new Tsa(ignite, instanceId, topology, license, tcEnv);
-    controllers.add(tsa);
-    return tsa;
-  }
-
-  public Client client(String nodeName) {
-    return client(nodeName, this.tcEnv);
-  }
-
-  @Deprecated
-  public Client client(String nodeName, TerracottaCommandLineEnvironment tcEnv) {
-    nodeName = hostnamesContext.getInjectedHostName(nodeName);
-    InstanceId instanceId = init(CLIENT, Collections.singleton(nodeName));
-
-    Client client = new Client(ignite, instanceId, nodeName, tcEnv, null);
-    controllers.add(client);
-    return client;
-  }
-
-  public Tms tms(Distribution distribution, License license, String hostname) {
-    return tms(distribution, license, hostname, null);
-  }
-
-  public Tms tms(Distribution distribution, License license, String hostname, TmsServerSecurityConfig securityConfig) {
-    hostname = hostnamesContext.getInjectedHostName(hostname);
-    InstanceId instanceId = init(TMS, Collections.singletonList(hostname));
-
-    Tms tms = new Tms(ignite, instanceId, license, hostname, distribution, securityConfig, tcEnv);
+    Tms tms = new Tms(ignite, instanceId, tmsConfigurationContext);
     controllers.add(tms);
     return tms;
   }
 
+  public ClientArray clientArray() {
+    ClientArrayConfigurationContext clientArrayConfigurationContext = configurationContext.clientArray();
+    init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
+
+    ClientArray clientArray = new ClientArray(ignite, () -> init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames()), clientArrayConfigurationContext);
+    controllers.add(clientArray);
+    return clientArray;
+  }
+
   @Override
-  public void close() {
+  public void close() throws IOException {
     List<Exception> exceptions = new ArrayList<>();
 
     for (AutoCloseable controller : controllers) {
@@ -266,6 +227,7 @@ public class ClusterFactory implements AutoCloseable {
     } catch (Exception e) {
       exceptions.add(e);
     }
+    remoteAgentLauncher = null;
 
     if (localhostAgent != null) {
       try {
@@ -278,22 +240,10 @@ public class ClusterFactory implements AutoCloseable {
     }
 
     if (!exceptions.isEmpty()) {
-      RuntimeException runtimeException = new RuntimeException("Error while closing down Cluster Factory prefixed with " + idPrefix);
-      exceptions.forEach(runtimeException::addSuppressed);
-      throw runtimeException;
+      IOException ioException = new IOException("Error while closing down Cluster Factory prefixed with " + idPrefix);
+      exceptions.forEach(ioException::addSuppressed);
+      throw ioException;
     }
-  }
-
-  public ClientArray clientArray(final ClientTopology clientTopology) {
-   return clientArray(clientTopology, null);
-  }
-
-  public ClientArray clientArray(final ClientTopology clientTopology, final License license) {
-    init(CLIENT, clientTopology.getClientsHostnames());
-
-    ClientArray tcClients = new ClientArray(ignite, () -> init(CLIENT, clientTopology.getClientsHostnames()), clientTopology, license);
-    controllers.add(tcClients);
-    return tcClients;
   }
 
 }

@@ -10,11 +10,9 @@ import com.terracottatech.qa.angela.common.topology.Version;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * base tc config holder
@@ -22,7 +20,7 @@ import java.util.Properties;
  *
  * @author Tim Eck
  */
-public class TcConfig implements Serializable {
+public class TcConfig {
 
   private final TcConfigHolder tcConfigHolder;
   private final String tcConfigName;

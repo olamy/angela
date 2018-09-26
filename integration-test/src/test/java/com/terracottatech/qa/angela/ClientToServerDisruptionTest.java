@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,21 +38,17 @@ public class ClientToServerDisruptionTest {
   /**
    * Create partition between client and server and verify store operation throws exeception after reconnect attempts get
    * timed out(5 seconds).
-   *
-   * @throws Exception
    */
   @Test
   public void testReconnectTimeout() throws Exception {
     //set netDisruptionEnabled to true for enabling disruption.
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))));
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
-      try (Tsa tsa = factory.tsa(topology, license)) {
-        tsa.installAll();
-        tsa.startAll();
-        tsa.licenseAll();
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {
+      try (Tsa tsa = factory.tsa().startAll().licenseAll()) {
         try (ClientToServerDisruptor disruptor = tsa.disruptionController().newClientToServerDisruptor()) {
           //use proxied URI from disruptor to make connection
           DatasetManager datasetManager = DatasetManager.clustered(disruptor.uri())
@@ -80,18 +78,18 @@ public class ClientToServerDisruptionTest {
 
   /**
    * Verify store operation can resume after reconnect.
-   *
-   * @throws Exception
    */
   @Test
   public void testResumeOperationsAfterReconnect() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
-      try (Tsa tsa = factory.tsa(topology, license)) {
-        tsa.installAll();
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {
+      try (Tsa tsa = factory.tsa().startAll()) {
         tsa.startAll();
         tsa.licenseAll();
         try (ClientToServerDisruptor disruptor = tsa.disruptionController().newClientToServerDisruptor()) {

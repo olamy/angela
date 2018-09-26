@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,21 +44,18 @@ public class ServerToServerDisruptionTest {
   /**
    * Create partition between [active] & [passive1,passive2] in consistent mode and verify
    * state of servers.
-   *
-   * @throws Exception
    */
   @Test
   public void testPartitionBetweenActivePassives() throws Exception {
     //set netDisruptionEnabled to true to enable disruption
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-app-consistent.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-app-consistent.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
-      try (Tsa tsa = factory.tsa(topology, license)) {
-        tsa.installAll();
-        tsa.startAll();
-        tsa.licenseAll();
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
+      try (Tsa tsa = factory.tsa().startAll().licenseAll()) {
         TerracottaServer active = tsa.getActive();
         Collection<TerracottaServer> passives = tsa.getPassives();
         Iterator<TerracottaServer> iterator = passives.iterator();

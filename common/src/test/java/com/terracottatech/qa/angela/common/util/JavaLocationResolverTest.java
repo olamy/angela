@@ -24,7 +24,7 @@ public class JavaLocationResolverTest {
     try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
       JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
       List<JDK> jdks = javaLocationResolver.resolveJavaLocations(null, null, true);
-      assertThat(jdks.size(), is(6));
+      assertThat(jdks.size(), is(7));
       assertThat(jdks.get(0).getVendor(), is("sun"));
       assertThat(jdks.get(0).getVersion(), is("1.6"));
       assertThat(jdks.get(1).getVendor(), is(IsNull.nullValue()));
@@ -37,6 +37,8 @@ public class JavaLocationResolverTest {
       assertThat(jdks.get(4).getVersion(), is("1.8"));
       assertThat(jdks.get(5).getVendor(), is("Oracle Corporation"));
       assertThat(jdks.get(5).getVersion(), is("1.8"));
+      assertThat(jdks.get(6).getVendor(), is("zulu"));
+      assertThat(jdks.get(6).getVersion(), is("1.8"));
     }
   }
 

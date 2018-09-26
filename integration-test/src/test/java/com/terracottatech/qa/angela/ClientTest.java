@@ -1,23 +1,25 @@
 package com.terracottatech.qa.angela;
 
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientArray;
+import com.terracottatech.qa.angela.client.ClientArrayFuture;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
-import com.terracottatech.qa.angela.client.Tsa;
-import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomMultiConfigurationContext;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.client.Barrier;
-import com.terracottatech.qa.angela.common.clientconfig.ClientsConfig;
+import com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig;
+import com.terracottatech.qa.angela.common.cluster.AtomicCounter;
+import com.terracottatech.qa.angela.common.cluster.Barrier;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.topology.ClientTopology;
+import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -25,11 +27,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.terracottatech.qa.angela.common.clientconfig.ClientsConfig.newClientsConfig;
+import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -41,13 +42,19 @@ public class ClientTest {
 
   @Test
   public void testRemoteClient() throws Exception {
-    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
-      try (Client client = instance.client("localhost")) {
-        Future<Void> f = client.submit((context) -> System.out.println("hello world 1"));
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))))
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))));
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> System.out.println("hello world 1"));
         f.get();
       }
-      try (Client client = instance.client("localhost")) {
-        Future<Void> f = client.submit((context) -> System.out.println("hello world 2"));
+      try (ClientArray clientArray = instance.clientArray()) {
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> System.out.println("hello world 2"));
         f.get();
       }
     }
@@ -61,29 +68,28 @@ public class ClientTest {
 
       License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
-      try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
+      ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+          newClientArrayConfig().host("localhost"));
 
-        ClientTopology ct = new ClientTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-            newClientsConfig().client("client1", "localhost"));
+      ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+          .tsa(tsa -> tsa.license(license))
+          .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
 
-        ClientJob clientJob = (context) -> {
+      try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {
+
+
+        ClientJob clientJob = (cluster) -> {
           System.out.println("hello");
           Thread.sleep(3000);
           System.out.println("again");
         };
 
         { // executeAll
-          ClientArray clientArray = factory.clientArray(ct, license);
+          ClientArray clientArray = factory.clientArray();
 
-          List<Future<Void>> futures = clientArray.executeAll(clientJob);
-          futures.forEach(voidFuture -> {
-            try {
-              voidFuture.get();
-            } catch (InterruptedException | ExecutionException e) {
-              throw new RuntimeException(e);
-            }
-          });
-          Client rc = clientArray.getClients().get(0);
+          ClientArrayFuture future = clientArray.executeOnAll(clientJob);
+          future.get();
+          Client rc = clientArray.getClients().stream().findFirst().get();
 
           rc.browse("stats").downloadTo(resultPath);
         }
@@ -101,11 +107,15 @@ public class ClientTest {
   @Test
   public void testMultipleRemoteClients() throws Exception {
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
-    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", new SshRemoteAgentLauncher())) {
-      Client client1 = instance.client(InetAddress.getLocalHost().getHostName());
-      Client client2 = instance.client(InetAddress.getLocalHost().getHostName());
-      Future<Void> f1 = client1.submit((context) -> System.out.println("hello world 1"));
-      Future<Void> f2 = client2.submit((context) -> System.out.println("hello world 2"));
+    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        newClientArrayConfig().hostSerie(2, InetAddress.getLocalHost().getHostName()));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .clientArrayTopology(ct));
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      ClientArray clientArray = instance.clientArray();
+      ClientArrayFuture f1 = clientArray.executeOnAll((cluster) -> System.out.println("hello world 1"));
+      ClientArrayFuture f2 = clientArray.executeOnAll((cluster) -> System.out.println("hello world 2"));
       f1.get();
       f2.get();
     } finally {
@@ -115,9 +125,15 @@ public class ClientTest {
 
   @Test
   public void testRemoteClientWithJdk9() throws Exception {
-    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient")) {
-      try (Client client = instance.client("localhost", new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--illegal-access=warn", "--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")))) {
-        Future<Void> f = client.submit((context) -> System.out.println("hello JDK 9 world"));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .terracottaCommandLineEnvironment(new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--illegal-access=warn", "--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")))
+        );
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> System.out.println("hello JDK 9 world"));
         f.get();
       }
     }
@@ -125,16 +141,20 @@ public class ClientTest {
 
   @Test
   public void testMixingLocalhostWithRemote() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        )
+        .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("remote-server")))
+        );
 
-    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {
+      factory.tsa();
 
       try {
-        factory.client("remote-server");
+        factory.clientArray();
         fail("expected exception");
       } catch (Exception e) {
         // expected
@@ -145,66 +165,68 @@ public class ClientTest {
   @Test
   public void testBarrier() throws Exception {
     final int clientCount = 2;
-    try (ClusterFactory factory = new ClusterFactory("ClientTest::testBarrier")) {
+    final int loopCount = 20;
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))))
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))));
 
-      ClientJob clientJob = (ClientJob)context -> {
-        Barrier daBarrier = context.barrier("daBarrier", clientCount);
-        for (int i = 0; i < 20; i++) {
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testBarrier", configContext)) {
+
+      ClientJob clientJob = cluster -> {
+        Barrier daBarrier = cluster.barrier("daBarrier", clientCount);
+        for (int i = 0; i < loopCount; i++) {
           daBarrier.await();
+          AtomicCounter counter = cluster.atomicCounter("ClientTest::testBarrier::counter", 0L);
+          counter.incrementAndGet();
         }
       };
 
       List<Future<Void>> futures = new ArrayList<>();
       for (int i = 0; i < clientCount; i++) {
-        Client client = factory.client("localhost");
-        Future<Void> future = client.submit(clientJob);
-
-        futures.add(future);
+        ClientArray clients = factory.clientArray();
+        ClientArrayFuture caf = clients.executeOnAll(clientJob);
+        futures.addAll(caf.getFutures());
       }
 
       // if the barrier hangs forever, one of those futures will timeout on get and throw
       for (Future<Void> future : futures) {
         future.get(30, TimeUnit.SECONDS);
       }
+
+      AtomicCounter counter = factory.cluster().atomicCounter("ClientTest::testBarrier::counter", 0L);
+      assertThat(counter.get(), is((long) clientCount * loopCount));
     }
   }
 
   @Test
   public void testUploadClientJars() throws Exception {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    ClientArrayConfig clientArrayConfig1 = newClientArrayConfig()
+        .host("client2", "localhost")
+        .host("client2-2", "localhost");
 
-    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", new SshRemoteAgentLauncher())) {
+    ClientArrayTopology ct = new ClientArrayTopology(distribution, clientArrayConfig1);
 
-      final Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.license(license))
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
 
-      final ClientsConfig clientsConfig1 = newClientsConfig()
-          .client("client2", "localhost")
-          .client("client2-2", "localhost");
-
-      final ClientsConfig clientsConfig2 = newClientsConfig()
-          .clientSerie(2, "tc-perf-001")
-          .clientSerie(2, "tc-perf-002");
-
-      ClientTopology ct = new ClientTopology(distribution, clientsConfig1);
-
-      ClientJob clientJob = (context) -> {
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {
+      ClientJob clientJob = (cluster) -> {
         System.out.println("hello");
         Thread.sleep(1000);
         System.out.println("again");
       };
 
       { // executeAll
-        ClientArray clientArray = factory.clientArray(ct, license);
+        ClientArray clientArray = factory.clientArray();
 
-        List<Future<Void>> futures = clientArray.executeAll(clientJob);
-        futures.forEach(voidFuture -> {
-          try {
-            voidFuture.get();
-          } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-          }
-        });
-        Client rc = clientArray.getClients().get(0);
+        ClientArrayFuture f = clientArray.executeOnAll(clientJob);
+        f.get();
+        Client rc = clientArray.getClients().stream().findFirst().get();
 
         rc.browse(".").downloadTo(new File("/tmp"));
       }

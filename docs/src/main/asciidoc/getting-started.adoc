@@ -37,15 +37,17 @@ We can ask now Angela to setup such a cluster:
 ----
 include::../java/GettingStarted.java[tags=configureCluster]
 ----
-<1> Creates the TSA cluster topology
-<2> Defines the Terracotta distribution : version, package type (KIT) and License (TC DB)
-<3> Defines the Terracotta cluster config
-<4> The license in case the distribution is enterprise
-<5> Creates a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
-<6> Installs the Tsa from the distribution on the appropriate server(s) (localhost in this case)
-<7> Starts all servers from the Tsa
-<8> Install the license with the cluster tool
-<9> Stops all Terracotta servers and cleans up the installation
+<1> Create a custom configuration context that is going to hold all the configurable bits
+<2> Define the TSA config
+<3> Specify the Terracotta cluster topology
+<4> Specify the Terracotta distribution : version, package type (KIT) and License (TC DB)
+<5> Specify the Terracotta cluster config
+<6> Specify the license in case the distribution is enterprise
+<7> Create a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
+<8> Install the Tsa from the distribution on the appropriate server(s) (localhost in this case)
+<9> Start all servers from the Tsa
+<10> Install the license with the cluster tool
+<11> Stop all Terracotta servers and cleans up the installation
 
 == Tsa Cluster with Security example
 
@@ -63,44 +65,45 @@ We can ask now Angela to setup such a cluster:
 ----
 include::../java/GettingStarted.java[tags=configureClusterWithSecurity]
 ----
-<1> Creates the TSA cluster topology
-<2> Defines the Terracotta distribution : version, package type (KIT) and License (TC DB)
-<3> Defines the Terracotta cluster config with security
-<4> Defines the SecurityRootDirectory for "Server1"
-<5> The license in case the distribution is enterprise
-<6> Creates a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
-<7> Installs the Tsa from the distribution on the appropriate server(s) (localhost in this case)
-<8> Starts all servers from the Tsa
-<9> Install the license with the cluster tool using SecurityRootDirectory
-<10> Stops all Terracotta servers and cleans up the installation
+<1> Specify the TSA cluster topology
+<2> Specify the Terracotta cluster config with security
+<3> Specify the SecurityRootDirectory for "Server1"
+<4> Create a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
+<5> Install the Tsa from the distribution on the appropriate server(s) (localhost in this case)
+<6> Install the license with the cluster tool using SecurityRootDirectory
 
-=== Tsa API
+== Tsa API
 
 [source,java]
 ----
 include::../java/GettingStarted.java[tags=showTsaApi]
 ----
-<1> install all Terracotta servers for the given topology
-<2> start all Terracotta servers
-<3> license all Terracotta servers
-<4> get the reference of the active server. Null is returned if there is none. An exception is throw if there are more than one
-<5> get the references of all active servers. Get an empty collection if there are none.
-<6> get the reference of the passive server. Null is returned if there is none. An exception is throw if there are more than one
-<7> get the references of all passive servers. Get an empty collection if there are none.
-<8> stop all Terracotta servers
-<9> start one Terracotta server
-<10> stop one Terracotta server
-<11> get the current state of the Terracotta server
+<1> Install all Terracotta servers for the given topology
+<2> Start all Terracotta servers
+<3> License all Terracotta servers
+<4> Get the reference of the active server. Null is returned if there is none. An exception is throw if there are more than one
+<5> Get the references of all active servers. Get an empty collection if there are none.
+<6> Get the reference of the passive server. Null is returned if there is none. An exception is throw if there are more than one
+<7> Get the references of all passive servers. Get an empty collection if there are none.
+<8> Stop all Terracotta servers
+<9> Start one Terracotta server
+<10> Stop one Terracotta server
+<11> Get the current state of the Terracotta server
 
-== Client example
+== Client array example
 
 [source,java]
 ----
 include::../java/GettingStarted.java[tags=runClient]
 ----
-<1> Creates a client on a remote server (localhost in this case)
-<2> executes the function on the remote client
-<3> Wait until the client execution finishes
+<1> Define the client array config
+<2> Specify the license that the TC clients will use
+<3> Define the client array topology
+<4> Specify the distribution from which to install the client jars
+<5> Specify the list of hosts that are going to be used by this client array (two clients, both on localhost in this case)
+<6> Create a client array on the remote servers
+<7> Execute the lambda on all the remote clients
+<8> Wait until all the clients finish their execution
 
 == Full example
 

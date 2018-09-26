@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
@@ -41,7 +40,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-public class CompressionUtils implements Serializable {
+public class CompressionUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(CompressionUtils.class);
 

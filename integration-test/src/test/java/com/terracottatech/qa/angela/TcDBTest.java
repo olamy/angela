@@ -1,11 +1,15 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.Client;
+import com.terracottatech.qa.angela.client.ClientArray;
+import com.terracottatech.qa.angela.client.ClientArrayFuture;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
-import com.terracottatech.qa.angela.common.client.Barrier;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
+import com.terracottatech.qa.angela.common.cluster.Barrier;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -24,8 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Optional;
-import java.util.concurrent.Future;
 
+import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -42,20 +46,24 @@ public class TcDBTest {
 
   @Test
   public void testConnection() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    final int clientCount = 2;
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        ).clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().hostSerie(clientCount, "localhost")))
+        );
 
-    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection")) {
-      Tsa tsa = factory.tsa(topology, license);
-      tsa.installAll();
-      tsa.startAll();
-      tsa.licenseAll();
+    try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
+      Tsa tsa = factory.tsa()
+          .startAll()
+          .licenseAll();
 
-      Client client = factory.client("localhost");
+      ClientArray clientArray = factory.clientArray();
       final URI uri = tsa.uri();
-      ClientJob clientJob = (context) -> {
-        Barrier barrier = context.barrier("testConnection", 2);
+      ClientJob clientJob = (cluster) -> {
+        Barrier barrier = cluster.barrier("testConnection", clientCount);
         logger.info("client started and waiting on barrier");
         int rank = barrier.await();
 
@@ -104,10 +112,8 @@ public class TcDBTest {
         logger.info("client done");
       };
 
-      Future<Void> f1 = client.submit(clientJob);
-      Future<Void> f2 = client.submit(clientJob);
-      f1.get();
-      f2.get();
+      ClientArrayFuture caf = clientArray.executeOnAll(clientJob);
+      caf.get();
     }
 
     logger.info("---> Stop");

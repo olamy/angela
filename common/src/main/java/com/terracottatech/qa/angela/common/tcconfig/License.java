@@ -5,14 +5,13 @@ import org.apache.commons.io.IOUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.net.URL;
 import java.nio.file.Files;
 
 /**
  * Created by esebasti on 7/21/17.
  */
-public class License implements Serializable {
+public class License {
 
   private final String licenseContent;
   private final String filename;

@@ -28,7 +28,7 @@ import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.client.Context;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -58,17 +59,14 @@ public class Client implements Closeable {
   private boolean closed = false;
 
 
-  Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
-    if (localKitManager == null) {
-      logger.warn("Detected use of deprecated ClusterFactory.client(String nodename). Please use ClusterFactory.clientArray(ClientTopology clientTopology, License license) instead");
-    }
+  Client(Ignite ignite, InstanceId instanceId, String nodeName, TerracottaCommandLineEnvironment tcEnv, LocalKitManager localKitManager) {
     this.instanceId = instanceId;
     this.nodeName = nodeName;
     this.ignite = ignite;
-    if (tcEnv == null) {
-      throw new IllegalArgumentException("JDK info must be passed");
-    }
-    this.subClientPid = spawnSubClient(tcEnv, localKitManager);
+    this.subClientPid = spawnSubClient(
+        Objects.requireNonNull(tcEnv),
+        Objects.requireNonNull(localKitManager)
+    );
   }
 
   private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
@@ -95,7 +93,7 @@ public class Client implements Closeable {
     }
   }
 
-  private void uploadClasspath(BlockingQueue<Object> queue, final LocalKitManager localKitManager) throws InterruptedException, IOException {
+  private void uploadClasspath(BlockingQueue<Object> queue, LocalKitManager localKitManager) throws InterruptedException, IOException {
     File javaHome = new File(System.getProperty("java.home"));
     String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
     for (String classpathJarName : classpathJarNames) {
@@ -113,10 +111,7 @@ public class Client implements Closeable {
     queue.put(Boolean.TRUE); // end of upload marker
   }
 
-  private File checkKitContents(final LocalKitManager localKitManager, final String classpathJarName) {
-    if (localKitManager == null) {  // LocalKitManager is null when legacy ClusterFactory.client(String nodename) is used
-      return new File(classpathJarName);
-    }
+  private File checkKitContents(LocalKitManager localKitManager, String classpathJarName) {
     File fileInKit = localKitManager.getFile(classpathJarName);
     if (fileInKit != null) {
       return fileInKit;
@@ -166,14 +161,14 @@ public class Client implements Closeable {
     return submit(clientJob, HardwareMetricsCollector.parse());
   }
 
-  public Future<Void> submit(ClientJob clientJob, HardwareMetricsCollector.TYPE type) {
+  Future<Void> submit(ClientJob clientJob, HardwareMetricsCollector.TYPE type) {
     IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
     ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
     IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>)() -> {
       HardwareMetricsCollector metricsCollector = new HardwareMetricsCollector();
       metricsCollector.startMonitoring(new File("."), type);
       try {
-        clientJob.run(new Context(nodeName, ignite, instanceId));
+        clientJob.run(new Cluster(ignite));
       } finally {
         metricsCollector.stopMonitoring();
       }

@@ -1,11 +1,9 @@
 package com.terracottatech.qa.angela.common.topology;
 
-import java.io.Serializable;
-
 /**
  * @author Aurelien Broszniowski
  */
-public enum PackageType implements Serializable {
+public enum PackageType {
 
   KIT, SAG_INSTALLER;
 
