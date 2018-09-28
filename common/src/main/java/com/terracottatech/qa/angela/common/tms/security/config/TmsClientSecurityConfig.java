@@ -10,20 +10,32 @@ import java.security.KeyStore;
 
 public class TmsClientSecurityConfig {
 
-  private final URI truststoreUri;
+  private final URI trustStoreUri;
+  private final String trustStorePassword;
+  private final String username;
   private final String password;
 
-  public TmsClientSecurityConfig(String password, URI truststoreUri) {
+  public TmsClientSecurityConfig(String trustStorePassword, URI trustStoreUri, String username, String password) {
+    this.trustStorePassword = trustStorePassword;
+    this.trustStoreUri = trustStoreUri;
+    this.username = username;
     this.password = password;
-    this.truststoreUri = truststoreUri;
   }
 
   public TrustManagerFactory getTrustManagerFactory() throws IOException, GeneralSecurityException {
-    InputStream truststoreStream = new FileInputStream(truststoreUri.getPath());
+    InputStream truststoreStream = new FileInputStream(trustStoreUri.getPath());
     KeyStore truststore = KeyStore.getInstance("JKS");
-    truststore.load(truststoreStream, password.toCharArray());
+    truststore.load(truststoreStream, trustStorePassword.toCharArray());
     TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
     trustManagerFactory.init(truststore);
     return trustManagerFactory;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
+  public String getPassword() {
+    return password;
   }
 }
