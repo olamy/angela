@@ -45,6 +45,7 @@ public class ClusterFactory implements AutoCloseable {
   private static final String TSA = "tsa";
   private static final String TMS = "tms";
   private static final String CLIENT_ARRAY = "clientArray";
+  private static final String MONITOR = "monitor";
   private static final DateTimeFormatter PATH_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-hhmmss");
 
   private final List<AutoCloseable> controllers = new ArrayList<>();
@@ -188,6 +189,28 @@ public class ClusterFactory implements AutoCloseable {
     return clientArray;
   }
 
+  public ClusterMonitor monitor() {
+    final List<String> hostnames = new ArrayList<>();
+    if (configurationContext.tsa() != null) {
+      if (configurationContext.tsa().getTopology() == null) {
+        throw new IllegalArgumentException("You added a tsa to the Configuration but did not define its topology");
+      }
+      hostnames.addAll(configurationContext.tsa().getTopology().getServersHostnames());
+    }
+    if (configurationContext.tms() != null) {
+      hostnames.add(configurationContext.tms().getHostname());
+    }
+    if (configurationContext.clientArray() != null) {
+      hostnames.addAll(configurationContext.clientArray().getClientArrayTopology().getClientHostnames());
+    }
+
+    InstanceId instanceId = init(MONITOR, new HashSet<>(hostnames));
+
+    ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, instanceId, configurationContext);
+    controllers.add(clusterMonitor);
+    return clusterMonitor;
+  }
+
   @Override
   public void close() throws IOException {
     List<Exception> exceptions = new ArrayList<>();
@@ -245,5 +268,4 @@ public class ClusterFactory implements AutoCloseable {
       throw ioException;
     }
   }
-
 }

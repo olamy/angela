@@ -13,6 +13,7 @@ import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
+import com.terracottatech.qa.angela.agent.kit.MonitoringInstance;
 import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
@@ -73,6 +74,7 @@ public class AgentController {
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
+  private final Map<InstanceId, MonitoringInstance> monitoringInstall = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
 
@@ -395,9 +397,9 @@ public class AgentController {
     }
   }
 
-  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, final HardwareMetricsCollector.TYPE hardwareStats) {
+  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
-    serverInstance.create(tcEnv, hardwareStats);
+    serverInstance.create(tcEnv);
   }
 
   public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv) {
@@ -463,6 +465,25 @@ public class AgentController {
       throw new IllegalStateException("Cannot control cluster tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
+  }
+
+  public synchronized void startHardwareMonitoring(final InstanceId instanceId) {
+    if (monitoringInstall.containsKey(instanceId)) {
+      logger.info("hardware monitoring already started on Agent {} for instance ID {}", ignite.name(), instanceId);
+      return;
+    }
+    final MonitoringInstance monitoringInstall = new MonitoringInstance(instanceId);
+    monitoringInstall.startHardwareMonitoring();
+    this.monitoringInstall.put(instanceId, monitoringInstall);
+  }
+
+  public synchronized void stopHardwareMonitoring(final InstanceId instanceId) {
+    if (!monitoringInstall.containsKey(instanceId)) {
+      logger.info("hardware monitoring not started on Agent {} for instance ID {}", ignite.name(), instanceId);
+      return;
+    }
+    monitoringInstall.get(instanceId).stopHardwareMonitoring();
+    this.monitoringInstall.remove(instanceId);
   }
 
   public void destroyClient(InstanceId instanceId, int pid) {

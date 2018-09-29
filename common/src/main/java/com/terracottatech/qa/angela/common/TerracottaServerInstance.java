@@ -60,8 +60,8 @@ public class TerracottaServerInstance implements Closeable {
     this.tcConfig.writeTcConfigFile(location, modifiedTcConfigName);
   }
 
-  public void create(TerracottaCommandLineEnvironment env, final HardwareMetricsCollector.TYPE type) {
-    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig, env, type);
+  public void create(TerracottaCommandLineEnvironment env) {
+    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, location, tcConfig, env);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
@@ -124,15 +124,13 @@ public class TerracottaServerInstance implements Closeable {
   public static class TerracottaServerInstanceProcess {
     private final Set<Number> pids;
     private final AtomicReference<TerracottaServerState> state;
-    private final HardwareMetricsCollector hardwareMetricsCollector;
 
-    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, final HardwareMetricsCollector hardwareMetricsCollector, Number... pids) {
+    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, Number... pids) {
       for (Number pid : pids) {
         if (pid.intValue() < 1) {
           throw new IllegalArgumentException("Pid cannot be < 1");
         }
       }
-      this.hardwareMetricsCollector = hardwareMetricsCollector;
       this.pids = new HashSet<>(Arrays.asList(pids));
       this.state = state;
     }
@@ -143,10 +141,6 @@ public class TerracottaServerInstance implements Closeable {
 
     public Set<Number> getPids() {
       return Collections.unmodifiableSet(pids);
-    }
-
-    public HardwareMetricsCollector getHardwareMetricsCollector() {
-      return hardwareMetricsCollector;
     }
 
     public boolean isAlive() {

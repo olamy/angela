@@ -46,7 +46,7 @@ public class Topology {
     }
   }
 
-  public DistributionController createDistributionController(TcConfig tcConfig) {
+  public DistributionController createDistributionController() {
     //TODO should it be validated early when constructing topology?
     if (distribution.getVersion().getMajor() == 10) {
       if (distribution.getVersion().getMinor() > 0) {
