@@ -26,15 +26,6 @@ public class HardwareMetricsCollector {
 
   private StartedProcess process = null;
 
-  public static TYPE parse() {
-    final String stats = System.getProperty("stats");
-    if (stats == null) {
-      return TYPE.none;
-    } else {
-      return TYPE.valueOf(stats);
-    }
-  }
-
   public String[] startCommand(final TYPE stats) {
     OS os = OS.INSTANCE;
 
@@ -64,7 +55,8 @@ public class HardwareMetricsCollector {
         final File statsDirectory = new File(installLocation, "stats");
         statsDirectory.mkdirs();
         final File logFile = new File(statsDirectory, "vmstat.log");
-        logger.info("stat log file: {}" , logFile.getAbsolutePath());
+        System.out.println("**************************" + logFile.getAbsolutePath());
+        logger.info("stat log file: {}", logFile.getAbsolutePath());
         output = new FileOutputStream(logFile);
       } catch (FileNotFoundException e) {
         throw new RuntimeException(e);
@@ -77,7 +69,7 @@ public class HardwareMetricsCollector {
             .redirectError(System.err)
             .redirectOutput(output).start();
       } catch (IOException e) {
-        throw new RuntimeException("Can not start hardware monitoring process",e);
+        throw new RuntimeException("Can not start hardware monitoring process", e);
       }
     }
   }

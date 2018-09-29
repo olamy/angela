@@ -111,7 +111,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public Future<Void> executeOn(ClientId clientId, ClientJob clientJob) {
-    return clients.get(clientId).submit(clientJob, HardwareMetricsCollector.parse());
+    return clients.get(clientId).submit(clientJob);
   }
 
   @Override

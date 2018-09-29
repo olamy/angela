@@ -45,7 +45,7 @@ public class TerracottaInstall {
 
   public void addServer(TerracottaServer terracottaServer, TcConfig tcConfig) {
     synchronized (terracottaServerInstances) {
-      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), topology.createDistributionController(tcConfig), installLocation, tcConfig, topology.isNetDisruptionEnabled()));
+      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), topology.createDistributionController(), installLocation, tcConfig, topology.isNetDisruptionEnabled()));
     }
   }
 

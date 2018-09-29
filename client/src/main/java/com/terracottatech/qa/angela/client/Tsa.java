@@ -52,7 +52,6 @@ public class Tsa implements AutoCloseable {
   private final transient DisruptionController disruptionController;
   private final TsaConfigurationContext tsaConfigurationContext;
   private final LocalKitManager localKitManager;
-  private final HardwareMetricsCollector.TYPE hardwareStats;
   private boolean closed = false;
 
   Tsa(Ignite ignite, InstanceId instanceId, TsaConfigurationContext tsaConfigurationContext) {
@@ -64,7 +63,6 @@ public class Tsa implements AutoCloseable {
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, tsaConfigurationContext.getTopology());
     this.localKitManager = new LocalKitManager(tsaConfigurationContext.getTopology().getDistribution());
-    this.hardwareStats = HardwareMetricsCollector.parse();
     installAll();
   }
 
@@ -181,7 +179,7 @@ public class Tsa implements AutoCloseable {
         return this;
       case STOPPED:
         logger.info("creating on {}", terracottaServer.getHostname());
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), hardwareStats)).get(TIMEOUT);
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment())).get(TIMEOUT);
         return this;
     }
     throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
