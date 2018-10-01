@@ -10,6 +10,7 @@ import org.apache.ignite.lang.IgniteClosure;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,21 +39,45 @@ public class RemoteFolder extends RemoteFile {
     return result;
   }
 
-  public void upload(String filename, URL resourceUrl) throws IOException {
-    try (InputStream in = resourceUrl.openStream()) {
-      upload(filename, in);
+  public void upload(String remoteFilename, File localFile) throws IOException {
+    if (localFile.isDirectory()) {
+      uploadFolder(remoteFilename, localFile);
+    } else {
+      try (FileInputStream fis = new FileInputStream(localFile)) {
+        upload(remoteFilename, fis);
+      }
     }
   }
 
-  public void upload(String filename, InputStream in) throws IOException {
+  private void uploadFolder(String parentName, File folder) throws IOException {
+    File[] files = folder.listFiles();
+    for (File f : files) {
+      String currentName = parentName + "/" + f.getName();
+      if (f.isDirectory()) {
+        uploadFolder(currentName, f);
+        return;
+      }
+      try (FileInputStream fis = new FileInputStream(f)) {
+        upload(currentName, fis);
+      }
+    }
+  }
+
+  public void upload(String remoteFilename, URL localResourceUrl) throws IOException {
+    try (InputStream in = localResourceUrl.openStream()) {
+      upload(remoteFilename, in);
+    }
+  }
+
+  public void upload(String remoteFilename, InputStream localStream) throws IOException {
     IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-    byte[] data = IOUtils.toByteArray(in);
-    ignite.compute(location).applyAsync((IgniteClosure<String, Void>) (aName) -> { Agent.CONTROLLER.uploadFile(aName, data); return null;}, getAbsoluteName() + "/" + filename).get();
+    byte[] data = IOUtils.toByteArray(localStream);
+    ignite.compute(location).applyAsync((IgniteClosure<String, Void>) (aName) -> { Agent.CONTROLLER.uploadFile(aName, data); return null;}, getAbsoluteName() + "/" + remoteFilename).get();
   }
 
   @Override
-  public void downloadTo(File path) throws IOException {
+  public void downloadTo(File localPath) throws IOException {
     IgniteHelper.checkAgentHealth(ignite, nodeName);
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     byte[] bytes;
@@ -62,9 +87,9 @@ public class RemoteFolder extends RemoteFile {
       throw new IOException(e.getMessage(), e);
     }
 
-    path.mkdirs();
-    if (!path.isDirectory()) {
-      throw new IllegalArgumentException("Destination path '" + path + "' is not a folder or could not be created");
+    localPath.mkdirs();
+    if (!localPath.isDirectory()) {
+      throw new IllegalArgumentException("Destination path '" + localPath + "' is not a folder or could not be created");
     }
 
     try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(bytes))) {
@@ -74,7 +99,7 @@ public class RemoteFolder extends RemoteFile {
           break;
         }
         String name = nextEntry.getName();
-        File file = new File(path, name);
+        File file = new File(localPath, name);
         file.getParentFile().mkdirs();
         try (FileOutputStream fos = new FileOutputStream(file)) {
           IOUtils.copy(zis, fos);
