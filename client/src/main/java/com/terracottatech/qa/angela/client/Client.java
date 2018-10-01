@@ -111,8 +111,8 @@ public class Client implements Closeable {
     queue.put(Boolean.TRUE); // end of upload marker
   }
 
-  private File checkKitContents(LocalKitManager localKitManager, String classpathJarName) {
-    File fileInKit = localKitManager.getFile(classpathJarName);
+  private File checkKitContents(LocalKitManager localKitManager, String classpathJarName) throws IOException {
+    File fileInKit = localKitManager.findEquivalent(classpathJarName);
     if (fileInKit != null) {
       return fileInKit;
     } else {

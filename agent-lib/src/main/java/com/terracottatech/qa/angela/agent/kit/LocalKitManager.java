@@ -1,16 +1,16 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +21,8 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
@@ -250,21 +252,45 @@ public class LocalKitManager extends KitManager {
     }
   }
 
-  public File getFile(final String filename) {
-    String fileToFind = new File(filename).getName();
+  public File findEquivalent(String filename) throws IOException {
+    /*
+     * Match files by reading the JAR's MANIFEST.MF file and reading the "Bundle-SymbolicName" attribute.
+     * This is provided by all OSGi-enabled JARs (all TC jars do) and is meant to figure out if two JAR files
+     * are providing the same thing, barring any version differences.
+     */
+    String sourceBundleSymbolicName = loadManifestBundleSymbolicName(new File(filename));
+
     final AtomicReference<File> returnFile = new AtomicReference<>(null);
     try {
       Files.walk(this.kitInstallationPath.toPath())
           .filter(Files::isRegularFile)
           .forEach((f) -> {
-            String file = f.toString();
-            if (file.endsWith(fileToFind))
-              returnFile.set(new File(file));
+            // this the OSGi Bundle-SymbolicName attribute matching
+            if (sourceBundleSymbolicName != null) {
+              try {
+                if (sourceBundleSymbolicName.equals(loadManifestBundleSymbolicName(f.toFile()))) {
+                  returnFile.set(f.toFile());
+                }
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
+            }
           });
     } catch (IOException e) {
       return null;
     }
-    logger.debug(" Looking for " + fileToFind + " in " + kitInstallationPath + " and found " + returnFile.get());
+    logger.debug("Looking for {} in {} and found {}", new File(filename).getName(), kitInstallationPath, returnFile.get());
     return returnFile.get();
+  }
+
+  private String loadManifestBundleSymbolicName(File file) throws IOException {
+    if (file.getName().endsWith(".jar")) {
+      try (JarInputStream jarInputStream = new JarInputStream(new FileInputStream(file))) {
+        Manifest manifest = jarInputStream.getManifest();
+        return manifest == null ? null : manifest.getMainAttributes().getValue("Bundle-SymbolicName");
+      }
+    } else {
+      return null;
+    }
   }
 }
