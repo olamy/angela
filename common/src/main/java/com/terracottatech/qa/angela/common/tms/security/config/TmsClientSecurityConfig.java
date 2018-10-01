@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.Objects;
 
 public class TmsClientSecurityConfig {
 
@@ -37,5 +38,31 @@ public class TmsClientSecurityConfig {
 
   public String getPassword() {
     return password;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    TmsClientSecurityConfig that = (TmsClientSecurityConfig) o;
+    return Objects.equals(trustStoreUri, that.trustStoreUri) &&
+        Objects.equals(trustStorePassword, that.trustStorePassword) &&
+        Objects.equals(username, that.username) &&
+        Objects.equals(password, that.password);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(trustStoreUri, trustStorePassword, username, password);
+  }
+
+  @Override
+  public String toString() {
+    return "TmsClientSecurityConfig{" +
+        "trustStoreUri=" + trustStoreUri +
+        ", trustStorePassword='" + trustStorePassword + '\'' +
+        ", username='" + username + '\'' +
+        ", password='" + password + '\'' +
+        '}';
   }
 }

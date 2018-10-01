@@ -11,9 +11,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.net.CookieHandler;
-import java.net.CookieManager;
-import java.net.CookiePolicy;
 import java.net.HttpCookie;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -23,18 +20,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class HttpUtils {
 
   private final static Set<HttpCookie> cookies = new HashSet<>();
-  private final static CookieManager cookieManager = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
   private final static Map<String, String> additionnalHeaders = new HashMap<>();
-
-  static {
-    CookieHandler.setDefault(cookieManager);
-  }
 
   public static String sendGetRequest(String url, TmsClientSecurityConfig tmsClientSecurityConfig) {
     try {
@@ -53,8 +45,6 @@ public class HttpUtils {
 
     try {
       HttpURLConnection connection = prepareHttpConnection(tmsClientSecurityConfig, new URL(url));
-      connection.setRequestProperty("Cookie", StringUtils.join(cookieManager.getCookieStore().getCookies(), ";"));
-
       addHttpPostPayload(payload, connection);
       saveHeaders(connection);
       checkResponseCode(connection);
@@ -67,24 +57,27 @@ public class HttpUtils {
   }
 
   private static HttpURLConnection prepareHttpConnection(TmsClientSecurityConfig tmsClientSecurityConfig, URL obj) throws IOException, GeneralSecurityException {
-    HttpURLConnection con;
+    HttpURLConnection connection;
     if (tmsClientSecurityConfig == null) {
       // not secured
-      con = (HttpURLConnection) obj.openConnection();
+      connection = (HttpURLConnection) obj.openConnection();
     } else {
       //secured
       SSLContext context = SSLContext.getInstance("TLS");
       context.init(null, tmsClientSecurityConfig.getTrustManagerFactory().getTrustManagers(), null);
-      con = (HttpURLConnection) obj.openConnection();
+      connection = (HttpURLConnection) obj.openConnection();
 
-      if (con instanceof HttpsURLConnection) {
-        ((HttpsURLConnection) con).setSSLSocketFactory(context.getSocketFactory());
+      if (connection instanceof HttpsURLConnection) {
+        ((HttpsURLConnection) connection).setSSLSocketFactory(context.getSocketFactory());
       }
     }
     if (additionnalHeaders.size() > 0) {
-      additionnalHeaders.forEach((key, value) -> con.setRequestProperty(key, value));
+      additionnalHeaders.forEach((key, value) -> connection.setRequestProperty(key, value));
     }
-    return con;
+    if (!cookies.isEmpty()) {
+      connection.setRequestProperty("Cookie", StringUtils.join(cookies, ";"));
+    }
+    return connection;
   }
 
   private static void addHttpPostPayload(String payload, HttpURLConnection con) throws IOException {
@@ -111,23 +104,30 @@ public class HttpUtils {
   private static void saveHeaders(HttpURLConnection connection) {
     String cookiesHeader = connection.getHeaderField("Set-Cookie");
     if (cookiesHeader != null) {
-      List<HttpCookie> httpCookiesParsed = HttpCookie.parse(cookiesHeader);
+      List<HttpCookie> httpCookiesParsed = connection.getHeaderFields()
+          .entrySet()
+          .stream()
+          .filter(headers -> headers.getKey() != null)
+          .filter(headers -> headers.getKey().equals("Set-Cookie"))
+          .map(headers -> headers.getValue())
+          .flatMap(headerValues -> headerValues.stream())
+          .map(header -> HttpCookie.parse(header))
+          .flatMap(cookiesLists -> cookiesLists.stream())
+          .collect(Collectors.toList());
       List<HttpCookie> cookiesToRemove = new ArrayList<>();
-      httpCookiesParsed.stream()
+      httpCookiesParsed
           .forEach(cookieParsed ->
               cookies.stream().filter(cookie -> cookie.getName().equals(cookieParsed.getName()))
-                  .forEach(existingCookie -> cookiesToRemove.add(existingCookie))
+                  .forEach(cookiesToRemove::add)
           );
       cookies.removeAll(cookiesToRemove);
       cookies.addAll(httpCookiesParsed);
     }
-    if (cookies.size() > 0) {
-      Optional<HttpCookie> xsrfTokenCookie = cookies.stream().filter(httpCookie -> httpCookie.getName().equals("XSRF-TOKEN")).findFirst();
-      if (xsrfTokenCookie.isPresent()) {
-        additionnalHeaders.put("X-XSRF-TOKEN", xsrfTokenCookie.get().getValue());
-      }
-    }
-    cookies.forEach(httpCookie -> cookieManager.getCookieStore().add(null, httpCookie));
+    cookies
+        .stream()
+        .filter(httpCookie -> httpCookie.getName().equals("XSRF-TOKEN"))
+        .findFirst()
+        .ifPresent(xsrfTokenCookie -> additionnalHeaders.put("X-XSRF-TOKEN", xsrfTokenCookie.getValue()));
   }
 
   private static String inputStreamToString(HttpURLConnection con) throws IOException {
