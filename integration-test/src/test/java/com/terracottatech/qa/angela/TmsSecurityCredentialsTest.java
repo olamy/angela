@@ -5,13 +5,13 @@ import com.terracottatech.qa.angela.client.ClientArrayFuture;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tms;
+import com.terracottatech.qa.angela.client.TmsHttpClient;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
-import com.terracottatech.qa.angela.common.http.HttpUtils;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
@@ -79,7 +79,7 @@ public class TmsSecurityCredentialsTest {
 
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
 
-    License license = new License(TmsSecurityTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    License license = new License(TmsSecurityCredentialsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
         .with(config->{
@@ -99,7 +99,7 @@ public class TmsSecurityCredentialsTest {
             ),
             secureTcConfig(
                 version(Versions.TERRACOTTA_VERSION),
-                TmsSecurityTest.class.getResource("/terracotta/10/tc-config-a-with-security-credentials.xml"),
+                TmsSecurityCredentialsTest.class.getResource("/terracotta/10/tc-config-a-with-security-credentials.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(serverSecurityRootDirectory.getPath()))
             )))
             .license(license)
@@ -111,7 +111,7 @@ public class TmsSecurityCredentialsTest {
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
         );
 
-    factory = new ClusterFactory("TmsSecurityTest::testSecureConnection", configContext);
+    factory = new ClusterFactory("TmsSecurityCredentialsTest::testSecureConnection", configContext);
     TSA = factory.tsa()
         .startAll()
         .licenseAll(securityRootDirectory(clientSecurityRootDirectory.getPath()));
@@ -121,31 +121,32 @@ public class TmsSecurityCredentialsTest {
   }
 
   @Test
-  public void could_create_connection_to_secure_cluster_test() throws Exception {
+  public void step1_could_create_connection_to_secure_cluster_test() throws Exception {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri, "dave", "password");
-    String tmsUrl = "https://" + TMS_HOSTNAME + ":9480";
-    HttpUtils.login(tmsUrl, tmsClientSecurityConfig);
-    String connectionName = TMS.connectToCluster(TSA.uri(), tmsClientSecurityConfig);
-    assertThat(connectionName, startsWith("TmsSecurityTest"));
+    TmsHttpClient tmsHttpClient =  new TmsHttpClient(TMS.url(), tmsClientSecurityConfig);
+    tmsHttpClient.login();
+    String connectionName = tmsHttpClient.createConnectionToCluster(TSA.uri());
+    assertThat(connectionName, startsWith("TmsSecurityCredentialsTest"));
   }
 
   @Test
-  public void http_client_connects_to_tms_using_ssl_test() throws Exception {
+  public void step2_http_client_connects_to_tms_using_ssl_test() throws Exception {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri, "dave", "password");
     ClientArray clientArray = factory.clientArray();
+    String tmsBaseUrl = TMS.url();
 
     ClientJob clientJobTms = (context) -> {
 
-      String tmsUrl = "https://" + TMS_HOSTNAME + ":9480";
-      HttpUtils.login(tmsUrl, tmsClientSecurityConfig);
+      TmsHttpClient tmsHttpClient =  new TmsHttpClient(tmsBaseUrl, tmsClientSecurityConfig);
+      tmsHttpClient.login();
 
-      String url = "https://" + TMS_HOSTNAME + ":9480/api/connections";
-      String response = HttpUtils.sendGetRequest(url, tmsClientSecurityConfig);
+      String url =  tmsBaseUrl + "/api/connections";
+      String response = tmsHttpClient.sendGetRequest(url);
       LOGGER.info("tms list connections result :" + response);
-      assertThat(response, Matchers.containsString("TmsSecurityTest"));
+      assertThat(response, Matchers.containsString("TmsSecurityCredentialsTest"));
 
-      String infoUrl = "https://" + TMS_HOSTNAME + ":9480/api/info";
-      String infoResponse = HttpUtils.sendGetRequest(infoUrl, tmsClientSecurityConfig);
+      String infoUrl = tmsBaseUrl + "/api/info";
+      String infoResponse = tmsHttpClient.sendGetRequest(infoUrl);
       LOGGER.info("tms info :" + response);
 
       assertThat(infoResponse, Matchers.containsString("\"connection_secured\":true"));

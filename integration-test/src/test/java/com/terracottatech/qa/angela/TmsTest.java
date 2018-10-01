@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.client.ClientArrayFuture;
 import com.terracottatech.qa.angela.client.ClientJob;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tms;
+import com.terracottatech.qa.angela.client.TmsHttpClient;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
@@ -32,7 +33,6 @@ import java.net.URI;
 
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
-import static com.terracottatech.qa.angela.common.http.HttpUtils.sendGetRequest;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -50,6 +50,7 @@ public class TmsTest {
   private static ClusterFactory factory;
   private static final String TMS_HOSTNAME = "localhost";
   private static URI tsaUri;
+  private static String tmsBaseUrl;
 
   @BeforeClass
   public static void setUp() {
@@ -75,7 +76,9 @@ public class TmsTest {
     tsaUri = tsa.uri();
     Tms tms = factory.tms()
         .start();
-    connectionName = tms.connectToCluster(tsaUri);
+    tmsBaseUrl = tms.url();
+    TmsHttpClient tmsHttpClient =  new TmsHttpClient(tmsBaseUrl, null);
+    connectionName = tmsHttpClient.createConnectionToCluster(tsaUri);
   }
 
   @Test
@@ -86,6 +89,8 @@ public class TmsTest {
   @Test
   public void testTmsConnection() throws Exception {
     URI tsaUri = TmsTest.tsaUri;
+    String tmsBaseUrl = TmsTest.tmsBaseUrl;
+
     ClientArray clientArray = factory.clientArray();
     ClientJob clientJob = (cluster) -> {
       try (DatasetManager datasetManager = DatasetManager.clustered(tsaUri).build()) {
@@ -107,8 +112,8 @@ public class TmsTest {
 
 
     ClientJob clientJobTms = (cluster) -> {
-      String url = "http://" + TMS_HOSTNAME + ":9480/api/connections";
-      String response = sendGetRequest(url, null);
+      TmsHttpClient tmsHttpClient =  new TmsHttpClient(tmsBaseUrl, null);
+      String response = tmsHttpClient.sendGetRequest(tmsBaseUrl + "/api/connections");
       LOGGER.info("tms list connections result :" + response.toString());
       assertThat(response.toString(), Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
     };
