@@ -137,7 +137,7 @@ public class ClusterMonitor implements AutoCloseable {
       try {
         new RemoteFolder(ignite, tsaHostname, null, workingKitInstallationPath).downloadTo(new File(location, tsaHostname));
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.error("error downloading tsa cluster monitor files", e);
       }
     }
   }
@@ -148,7 +148,7 @@ public class ClusterMonitor implements AutoCloseable {
         new RemoteFolder(ignite, tmsHostname, null, workingKitInstallationPath).downloadTo(new File(location, tmsHostname));
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("error downloading tsa cluster monitor files", e);
     }
   }
 
@@ -157,7 +157,7 @@ public class ClusterMonitor implements AutoCloseable {
       try {
         new RemoteFolder(ignite, clientHostname, null, workingKitInstallationPath).downloadTo(new File(location, clientHostname));
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.error("error downloading tsa cluster monitor files", e);
       }
     }
   }
