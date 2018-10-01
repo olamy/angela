@@ -52,19 +52,33 @@ public class BrowseTest {
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testClient", configContext)) {
       ClientArray clientArray = factory.clientArray();
+      Client client = clientArray.getClients().stream().findFirst().get();
+
+      File fileToUpload = new File("target/toUpload", "uploaded-data.txt");
+      fileToUpload.getParentFile().mkdir();
+      try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(fileToUpload))) {
+        dos.writeUTF("uploaded : hello, world!");
+      }
+
+      client.browse(".").upload("uploaded", new File("target/toUpload"));
+
       clientArray.executeOnAll(cluster -> {
-        File file = new File("newFolder", "data.txt");
+        try (DataInputStream dis = new DataInputStream(new FileInputStream("uploaded/uploaded-data.txt"))) {
+          String line = dis.readUTF();
+          assertThat(line, is("uploaded : hello, world!"));
+        }
+
+        File file = new File("toDownload", "downloaded-data.txt");
         file.getParentFile().mkdir();
         try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(file))) {
-          dos.writeUTF("hello, world!");
+          dos.writeUTF("downloaded: hello, world!");
         }
       }).get();
 
-      Client client = clientArray.getClients().stream().findFirst().get();
-      client.browse("newFolder").list().stream().filter(remoteFile -> remoteFile.getName().equals("data.txt")).findAny().get().downloadTo(new File("target/data.txt"));
+      client.browse("toDownload").list().stream().filter(remoteFile -> remoteFile.getName().equals("downloaded-data.txt")).findAny().get().downloadTo(new File("target/downloaded-data.txt"));
 
-      try (DataInputStream dis = new DataInputStream(new FileInputStream("target/data.txt"))) {
-        assertThat(dis.readUTF(), is("hello, world!"));
+      try (DataInputStream dis = new DataInputStream(new FileInputStream("target/downloaded-data.txt"))) {
+        assertThat(dis.readUTF(), is("downloaded: hello, world!"));
       }
     }
   }
