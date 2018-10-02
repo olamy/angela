@@ -67,7 +67,7 @@ public class InstallTest {
       monitor.stopOnAll();
     }
 
-    assertThat(new File(resultPath, "localhost/stats/vmstat.log").exists(), is(true));
+    assertThat(new File(resultPath, "/" + "localhost" + "/metrics/vmstat.log").exists(), is(true));
     resultPath.delete();
   }
 
