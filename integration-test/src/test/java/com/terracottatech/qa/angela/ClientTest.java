@@ -217,7 +217,6 @@ public class ClientTest {
     ClientArrayTopology ct = new ClientArrayTopology(distribution, clientArrayConfig1);
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.license(license))
         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {

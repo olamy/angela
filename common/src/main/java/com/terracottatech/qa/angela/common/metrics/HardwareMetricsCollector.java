@@ -21,7 +21,7 @@ import java.io.IOException;
 public class HardwareMetricsCollector {
 
   private final static Logger logger = LoggerFactory.getLogger(HardwareMetricsCollector.class);
-  private final static String METRICS_DIRECTORY = "METRICS_DIRECTORY";;
+  private final static String METRICS_DIRECTORY = "metrics";;
 
   public enum TYPE {vmstat, none;}
 
