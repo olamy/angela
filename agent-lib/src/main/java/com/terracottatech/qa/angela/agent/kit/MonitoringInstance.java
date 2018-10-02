@@ -14,7 +14,7 @@ import java.io.File;
 public class MonitoringInstance {
 
   private final String workingKitInstallationPath;
-  HardwareMetricsCollector hardwareMetricsCollector = new HardwareMetricsCollector();
+  private final HardwareMetricsCollector hardwareMetricsCollector = new HardwareMetricsCollector();
 
   public MonitoringInstance(final InstanceId instanceId) {
     this.workingKitInstallationPath = Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId;

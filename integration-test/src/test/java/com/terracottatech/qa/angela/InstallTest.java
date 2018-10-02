@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 public class InstallTest {
 
   @Test
-  public void testHardwareStatsLogs() throws Exception {
+  public void testHardwareMetricsLogs() throws Exception {
     final File resultPath = new File(UUID.randomUUID().toString());
 
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()

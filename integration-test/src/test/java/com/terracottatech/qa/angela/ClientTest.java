@@ -65,13 +65,14 @@ public class ClientTest {
   }
 
   @Test
-  public void testClientHardwareStatsLog() throws Exception {
+  public void testClientHardwareMetricsLog() throws Exception {
     final File resultPath = new File(UUID.randomUUID().toString());
 
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
+    final String clientHostname = "localhost";
     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        newClientArrayConfig().host("localhost"));
+        newClientArrayConfig().host(clientHostname));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
@@ -100,7 +101,7 @@ public class ClientTest {
 
     }
 
-    assertThat(new File(resultPath, "/localhost/stats/vmstat.log").exists(), is(true));
+    assertThat(new File(resultPath, "/" + clientHostname + "/metrics/vmstat.log").exists(), is(true));
     resultPath.delete();
   }
 
