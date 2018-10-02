@@ -196,9 +196,6 @@ public class ClusterFactory implements AutoCloseable {
   public ClusterMonitor monitor() {
     final Set<String> hostnames = new HashSet<>();
     if (configurationContext.tsa() != null) {
-      if (configurationContext.tsa().getTopology() == null) {
-        throw new IllegalArgumentException("You added a tsa to the Configuration but did not define its topology");
-      }
       hostnames.addAll(configurationContext.tsa().getTopology().getServersHostnames());
     }
     if (configurationContext.tms() != null) {
