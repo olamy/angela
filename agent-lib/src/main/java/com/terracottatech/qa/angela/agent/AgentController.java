@@ -469,7 +469,6 @@ public class AgentController {
 
   public synchronized void startHardwareMonitoring(final InstanceId instanceId) {
     if (monitoringInstall.containsKey(instanceId)) {
-      logger.info("hardware monitoring already started on Agent {} for instance ID {}", ignite.name(), instanceId);
       return;
     }
     final MonitoringInstance monitoringInstall = new MonitoringInstance(instanceId);
@@ -479,7 +478,6 @@ public class AgentController {
 
   public synchronized void stopHardwareMonitoring(final InstanceId instanceId) {
     if (!monitoringInstall.containsKey(instanceId)) {
-      logger.info("hardware monitoring not started on Agent {} for instance ID {}", ignite.name(), instanceId);
       return;
     }
     monitoringInstall.get(instanceId).stopHardwareMonitoring();

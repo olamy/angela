@@ -21,6 +21,7 @@ import java.io.IOException;
 public class HardwareMetricsCollector {
 
   private final static Logger logger = LoggerFactory.getLogger(HardwareMetricsCollector.class);
+  private final static String METRICS_DIRECTORY = "METRICS_DIRECTORY";;
 
   public enum TYPE {vmstat, none;}
 
@@ -52,10 +53,9 @@ public class HardwareMetricsCollector {
 
       final FileOutputStream output;
       try {
-        final File statsDirectory = new File(installLocation, "stats");
+        final File statsDirectory = new File(installLocation, METRICS_DIRECTORY);
         statsDirectory.mkdirs();
         final File logFile = new File(statsDirectory, "vmstat.log");
-        System.out.println("**************************" + logFile.getAbsolutePath());
         logger.info("stat log file: {}", logFile.getAbsolutePath());
         output = new FileOutputStream(logFile);
       } catch (FileNotFoundException e) {
