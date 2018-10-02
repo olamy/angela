@@ -34,8 +34,7 @@ public class ClusterMonitor implements AutoCloseable {
     this.hostnames = hostnames;
   }
 
-
-  public void startOnAll() {
+  public ClusterMonitor startOnAll() {
     List<Exception> exceptions = new ArrayList<>();
 
     for (String hostname : hostnames) {
@@ -51,9 +50,10 @@ public class ClusterMonitor implements AutoCloseable {
       exceptions.forEach(re::addSuppressed);
       throw re;
     }
+    return this;
   }
 
-  public void stopOnAll() {
+  public ClusterMonitor stopOnAll() {
     List<Exception> exceptions = new ArrayList<>();
 
     for (String hostname : hostnames) {
@@ -69,6 +69,7 @@ public class ClusterMonitor implements AutoCloseable {
       exceptions.forEach(re::addSuppressed);
       throw re;
     }
+    return this;
   }
 
   public void downloadTo(File location) {

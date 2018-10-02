@@ -45,7 +45,7 @@ public class InstallTest {
 
   @Test
   public void testHardwareMetricsLogs() throws Exception {
-    final File resultPath = new File(UUID.randomUUID().toString());
+    final File resultPath = new File("target", UUID.randomUUID().toString());
 
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
@@ -55,20 +55,17 @@ public class InstallTest {
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();
-      ClusterMonitor monitor = factory.monitor();
 
       TerracottaServer server = config.tsa().getTopology().get(0).getTerracottaServer(0);
       tsa.create(server);
-      monitor.startOnAll();
+      ClusterMonitor monitor = factory.monitor().startOnAll();
 
       Thread.sleep(3000);
 
       monitor.downloadTo(resultPath);
-      monitor.stopOnAll();
     }
 
-    assertThat(new File(resultPath, "/" + "localhost" + "/metrics/vmstat.log").exists(), is(true));
-    resultPath.delete();
+    assertThat(new File(resultPath, "/localhost/metrics/vmstat.log").exists(), is(true));
   }
 
   @Test
