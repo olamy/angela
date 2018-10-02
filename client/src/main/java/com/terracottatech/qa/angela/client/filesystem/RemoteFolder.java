@@ -55,10 +55,10 @@ public class RemoteFolder extends RemoteFile {
       String currentName = parentName + "/" + f.getName();
       if (f.isDirectory()) {
         uploadFolder(currentName, f);
-        return;
-      }
-      try (FileInputStream fis = new FileInputStream(f)) {
-        upload(currentName, fis);
+      } else {
+        try (FileInputStream fis = new FileInputStream(f)) {
+          upload(currentName, fis);
+        }
       }
     }
   }
