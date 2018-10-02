@@ -7,19 +7,12 @@ import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.http.HttpUtils;
 import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
-import io.restassured.path.json.JsonPath;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URLEncoder;
 
 import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
 import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
@@ -65,71 +58,6 @@ public class Tms implements AutoCloseable {
       );
     }
     return (isHttps ? "https://" : "http://") + tmsConfigurationContext.getHostname() + ":9480";
-  }
-
-  /**
-   * This method connects to the TMS via HTTP (insecurely) REST calls.  It also creates a TMS connection to the cluster.
-   *
-   * @param uri of the cluster to connect to
-   * @return connectionName
-   */
-  public String connectToCluster(URI uri) {
-    return connectToCluster(uri, null);
-  }
-
-  /**
-   * This method connects to the TMS via HTTPS (securely) REST calls.  It also creates a TMS connection to the cluster.
-   * If cluster security is enabled it will connect to the cluster via SSL/TLS, otherwise if connects via plain text.
-   *
-   * @param uri                     of the cluster to connect to
-   * @param tmsClientSecurityConfig
-   * @return connectionName
-   */
-  public String connectToCluster(URI uri, TmsClientSecurityConfig tmsClientSecurityConfig) {
-    String connectionName;
-    logger.info("connecting TMS to {}", uri.toString());
-    // probe
-    String url;
-    String response;
-    try {
-      response = probeOldStyle(uri, tmsClientSecurityConfig);
-    } catch (HttpUtils.FailedHttpRequestException e) {
-      // TDB-3370 / https://irepo.eur.ad.sag/projects/TAB/repos/terracotta-enterprise/pull-requests/1580/overview
-      // in 10.3, probe calls need to use /probe?uri=host:port instead of : /probe/host:port in 10.2
-      response = probeNewStyle(uri, tmsClientSecurityConfig);
-    }
-
-    // create connection
-    url = url() + "/api/connections";
-
-    response = HttpUtils.sendPostRequest(url, response, tmsClientSecurityConfig);
-    logger.info("tms connect result :" + response);
-
-    connectionName = JsonPath.from(response).get("config.connectionName");
-
-    return connectionName;
-  }
-
-
-  private String probeOldStyle(URI uri, TmsClientSecurityConfig securityConfig) {
-    return probe(uri, API_CONNECTIONS_PROBE_OLD, securityConfig);
-  }
-
-  private String probeNewStyle(URI uri, TmsClientSecurityConfig securityConfig) {
-    return probe(uri, API_CONNECTIONS_PROBE_NEW, securityConfig);
-  }
-
-  private String probe(URI uri, String probeEndpoint, TmsClientSecurityConfig tmsClientSecurityConfig) {
-    String url;
-    try {
-      url = url() + probeEndpoint +
-            URLEncoder.encode(uri.toString(), "UTF-8");
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException("Could not encode terracotta connection url", e);
-    }
-    String response = HttpUtils.sendGetRequest(url, tmsClientSecurityConfig);
-    logger.info("tms probe result :" + response);
-    return response;
   }
 
   public RemoteFolder browse(String root) {
