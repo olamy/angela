@@ -8,6 +8,7 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
@@ -20,8 +21,6 @@ import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
 public class Tms implements AutoCloseable {
 
   private final static Logger logger = LoggerFactory.getLogger(Tsa.class);
-  private static final String API_CONNECTIONS_PROBE_OLD = "/api/connections/probe/";
-  private static final String API_CONNECTIONS_PROBE_NEW = "/api/connections/probe?uri=";
   private final TmsConfigurationContext tmsConfigurationContext;
   private boolean closed = false;
   private final Ignite ignite;
@@ -37,7 +36,7 @@ public class Tms implements AutoCloseable {
   @Deprecated
   public static final String FULL = "full";
 
-  public Tms(Ignite ignite, InstanceId instanceId, TmsConfigurationContext tmsConfigurationContext) {
+  Tms(Ignite ignite, InstanceId instanceId, TmsConfigurationContext tmsConfigurationContext) {
     if (tmsConfigurationContext.getLicense() == null) {
       throw new IllegalArgumentException("TMS requires a license.");
     }
@@ -58,6 +57,14 @@ public class Tms implements AutoCloseable {
       );
     }
     return (isHttps ? "https://" : "http://") + tmsConfigurationContext.getHostname() + ":9480";
+  }
+
+  public TmsHttpClient httpClient() {
+    return httpClient(null);
+  }
+
+  public TmsHttpClient httpClient(TmsClientSecurityConfig tmsClientSecurityConfig) {
+    return new TmsHttpClient(url(), tmsClientSecurityConfig);
   }
 
   public RemoteFolder browse(String root) {

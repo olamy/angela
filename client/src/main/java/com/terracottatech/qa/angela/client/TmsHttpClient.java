@@ -3,16 +3,17 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import io.restassured.path.json.JsonPath;
 import static java.nio.charset.StandardCharsets.UTF_8;
+
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,8 +46,8 @@ public class TmsHttpClient {
   private static final String APPLICATION_JSON = "application/json";
 
 
-  public TmsHttpClient(String tmsBaseUrl, TmsClientSecurityConfig tmsClientSecurityConfig) {
-    this.tmsBaseUrl = tmsBaseUrl;
+  TmsHttpClient(String tmsBaseUrl, TmsClientSecurityConfig tmsClientSecurityConfig) {
+    this.tmsBaseUrl = Objects.requireNonNull(tmsBaseUrl);
     this.tmsClientSecurityConfig = tmsClientSecurityConfig;
   }
 
@@ -60,7 +62,6 @@ public class TmsHttpClient {
     String connectionName;
     LOGGER.info("connecting TMS to {}", uri.toString());
     // probe
-    String url;
     String response;
     try {
       response = probeOldStyle(uri);
@@ -71,16 +72,13 @@ public class TmsHttpClient {
     }
 
     // create connection
-    url = tmsBaseUrl + "/api/connections";
-
-    response = sendPostRequest(url, response);
+    response = sendPostRequest("/api/connections", response);
     LOGGER.info("tms connect result :" + response);
 
     connectionName = JsonPath.from(response).get("config.connectionName");
 
     return connectionName;
   }
-
 
   private String probeOldStyle(URI uri) {
     return probe(uri, API_CONNECTIONS_PROBE_OLD);
@@ -91,23 +89,19 @@ public class TmsHttpClient {
   }
 
   private String probe(URI uri, String probeEndpoint) {
-    String url;
     try {
-      url = tmsBaseUrl + probeEndpoint +
-          URLEncoder.encode(uri.toString(), String.valueOf(UTF_8));
+      String response = sendGetRequest(probeEndpoint +
+          URLEncoder.encode(uri.toString(), String.valueOf(UTF_8)));
+      LOGGER.info("tms probe result :" + response);
+      return response;
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("Could not encode terracotta connection url", e);
     }
-    String response = sendGetRequest(url);
-    LOGGER.info("tms probe result :" + response);
-    return response;
   }
-
-
 
   public void login() throws IOException, GeneralSecurityException {
     // get the login page to load the XSRF token
-    sendGetRequest(tmsBaseUrl + "/login.html");
+    sendGetRequest("/login.html");
 
     String urlParameters = "username=" + tmsClientSecurityConfig.getUsername() + "&password=" + tmsClientSecurityConfig.getPassword();
     URL url = new URL(tmsBaseUrl + "/api/security/login");
@@ -131,15 +125,16 @@ public class TmsHttpClient {
     if (responseCode != 302) {
       throw new FailedHttpRequestException(responseCode);
     }
-
   }
 
-  public String sendGetRequest(String url) {
+  public String sendGetRequest(String path) {
     try {
-      HttpURLConnection connection = prepareHttpConnection(tmsClientSecurityConfig, new URL(url));
+      HttpURLConnection connection = prepareHttpConnection(tmsClientSecurityConfig, new URL(tmsBaseUrl + path));
       saveHeaders(connection);
       checkResponseCode(connection);
-      return inputStreamToString(connection);
+      try (InputStream inputStream = connection.getInputStream()) {
+        return IOUtils.toString(inputStream);
+      }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (GeneralSecurityException e) {
@@ -147,14 +142,15 @@ public class TmsHttpClient {
     }
   }
 
-  public String sendPostRequest(String url, String payload) {
-
+  public String sendPostRequest(String path, String payload) {
     try {
-      HttpURLConnection connection = prepareHttpConnection(tmsClientSecurityConfig, new URL(url));
+      HttpURLConnection connection = prepareHttpConnection(tmsClientSecurityConfig, new URL(tmsBaseUrl + path));
       addHttpPostPayload(payload, connection);
       saveHeaders(connection);
       checkResponseCode(connection);
-      return inputStreamToString(connection);
+      try (InputStream inputStream = connection.getInputStream()) {
+        return IOUtils.toString(inputStream);
+      }
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (GeneralSecurityException e) {
@@ -236,22 +232,9 @@ public class TmsHttpClient {
         .ifPresent(xsrfTokenCookie -> additionnalHeaders.put("X-XSRF-TOKEN", xsrfTokenCookie.getValue()));
   }
 
-  private static String inputStreamToString(HttpURLConnection con) throws IOException {
-    StringBuilder response = new StringBuilder();
-    try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
-      String inputLine;
-      while ((inputLine = in.readLine()) != null) {
-        response.append(inputLine);
-      }
-    }
-    return response.toString();
-  }
-
-
-
   public static class FailedHttpRequestException extends RuntimeException {
     public FailedHttpRequestException(int responseCode) {
-      super("The HTTP request failed with error code : " + responseCode);
+      super("The HTTP request failed with response code : " + responseCode);
     }
   }
 }
