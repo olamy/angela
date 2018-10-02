@@ -114,6 +114,7 @@ public class Client implements Closeable {
   private File checkKitContents(LocalKitManager localKitManager, String classpathJarName) throws IOException {
     File fileInKit = localKitManager.findEquivalent(classpathJarName);
     if (fileInKit != null) {
+      logger.info("Substituting '{}' with kit's equivalent JAR '{}'", new File(classpathJarName).getName(), fileInKit);
       return fileInKit;
     } else {
       return new File(classpathJarName);

@@ -117,7 +117,7 @@ public class TmsSecurityTest {
   @Test
   public void could_create_connection_to_secure_cluster_test() {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri, null, null);
-    TmsHttpClient tmsHttpClient =  new TmsHttpClient(TMS.url(), tmsClientSecurityConfig);
+    TmsHttpClient tmsHttpClient = TMS.httpClient(tmsClientSecurityConfig);
     String connectionName = tmsHttpClient.createConnectionToCluster(TSA.uri());
     assertThat(connectionName, startsWith("TmsSecurityTest"));
   }
@@ -125,19 +125,16 @@ public class TmsSecurityTest {
   @Test
   public void http_client_connects_to_tms_using_ssl_test() throws Exception {
     TmsClientSecurityConfig tmsClientSecurityConfig = new TmsClientSecurityConfig("terracotta_security_password", clientTruststoreUri, null, null);
-    String tmsBaseUrl = TMS.url();
-    TmsHttpClient tmsHttpClient =  new TmsHttpClient(TMS.url(), tmsClientSecurityConfig);
+    TmsHttpClient tmsHttpClient = TMS.httpClient(tmsClientSecurityConfig);
 
     ClientArray clientArray = factory.clientArray();
 
     ClientJob clientJobTms = (context) -> {
-      String url = tmsBaseUrl +"/api/connections";
-      String response = tmsHttpClient.sendGetRequest(url);
+      String response = tmsHttpClient.sendGetRequest("/api/connections");
       LOGGER.info("tms list connections result :" + response);
       assertThat(response, Matchers.containsString("TmsSecurityTest"));
 
-      String infoUrl = tmsBaseUrl + "/api/info";
-      String infoResponse = tmsHttpClient.sendGetRequest(infoUrl);
+      String infoResponse = tmsHttpClient.sendGetRequest("/api/info");
       LOGGER.info("tms info :" + response);
 
       assertThat(infoResponse, Matchers.containsString("\"connection_secured\":true"));

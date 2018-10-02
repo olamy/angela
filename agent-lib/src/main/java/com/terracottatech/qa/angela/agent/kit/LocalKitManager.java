@@ -19,8 +19,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
@@ -259,37 +259,33 @@ public class LocalKitManager extends KitManager {
      * are providing the same thing, barring any version differences.
      */
     String sourceBundleSymbolicName = loadManifestBundleSymbolicName(new File(filename));
-
-    final AtomicReference<File> returnFile = new AtomicReference<>(null);
-    try {
-      Files.walk(this.kitInstallationPath.toPath())
-          .filter(Files::isRegularFile)
-          .forEach((f) -> {
-            // this the OSGi Bundle-SymbolicName attribute matching
-            if (sourceBundleSymbolicName != null) {
-              try {
-                if (sourceBundleSymbolicName.equals(loadManifestBundleSymbolicName(f.toFile()))) {
-                  returnFile.set(f.toFile());
-                }
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-              }
-            }
-          });
-    } catch (IOException e) {
+    if (sourceBundleSymbolicName == null) {
       return null;
     }
-    logger.debug("Looking for {} in {} and found {}", new File(filename).getName(), kitInstallationPath, returnFile.get());
-    return returnFile.get();
+
+    // search for equivalent files in the kit's "client/" subfolder
+    Path found = Files.walk(new File(kitInstallationPath, "client").toPath())
+        .filter(Files::isRegularFile)
+        .filter(f -> sourceBundleSymbolicName.equals(loadManifestBundleSymbolicName(f.toFile())))
+        .findFirst()
+        .orElse(null);
+
+    logger.debug("Looking for {} in {} and found {}", new File(filename).getName(), kitInstallationPath, found);
+    return found == null ? null : found.toFile();
   }
 
-  private String loadManifestBundleSymbolicName(File file) throws IOException {
-    if (file.getName().endsWith(".jar")) {
-      try (JarInputStream jarInputStream = new JarInputStream(new FileInputStream(file))) {
-        Manifest manifest = jarInputStream.getManifest();
-        return manifest == null ? null : manifest.getMainAttributes().getValue("Bundle-SymbolicName");
+  private String loadManifestBundleSymbolicName(File file) {
+    try {
+      if (file.getName().endsWith(".jar")) {
+        try (JarInputStream jarInputStream = new JarInputStream(new FileInputStream(file))) {
+          Manifest manifest = jarInputStream.getManifest();
+          return manifest == null ? null : manifest.getMainAttributes().getValue("Bundle-SymbolicName");
+        }
+      } else {
+        return null;
       }
-    } else {
+    } catch (IOException ioe) {
+      logger.error("Error loading the JAR manifest of " + file, ioe);
       return null;
     }
   }

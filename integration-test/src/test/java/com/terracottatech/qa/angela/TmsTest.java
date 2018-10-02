@@ -50,7 +50,7 @@ public class TmsTest {
   private static ClusterFactory factory;
   private static final String TMS_HOSTNAME = "localhost";
   private static URI tsaUri;
-  private static String tmsBaseUrl;
+  private static TmsHttpClient tmsHttpClient;
 
   @BeforeClass
   public static void setUp() {
@@ -76,8 +76,7 @@ public class TmsTest {
     tsaUri = tsa.uri();
     Tms tms = factory.tms()
         .start();
-    tmsBaseUrl = tms.url();
-    TmsHttpClient tmsHttpClient =  new TmsHttpClient(tmsBaseUrl, null);
+    tmsHttpClient = tms.httpClient();
     connectionName = tmsHttpClient.createConnectionToCluster(tsaUri);
   }
 
@@ -89,7 +88,7 @@ public class TmsTest {
   @Test
   public void testTmsConnection() throws Exception {
     URI tsaUri = TmsTest.tsaUri;
-    String tmsBaseUrl = TmsTest.tmsBaseUrl;
+    TmsHttpClient tmsHttpClient = TmsTest.tmsHttpClient;
 
     ClientArray clientArray = factory.clientArray();
     ClientJob clientJob = (cluster) -> {
@@ -112,10 +111,9 @@ public class TmsTest {
 
 
     ClientJob clientJobTms = (cluster) -> {
-      TmsHttpClient tmsHttpClient =  new TmsHttpClient(tmsBaseUrl, null);
-      String response = tmsHttpClient.sendGetRequest(tmsBaseUrl + "/api/connections");
-      LOGGER.info("tms list connections result :" + response.toString());
-      assertThat(response.toString(), Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
+      String response = tmsHttpClient.sendGetRequest("/api/connections");
+      LOGGER.info("tms list connections result : " + response);
+      assertThat(response, Matchers.containsString("datasetServerEntities\":{\"MyDataset\""));
     };
 
     ClientArrayFuture f1 = clientArray.executeOnAll(clientJob);
