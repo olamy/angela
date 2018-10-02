@@ -32,7 +32,6 @@ import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurity
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -74,7 +73,7 @@ public class AgentController {
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
-  private final Map<InstanceId, MonitoringInstance> monitoringInstall = new HashMap<>();
+  private final Map<InstanceId, MonitoringInstance> monitoringInstances = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
 
@@ -467,21 +466,21 @@ public class AgentController {
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
   }
 
-  public synchronized void startHardwareMonitoring(final InstanceId instanceId) {
-    if (monitoringInstall.containsKey(instanceId)) {
+  public void startHardwareMonitoring(final InstanceId instanceId) {
+    if (monitoringInstances.containsKey(instanceId)) {
       return;
     }
     final MonitoringInstance monitoringInstall = new MonitoringInstance(instanceId);
     monitoringInstall.startHardwareMonitoring();
-    this.monitoringInstall.put(instanceId, monitoringInstall);
+    this.monitoringInstances.put(instanceId, monitoringInstall);
   }
 
-  public synchronized void stopHardwareMonitoring(final InstanceId instanceId) {
-    if (!monitoringInstall.containsKey(instanceId)) {
+  public void stopHardwareMonitoring(final InstanceId instanceId) {
+    if (!monitoringInstances.containsKey(instanceId)) {
       return;
     }
-    monitoringInstall.get(instanceId).stopHardwareMonitoring();
-    this.monitoringInstall.remove(instanceId);
+    monitoringInstances.get(instanceId).stopHardwareMonitoring();
+    this.monitoringInstances.remove(instanceId);
   }
 
   public void destroyClient(InstanceId instanceId, int pid) {

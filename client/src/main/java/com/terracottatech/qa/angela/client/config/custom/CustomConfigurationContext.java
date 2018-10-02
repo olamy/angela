@@ -51,6 +51,9 @@ public class CustomConfigurationContext implements ConfigurationContext {
     }
     customTsaConfigurationContext = new CustomTsaConfigurationContext();
     tsa.accept(customTsaConfigurationContext);
+    if (customTsaConfigurationContext.getTopology() == null) {
+      throw new IllegalArgumentException("You added a tsa to the Configuration but did not define its topology");
+    }
     return this;
   }
 
