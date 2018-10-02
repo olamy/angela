@@ -1,6 +1,10 @@
 package com.terracottatech.qa.angela;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import com.terracottatech.qa.angela.client.ClusterFactory;
+import com.terracottatech.qa.angela.client.ClusterMonitor;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
@@ -14,8 +18,6 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -42,35 +44,32 @@ import static org.junit.Assert.fail;
 public class InstallTest {
 
   @Test
-  public void testHardwareStatsLogs() throws Exception {
-    System.setProperty("stats", "vmstat");
-    try {
-      final File resultPath = new File(UUID.randomUUID().toString());
+  public void testHardwareMetricsLogs() throws Exception {
+    final File resultPath = new File(UUID.randomUUID().toString());
 
-      ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
-          .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-              tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-              .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-          );
+    ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
 
-      try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
-        Tsa tsa = factory.tsa();
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
+      Tsa tsa = factory.tsa();
+      ClusterMonitor monitor = factory.monitor();
 
-        TerracottaServer server = config.tsa().getTopology().get(0).getTerracottaServer(0);
-        tsa.create(server);
+      TerracottaServer server = config.tsa().getTopology().get(0).getTerracottaServer(0);
+      tsa.create(server);
+      monitor.startOnAll();
 
-        Thread.sleep(3000);
+      Thread.sleep(3000);
 
-        tsa.browse(server, "stats").downloadTo(resultPath);
-      }
-
-      assertThat(new File(resultPath, "vmstat.log").exists(), is(true));
-      resultPath.delete();
-    } finally {
-      System.clearProperty("stats");
+      monitor.downloadTo(resultPath);
+      monitor.stopOnAll();
     }
-  }
 
+    assertThat(new File(resultPath, "/" + "localhost" + "/metrics/vmstat.log").exists(), is(true));
+    resultPath.delete();
+  }
 
   @Test
   public void testSsh() throws Exception {

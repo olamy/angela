@@ -13,6 +13,7 @@ import org.zeroturnaround.process.PidUtil;
 import org.zeroturnaround.process.ProcessUtil;
 import org.zeroturnaround.process.Processes;
 
+import com.terracottatech.qa.angela.agent.kit.MonitoringInstance;
 import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
@@ -31,7 +32,6 @@ import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurity
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -73,6 +73,7 @@ public class AgentController {
   private final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
+  private final Map<InstanceId, MonitoringInstance> monitoringInstances = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
 
@@ -395,9 +396,9 @@ public class AgentController {
     }
   }
 
-  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, final HardwareMetricsCollector.TYPE hardwareStats) {
+  public void create(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
-    serverInstance.create(tcEnv, hardwareStats);
+    serverInstance.create(tcEnv);
   }
 
   public void stop(final InstanceId instanceId, final TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv) {
@@ -463,6 +464,23 @@ public class AgentController {
       throw new IllegalStateException("Cannot control cluster tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
+  }
+
+  public void startHardwareMonitoring(final InstanceId instanceId) {
+    if (monitoringInstances.containsKey(instanceId)) {
+      return;
+    }
+    final MonitoringInstance monitoringInstall = new MonitoringInstance(instanceId);
+    monitoringInstall.startHardwareMonitoring();
+    this.monitoringInstances.put(instanceId, monitoringInstall);
+  }
+
+  public void stopHardwareMonitoring(final InstanceId instanceId) {
+    if (!monitoringInstances.containsKey(instanceId)) {
+      return;
+    }
+    monitoringInstances.get(instanceId).stopHardwareMonitoring();
+    this.monitoringInstances.remove(instanceId);
   }
 
   public void destroyClient(InstanceId instanceId, int pid) {

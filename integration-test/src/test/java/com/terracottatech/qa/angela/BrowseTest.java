@@ -110,9 +110,6 @@ public class BrowseTest {
   public void testTms() throws Exception {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa
-            .license(license)
-        )
         .tms(tms -> tms
             .distribution(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB))
             .license(license)

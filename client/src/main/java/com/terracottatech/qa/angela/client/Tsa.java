@@ -1,12 +1,15 @@
 package com.terracottatech.qa.angela.client;
 
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.client.net.DisruptionController;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
@@ -15,9 +18,6 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -52,7 +52,6 @@ public class Tsa implements AutoCloseable {
   private final transient DisruptionController disruptionController;
   private final TsaConfigurationContext tsaConfigurationContext;
   private final LocalKitManager localKitManager;
-  private final HardwareMetricsCollector.TYPE hardwareStats;
   private boolean closed = false;
 
   Tsa(Ignite ignite, InstanceId instanceId, TsaConfigurationContext tsaConfigurationContext) {
@@ -64,7 +63,6 @@ public class Tsa implements AutoCloseable {
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, tsaConfigurationContext.getTopology());
     this.localKitManager = new LocalKitManager(tsaConfigurationContext.getTopology().getDistribution());
-    this.hardwareStats = HardwareMetricsCollector.parse();
     installAll();
   }
 
@@ -181,7 +179,7 @@ public class Tsa implements AutoCloseable {
         return this;
       case STOPPED:
         logger.info("creating on {}", terracottaServer.getHostname());
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), hardwareStats)).get(TIMEOUT);
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment())).get(TIMEOUT);
         return this;
     }
     throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);

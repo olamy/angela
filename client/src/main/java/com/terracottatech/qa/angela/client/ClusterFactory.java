@@ -1,13 +1,5 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
-import com.terracottatech.qa.angela.client.config.ConfigurationContext;
-import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
-import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
-import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
-import com.terracottatech.qa.angela.common.cluster.Cluster;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -20,6 +12,15 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
+import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -45,6 +46,7 @@ public class ClusterFactory implements AutoCloseable {
   private static final String TSA = "tsa";
   private static final String TMS = "tms";
   private static final String CLIENT_ARRAY = "clientArray";
+  private static final String MONITOR = "monitor";
   private static final DateTimeFormatter PATH_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-hhmmss");
 
   private final List<AutoCloseable> controllers = new ArrayList<>();
@@ -122,7 +124,9 @@ public class ClusterFactory implements AutoCloseable {
 
       TcpDiscoverySpi spi = new TcpDiscoverySpi();
       TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-      ipFinder.setAddresses(targetServerNames.stream().map(targetServerName -> targetServerName + ":40000").collect(Collectors.toList()));
+      ipFinder.setAddresses(targetServerNames.stream()
+          .map(targetServerName -> targetServerName + ":40000")
+          .collect(Collectors.toList()));
       spi.setJoinTimeout(10000);
       spi.setIpFinder(ipFinder);
 
@@ -183,9 +187,29 @@ public class ClusterFactory implements AutoCloseable {
     ClientArrayConfigurationContext clientArrayConfigurationContext = configurationContext.clientArray();
     init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
 
-    ClientArray clientArray = new ClientArray(ignite, () -> init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames()), clientArrayConfigurationContext);
+    ClientArray clientArray = new ClientArray(ignite, () -> init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology()
+        .getClientHostnames()), clientArrayConfigurationContext);
     controllers.add(clientArray);
     return clientArray;
+  }
+
+  public ClusterMonitor monitor() {
+    final Set<String> hostnames = new HashSet<>();
+    if (configurationContext.tsa() != null) {
+      hostnames.addAll(configurationContext.tsa().getTopology().getServersHostnames());
+    }
+    if (configurationContext.tms() != null) {
+      hostnames.add(configurationContext.tms().getHostname());
+    }
+    if (configurationContext.clientArray() != null) {
+      hostnames.addAll(configurationContext.clientArray().getClientArrayTopology().getClientHostnames());
+    }
+
+    InstanceId instanceId = init(MONITOR, hostnames);
+
+    ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, instanceId, hostnames);
+    controllers.add(clusterMonitor);
+    return clusterMonitor;
   }
 
   @Override
@@ -245,5 +269,4 @@ public class ClusterFactory implements AutoCloseable {
       throw ioException;
     }
   }
-
 }
