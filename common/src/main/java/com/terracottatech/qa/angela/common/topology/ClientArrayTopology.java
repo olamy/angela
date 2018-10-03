@@ -16,6 +16,10 @@ public class ClientArrayTopology {
   private final Distribution distribution;
   private final ClientArrayConfig clientArrayConfig;
 
+  public ClientArrayTopology(ClientArrayConfig clientArrayConfig) {
+    this(null, clientArrayConfig);
+  }
+
   public ClientArrayTopology(Distribution distribution, ClientArrayConfig clientArrayConfig) {
     this.distribution = distribution;
     this.clientArrayConfig = clientArrayConfig;

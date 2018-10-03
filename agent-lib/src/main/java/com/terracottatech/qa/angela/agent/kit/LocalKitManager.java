@@ -47,7 +47,7 @@ public class LocalKitManager extends KitManager {
                                            + kitInstallationPath + "] but the location ins't a directory");
       }
       this.kitInstallationPath = new File(kitInstallationPath);
-    } else {
+    } else if (rootInstallationPath != null) {
       logger.info("getting install from the kit/installer");
       File localInstallerFilename = new File(resolveLocalInstallerFilename());
       if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
@@ -67,7 +67,9 @@ public class LocalKitManager extends KitManager {
         createLocalInstallFromInstaller(license, localInstallerFilename);
       }
     }
-    logger.info("Local install is located in {}", this.kitInstallationPath);
+    if (this.kitInstallationPath != null) {
+      logger.info("Local install is located in {}", this.kitInstallationPath);
+    }
   }
 
   public String getKitInstallationName() {
@@ -253,6 +255,10 @@ public class LocalKitManager extends KitManager {
   }
 
   public File findEquivalent(String filename) throws IOException {
+    if (rootInstallationPath == null) {
+      // no configured kit -> no equivalent
+      return null;
+    }
     /*
      * Match files by reading the JAR's MANIFEST.MF file and reading the "Bundle-SymbolicName" attribute.
      * This is provided by all OSGi-enabled JARs (all TC jars do) and is meant to figure out if two JAR files
