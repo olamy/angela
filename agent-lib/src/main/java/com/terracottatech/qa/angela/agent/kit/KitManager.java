@@ -44,7 +44,7 @@ public abstract class KitManager {
       localWorkRootDir = dir;
     }
 
-    this.rootInstallationPath = localWorkRootDir + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
+    this.rootInstallationPath = distribution == null ? null : localWorkRootDir + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
                                 + File.separator + distribution.getVersion().getVersion(false);
   }
 

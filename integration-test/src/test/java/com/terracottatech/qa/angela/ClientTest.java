@@ -65,6 +65,32 @@ public class ClientTest {
   }
 
   @Test
+  public void testClientArrayNoDistribution() throws Exception {
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().host("localhost"))));
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> System.out.println("hello world 1"));
+        f.get();
+      }
+    }
+  }
+
+  @Test
+  public void testClientArrayMissingLicenseCheck() {
+    try {
+      CustomConfigurationContext.customConfigurationContext()
+          .clientArray(clientArray -> clientArray
+              .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+          );
+      fail("expected IllegalArgumentException");
+    } catch (IllegalArgumentException e) {
+      // expected
+    }
+  }
+
+  @Test
   public void testClientHardwareMetricsLog() throws Exception {
     final File resultPath = new File(UUID.randomUUID().toString());
 

@@ -37,9 +37,6 @@ public class Tms implements AutoCloseable {
   public static final String FULL = "full";
 
   Tms(Ignite ignite, InstanceId instanceId, TmsConfigurationContext tmsConfigurationContext) {
-    if (tmsConfigurationContext.getLicense() == null) {
-      throw new IllegalArgumentException("TMS requires a license.");
-    }
     this.tmsConfigurationContext = tmsConfigurationContext;
     this.instanceId = instanceId;
     this.ignite = ignite;
