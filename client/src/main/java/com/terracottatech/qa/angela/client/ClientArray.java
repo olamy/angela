@@ -3,8 +3,6 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.common.clientconfig.ClientId;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
-import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
@@ -36,14 +34,10 @@ public class ClientArray implements AutoCloseable {
   private boolean closed = false;
 
   ClientArray(Ignite ignite, Supplier<InstanceId> instanceIdSupplier, ClientArrayConfigurationContext clientArrayConfigurationContext) {
-    ClientArrayTopology topology = clientArrayConfigurationContext.getClientArrayTopology();
-    if (!topology.getDistribution().getLicenseType().isOpenSource() && clientArrayConfigurationContext.getLicense() == null) {
-      throw new IllegalArgumentException("LicenseType '" + topology.getDistribution().getLicenseType() + "' requires a license.");
-    }
     this.clientArrayConfigurationContext = clientArrayConfigurationContext;
     this.instanceIdSupplier = instanceIdSupplier;
     this.ignite = ignite;
-    this.localKitManager = new LocalKitManager(topology.getDistribution());
+    this.localKitManager = new LocalKitManager(clientArrayConfigurationContext.getClientArrayTopology().getDistribution());
     installAll();
   }
 

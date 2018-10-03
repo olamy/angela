@@ -6,6 +6,7 @@ import com.terracottatech.qa.angela.client.config.RemotingConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,6 +69,9 @@ public class CustomConfigurationContext implements ConfigurationContext {
     }
     customTmsConfigurationContext = new CustomTmsConfigurationContext();
     tms.accept(customTmsConfigurationContext);
+    if (customTmsConfigurationContext.getLicense() == null) {
+      throw new IllegalArgumentException("TMS requires a license.");
+    }
     return this;
   }
 
@@ -82,6 +86,10 @@ public class CustomConfigurationContext implements ConfigurationContext {
     }
     customClientArrayConfigurationContext = new CustomClientArrayConfigurationContext();
     clientArray.accept(customClientArrayConfigurationContext);
+    Distribution distribution = customClientArrayConfigurationContext.getClientArrayTopology().getDistribution();
+    if (distribution != null && !distribution.getLicenseType().isOpenSource() && customClientArrayConfigurationContext.getLicense() == null) {
+      throw new IllegalArgumentException("Distribution's license type '" + distribution.getLicenseType() + "' requires a license.");
+    }
     return this;
   }
 
