@@ -145,7 +145,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configureLicense(String clusterName, final File location, String licensePath, final List<TcConfig> tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     Map<String, String> env = buildEnv(tcEnv);
 
     String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory, verbose);
@@ -169,7 +169,7 @@ public class Distribution102Controller extends DistributionController {
     }
   }
 
-  private synchronized String[] configureCommand(final File location, String licensePath, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory, boolean verbose) {
+  private synchronized String[] configureCommand(final File location, String licensePath, final List<TcConfig> tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory, boolean verbose) {
     List<String> command = new ArrayList<>();
 
     StringBuilder sb = null;

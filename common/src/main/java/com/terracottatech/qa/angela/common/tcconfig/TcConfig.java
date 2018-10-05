@@ -75,12 +75,8 @@ public class TcConfig {
     }
   }
 
-  public Map<ServerSymbolicName, TerracottaServer> getServers() {
+  public List<TerracottaServer> getServers() {
     return tcConfigHolder.getServers();
-  }
-
-  public TerracottaServer getTerracottaServer(int index) {
-    return this.tcConfigHolder.getServers().values().toArray(new TerracottaServer[0])[index];
   }
 
   public String getTcConfigName() {

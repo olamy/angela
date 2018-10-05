@@ -1,9 +1,5 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.ClusterMonitor;
 import com.terracottatech.qa.angela.client.Tsa;
@@ -19,6 +15,8 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -57,7 +55,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().getStripeConfig(0).getTerracottaServer(0);
+      TerracottaServer server = config.tsa().getTopology().findServer(0,0);
       tsa.create(server);
       ClusterMonitor monitor = factory.monitor().startOnAll();
 
@@ -185,8 +183,10 @@ public class InstallTest {
   public void testTwoTsaInstalls() throws Exception {
     Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
+    assertThat(topology1.getServers().size(), is(1));
     Topology topology2 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
+    assertThat(topology2.getServers().size(), is(2));
 
     ConfigurationContext config = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .tsa(tsa -> tsa
@@ -202,12 +202,10 @@ public class InstallTest {
       Tsa tsa1 = factory.tsa();
       tsa1.startAll();
       tsa1.licenseAll();
-      assertThat(tsa1.getServers().size(), is(1));
 
       Tsa tsa2 = factory.tsa();
       tsa2.startAll();
       tsa2.licenseAll();
-      assertThat(tsa2.getServers().size(), is(2));
     }
   }
 
@@ -223,7 +221,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().getStripeConfig(0).getTerracottaServer(0);
+      TerracottaServer server = config.tsa().getTopology().findServer(0, 0);
       tsa.create(server);
 
       assertThat(tsa.getState(server), is(STARTING));
@@ -246,7 +244,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().getStripeConfig(0).getTerracottaServer(0);
+      TerracottaServer server = config.tsa().getTopology().findServer(0,0);
       tsa.create(server);
       tsa.start(server);
       assertThat(tsa.getState(server), is(STARTED_AS_ACTIVE));

@@ -44,7 +44,7 @@ public class ClientToServerDisruptor implements Disruptor {
 
   ClientToServerDisruptor(Topology topology, Consumer<Disruptor> closeHook, Map<ServerSymbolicName, Integer> proxiedTsaPorts) {
     this.closeHook = closeHook;
-    for (TerracottaServer server : topology.getServers().values()) {
+    for (TerracottaServer server : topology.getServers()) {
       final InetSocketAddress clientEndPoint = DISRUPTION_PROVIDER.isProxyBased() ? null : new InetSocketAddress("localhost", -1);
       final InetSocketAddress proxyEndPoint = DISRUPTION_PROVIDER.isProxyBased() ? new InetSocketAddress("localhost", proxiedTsaPorts
           .get(server.getServerSymbolicName())) : null;

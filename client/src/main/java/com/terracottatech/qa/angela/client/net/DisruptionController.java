@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -185,12 +186,13 @@ public class DisruptionController implements AutoCloseable {
   }
 
 
-  public TcConfig[] updateTsaPortsWithProxy(TcConfig[] configs) {
+  public List<TcConfig> updateTsaPortsWithProxy(List<TcConfig> configs) {
     if (DISRUPTION_PROVIDER.isProxyBased()) {
-      TcConfig[] proxiedTcConfigs = new TcConfig[configs.length];
-      for (int i = 0; i < configs.length; ++i) {
-        proxiedTcConfigs[i] = TcConfig.copy(configs[i]);
-        proxyTsaPorts.putAll(proxiedTcConfigs[i].retrieveTsaPorts(true));
+      List<TcConfig> proxiedTcConfigs = new ArrayList<>();
+      for (TcConfig config : configs) {
+        TcConfig copy = TcConfig.copy(config);
+        proxiedTcConfigs.add(copy);
+        proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
       }
       //create disruptor up front for cluster tool configuration
       ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);

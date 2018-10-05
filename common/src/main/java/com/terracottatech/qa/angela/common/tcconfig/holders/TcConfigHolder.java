@@ -87,8 +87,8 @@ public abstract class TcConfigHolder {
 
   protected abstract NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException;
 
-  public Map<ServerSymbolicName, TerracottaServer> getServers() {
-    Map<ServerSymbolicName, TerracottaServer> servers = new LinkedHashMap<>();
+  public List<TerracottaServer> getServers() {
+    List<TerracottaServer> servers = new ArrayList<>();
 
     // read servers list from XML
     try {
@@ -127,7 +127,7 @@ public abstract class TcConfigHolder {
         String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
         TerracottaServer terracottaServer = new TerracottaServer(symbolicName, hostname, tsaPort, tsaGroupPort, managementPort, jmxPort);
-        servers.put(terracottaServer.getServerSymbolicName(), terracottaServer);
+        servers.add(terracottaServer);
       }
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);

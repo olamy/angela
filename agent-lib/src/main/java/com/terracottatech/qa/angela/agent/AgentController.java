@@ -421,7 +421,7 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
-  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs,
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final List<TcConfig> tcConfigs,
                                String clusterName, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv,
                                boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);

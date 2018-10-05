@@ -92,7 +92,7 @@ public class TerracottaServerInstance implements Closeable {
     removeDisruptionLinks();
   }
 
-  public void configureLicense(String clusterName, String licensePath, final TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
+  public void configureLicense(String clusterName, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
     this.distributionController.configureLicense(clusterName, location, licensePath, tcConfigs, securityRootDirectory, env, verbose);
   }
 
