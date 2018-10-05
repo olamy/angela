@@ -85,21 +85,20 @@ public class Tsa implements AutoCloseable {
   private void installAll() {
     Topology topology = tsaConfigurationContext.getTopology();
     TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (int stripeId = 0; stripeId < tcConfigs.length; stripeId++) {
-      final TcConfig tcConfig = tcConfigs[stripeId];
+    for (TcConfig tcConfig : tcConfigs) {
       for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
         TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
         if (tcConfig instanceof SecureTcConfig) {
-          SecureTcConfig secureTcConfig = (SecureTcConfig)tcConfig;
-          install(stripeId, terracottaServer, secureTcConfig.securityRootDirectoryFor(serverSymbolicName));
+          SecureTcConfig secureTcConfig = (SecureTcConfig) tcConfig;
+          install(terracottaServer, secureTcConfig.securityRootDirectoryFor(serverSymbolicName));
         } else {
-          install(stripeId, terracottaServer, null);
+          install(terracottaServer, null);
         }
       }
     }
   }
 
-  private void install(int stripeId, TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory) {
+  private void install(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
@@ -116,8 +115,8 @@ public class Tsa implements AutoCloseable {
     logger.info("Attempting to remotely installing if existing install already exists on {}", terracottaServer.getHostname());
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
-      isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.attemptRemoteInstallation(
-          instanceId, topology, terracottaServer, offline, license, stripeId, securityRootDirectory, localKitManager.getKitInstallationName()))
+      isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(
+          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName()))
           .get();
     } else {
       isRemoteInstallationSuccessful = false;
@@ -127,7 +126,7 @@ public class Tsa implements AutoCloseable {
         uploadKit(ignite, terracottaServer.getHostname(), instanceId, topology.getDistribution(),
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, stripeId, securityRootDirectory,
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, securityRootDirectory,
             localKitManager.getKitInstallationName())).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);

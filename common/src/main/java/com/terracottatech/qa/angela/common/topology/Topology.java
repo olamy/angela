@@ -97,14 +97,11 @@ public class Topology {
     return null;
   }
 
-  public int getStripeId(final ServerSymbolicName serverSymbolicName) {
-    for (int stripeId = 0; stripeId < this.tcConfigs.length; stripeId++) {
-      final TcConfig tcConfig = this.tcConfigs[stripeId];
-      Collection<TerracottaServer> servers = tcConfig.getServers().values();
-      for (TerracottaServer server : servers) {
-        if (serverSymbolicName.equals(server.getServerSymbolicName())) {
-          return stripeId;
-        }
+  public int findStripeIdOf(ServerSymbolicName serverSymbolicName) {
+    for (int i = 0; i < tcConfigs.length; i++) {
+      TcConfig tcConfig = tcConfigs[i];
+      if (tcConfig.getServers().keySet().contains(serverSymbolicName)) {
+        return i;
       }
     }
     return -1;
