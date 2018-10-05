@@ -134,7 +134,7 @@ public class Tms implements AutoCloseable {
     logger.info("Attempting to remotely installing if existing install already exists on {}", tmsHostname);
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
-      isRemoteInstallationSuccessful = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.attemptRemoteTmsInstallation(
+      isRemoteInstallationSuccessful = executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.installTms(
           instanceId, tmsHostname, distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv))
           .get();
     } else {
@@ -146,7 +146,7 @@ public class Tms implements AutoCloseable {
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
         executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname,
-            distribution, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv)).get();
+            distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv)).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + tmsHostname, e);
       }

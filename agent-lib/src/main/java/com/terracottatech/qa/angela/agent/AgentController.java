@@ -206,10 +206,10 @@ public class AgentController {
   }
 
 
-  public boolean attemptRemoteTmsInstallation(final InstanceId instanceId, final String tmsHostname,
-                                              final Distribution distribution, final boolean offline, final License license,
-                                              final TmsServerSecurityConfig tmsServerSecurityConfig, final String kitInstallationName,
-                                              TerracottaCommandLineEnvironment tcEnv) {
+  public boolean installTms(final InstanceId instanceId, final String tmsHostname,
+                            final Distribution distribution, final boolean offline, final License license,
+                            final TmsServerSecurityConfig tmsServerSecurityConfig, final String kitInstallationName,
+                            TerracottaCommandLineEnvironment tcEnv) {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       logger.info("Kit for " + tmsHostname + " already installed");
@@ -234,59 +234,28 @@ public class AgentController {
     }
   }
 
-  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, License license, TmsServerSecurityConfig tmsServerSecurityConfig, String kitInstallationName, TerracottaCommandLineEnvironment tcEnv) {
-    TmsInstall tmsInstall = tmsInstalls.get(instanceId);
-    if (tmsInstall != null) {
-      logger.info("Kit for " + tmsHostname + " already installed");
-      tmsInstall.addTerracottaManagementServer();
-    } else {
-      logger.info("Installing kit for " + tmsHostname);
-      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
-      File kitDir = kitManager.installKit(license);
-      File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
-      if (tmsServerSecurityConfig != null) {
-        enableSecurity(tmcProperties, tmsServerSecurityConfig);
-      }
-
-      tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir, tcEnv));
-    }
-  }
-
   private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
-
     Properties properties = new Properties();
 
-    try (InputStream inputStream = new FileInputStream(tmcProperties);)
-    {
+    try (InputStream inputStream = new FileInputStream(tmcProperties)) {
       properties.load(inputStream);
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
 
-    tmsServerSecurityConfig.toMap().entrySet().forEach(entry-> {
-      if (entry.getValue() == null) properties.remove(entry.getKey());
-      else properties.put(entry.getKey(), entry.getValue());
-    } );
+    tmsServerSecurityConfig.toMap().forEach((key, value) -> {
+      if (value == null) {
+        properties.remove(key);
+      } else {
+        properties.put(key, value);
+      }
+    });
 
-    try (OutputStream outputStream = new FileOutputStream(tmcProperties);)
-    {
+    try (OutputStream outputStream = new FileOutputStream(tmcProperties)) {
       properties.store(outputStream, null);
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
-
-  }
-
-  private String adaptToWindowsPaths(Path path) {
-    String pathAsString = path.toString();
-    if (OS.INSTANCE.isWindows()) {
-      //Replace "\" with "\\"
-      pathAsString = pathAsString.replace("\\", "\\\\");
-      return pathAsString;
-    }
-    return pathAsString;
   }
 
   public void startTms(final InstanceId instanceId) {
