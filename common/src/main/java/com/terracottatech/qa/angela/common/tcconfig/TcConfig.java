@@ -107,16 +107,16 @@ public class TcConfig {
     return this.tcConfigHolder.getLogsLocation();
   }
 
-  public void updateLogsLocation(final File kitDir, final int tcConfigIndex) {
-    tcConfigHolder.updateLogsLocation(kitDir, tcConfigIndex);
+  public void updateLogsLocation(final File kitDir, final int stripeId) {
+    tcConfigHolder.updateLogsLocation(kitDir, stripeId);
   }
 
   public void updateSecurityRootDirectoryLocation(final String securityRootDirectory) {
     tcConfigHolder.updateSecurityRootDirectoryLocation(securityRootDirectory);
   }
 
-  public void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex) {
-    tcConfigHolder.updateAuditDirectoryLocation(kitDir, tcConfigIndex);
+  public void updateAuditDirectoryLocation(final File kitDir, final int stripeId) {
+    tcConfigHolder.updateAuditDirectoryLocation(kitDir, stripeId);
   }
 
   public void updateDataDirectory(final String rootId, final String newlocation) {

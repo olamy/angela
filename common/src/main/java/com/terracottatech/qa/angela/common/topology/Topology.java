@@ -8,14 +8,14 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Holds the test environment topology:
@@ -44,6 +44,20 @@ public class Topology {
         tcConfig.createOrUpdateTcProperty("l1redirect.enabled", "false");
       }
     }
+    checkConfigsHaveNoSymbolicNameDuplicate(tcConfigs);
+  }
+
+  private void checkConfigsHaveNoSymbolicNameDuplicate(TcConfig[] tcConfigs) {
+    Set<ServerSymbolicName> names = new HashSet<>();
+    for (TcConfig tcConfig : tcConfigs) {
+      Set<ServerSymbolicName> serverSymbolicNames = tcConfig.getServers().keySet();
+      serverSymbolicNames.forEach(serverSymbolicName -> {
+        if (names.contains(serverSymbolicName)) {
+          throw new IllegalArgumentException("Duplicate name found in TC configs : " + serverSymbolicName);
+        }
+      });
+      names.addAll(serverSymbolicNames);
+    }
   }
 
   public DistributionController createDistributionController() {
@@ -70,11 +84,11 @@ public class Topology {
     return servers;
   }
 
-  public TcConfig get(final int stripeId) {
+  public TcConfig getStripeConfig(int stripeId) {
     return this.tcConfigs[stripeId];
   }
 
-  public TcConfig getTcConfig(final ServerSymbolicName serverSymbolicName) {
+  public TcConfig findTcConfigOf(ServerSymbolicName serverSymbolicName) {
     for (TcConfig tcConfig : this.tcConfigs) {
       if (tcConfig.getServers().keySet().contains(serverSymbolicName)) {
         return tcConfig;
@@ -83,25 +97,17 @@ public class Topology {
     return null;
   }
 
-  public int getTcConfigIndex(final InetAddress inetAddress) throws UnknownHostException {
-    for (int tcConfigIndex = 0; tcConfigIndex < this.tcConfigs.length; tcConfigIndex++) {
-      final TcConfig tcConfig = this.tcConfigs[tcConfigIndex];
+  public int getStripeId(final ServerSymbolicName serverSymbolicName) {
+    for (int stripeId = 0; stripeId < this.tcConfigs.length; stripeId++) {
+      final TcConfig tcConfig = this.tcConfigs[stripeId];
       Collection<TerracottaServer> servers = tcConfig.getServers().values();
       for (TerracottaServer server : servers) {
-        if (inetAddress.toString().equalsIgnoreCase(InetAddress.getByName(server.getHostname()).toString())) {
-          return tcConfigIndex;
+        if (serverSymbolicName.equals(server.getServerSymbolicName())) {
+          return stripeId;
         }
       }
     }
     return -1;
-  }
-
-  public List<String> getLogsLocation() {
-    List<String> logsLocation = new ArrayList<String>();
-    for (TcConfig tcConfig : this.tcConfigs) {
-      logsLocation.addAll(tcConfig.getLogsLocation());
-    }
-    return logsLocation;
   }
 
   public TcConfig[] getTcConfigs() {
@@ -125,6 +131,10 @@ public class Topology {
     return netDisruptionEnabled;
   }
 
+  public Distribution getDistribution() {
+    return distribution;
+  }
+
   @Override
   public String toString() {
     return "Topology{" +
@@ -132,9 +142,5 @@ public class Topology {
            ", tcConfigs=" + Arrays.toString(tcConfigs) +
            ", netDisruptionEnabled=" + netDisruptionEnabled +
            '}';
-  }
-
-  public Distribution getDistribution() {
-    return distribution;
   }
 }

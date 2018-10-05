@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -56,7 +57,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().get(0).getTerracottaServer(0);
+      TerracottaServer server = config.tsa().getTopology().getStripeConfig(0).getTerracottaServer(0);
       tsa.create(server);
       ClusterMonitor monitor = factory.monitor().startOnAll();
 
@@ -222,7 +223,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().get(0).getTerracottaServer(0);
+      TerracottaServer server = config.tsa().getTopology().getStripeConfig(0).getTerracottaServer(0);
       tsa.create(server);
 
       assertThat(tsa.getState(server), is(STARTING));
@@ -245,7 +246,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().get(0).getTerracottaServer(0);
+      TerracottaServer server = config.tsa().getTopology().getStripeConfig(0).getTerracottaServer(0);
       tsa.create(server);
       tsa.start(server);
       assertThat(tsa.getState(server), is(STARTED_AS_ACTIVE));

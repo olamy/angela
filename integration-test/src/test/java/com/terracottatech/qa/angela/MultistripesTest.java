@@ -66,6 +66,19 @@ public class MultistripesTest {
   }
 
   @Test
+  public void testUniquenessOfSymbolicNamesInConfigs() {
+    TcConfig tcConfig1 = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml"));
+    TcConfig tcConfig2 = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml"));
+
+    try {
+      new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), tcConfig1, tcConfig2);
+      fail("expected IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+  }
+
+  @Test
   public void test2Stripes() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),

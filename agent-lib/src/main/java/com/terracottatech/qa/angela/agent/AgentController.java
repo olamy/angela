@@ -82,7 +82,7 @@ public class AgentController {
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
   }
 
-  public boolean attemptRemoteInstallation(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
+  public boolean attemptRemoteInstallation(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int stripeId, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
 
     if (terracottaInstall == null) {
@@ -93,11 +93,11 @@ public class AgentController {
       if (isKitAvailable) {
         File kitDir = kitManager.installKit(license);
 
-        setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
+        setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, stripeId);
 
         logger.info("Installing the tc-configs");
         for (TcConfig tcConfig : topology.getTcConfigs()) {
-          tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
+          tcConfig.updateLogsLocation(kitDir, stripeId);
           tcConfig.writeTcConfigFile(kitDir);
           logger.info("Tc Config installed config path : {}", tcConfig.getPath());
         }
@@ -108,11 +108,11 @@ public class AgentController {
       }
     } else {
       logger.info("Kit for " + terracottaServer + " already installed");
-      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, stripeId);
     }
 
-    TcConfig tcConfig = topology.get(tcConfigIndex);
-    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(), tcConfigIndex);
+    TcConfig tcConfig = topology.getStripeConfig(stripeId);
+    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(), stripeId);
     terracottaInstall.addServer(terracottaServer, tcConfig);
 
     return true;
@@ -163,7 +163,7 @@ public class AgentController {
     }
   }
 
-  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
+  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int stripeId, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall == null) {
       logger.info("Installing kit for " + terracottaServer);
@@ -171,10 +171,10 @@ public class AgentController {
 
       File kitDir = kitManager.installKit(license);
 
-      setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
+      setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, stripeId);
       logger.info("Installing the tc-configs");
       for (TcConfig tcConfig : topology.getTcConfigs()) {
-        tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
+        tcConfig.updateLogsLocation(kitDir, stripeId);
         tcConfig.writeTcConfigFile(kitDir);
         logger.info("Tc Config installed config path : {}", tcConfig.getPath());
       }
@@ -182,11 +182,11 @@ public class AgentController {
       kitsInstalls.put(instanceId, terracottaInstall);
     } else {
       logger.info("Kit for " + terracottaServer + " already installed");
-      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, stripeId);
     }
 
-    TcConfig tcConfig = topology.get(tcConfigIndex);
-    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(), tcConfigIndex);
+    TcConfig tcConfig = topology.getStripeConfig(stripeId);
+    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(), stripeId);
     terracottaInstall.addServer(terracottaServer, tcConfig);
   }
 
@@ -209,26 +209,26 @@ public class AgentController {
 
   private void setupSecurityDirectories(SecurityRootDirectory securityRootDirectory, File installLocation,
                                         TerracottaServer terracottaServer,
-                                        Topology topology, int tcConfigIndex){
+                                        Topology topology, int stripeId){
     if(securityRootDirectory != null) {
-      installSecurityRootDirectory(securityRootDirectory, installLocation, terracottaServer, topology, tcConfigIndex);
-      createAuditDirectory(installLocation, topology, tcConfigIndex);
+      installSecurityRootDirectory(securityRootDirectory, installLocation, terracottaServer, topology, stripeId);
+      createAuditDirectory(installLocation, topology, stripeId);
     }
   }
 
   private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
                                             TerracottaServer terracottaServer,
-                                            Topology topology, int tcConfigIndex) {
+                                            Topology topology, int stripeId) {
 
       final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
       Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory-" + serverName);
       logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
       securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
-      topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.toString());
+      topology.getStripeConfig(stripeId).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.toString());
   }
 
-  private void createAuditDirectory(File installLocation,Topology topology, int tcConfigIndex) {
-    topology.get(tcConfigIndex).updateAuditDirectoryLocation(installLocation,tcConfigIndex);
+  private void createAuditDirectory(File installLocation,Topology topology, int stripeId) {
+    topology.getStripeConfig(stripeId).updateAuditDirectoryLocation(installLocation,stripeId);
   }
 
 

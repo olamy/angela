@@ -17,7 +17,6 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 
@@ -141,7 +140,7 @@ public class Distribution43Controller extends DistributionController {
     }
 
     // add -f if applicable
-    TcConfig tcConfig = topology.getTcConfig(serverSymbolicName);
+    TcConfig tcConfig = topology.findTcConfigOf(serverSymbolicName);
     if (tcConfig.getPath() != null) {
       options.add("-f");
       options.add(tcConfig.getPath());
