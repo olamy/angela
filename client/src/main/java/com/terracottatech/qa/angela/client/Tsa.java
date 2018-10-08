@@ -287,10 +287,6 @@ public class Tsa implements AutoCloseable {
     return this;
   }
 
-  public TerracottaServer findServer(int stripeId, int serverId) {
-    return tsaConfigurationContext.getTopology().findServer(stripeId, serverId);
-  }
-
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
     return executeRemotely(ignite, terracottaServer,
         () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer)).get();

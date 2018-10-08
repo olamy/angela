@@ -100,14 +100,12 @@ public class MultistripesTest {
 
   @Test
   public void testUpgrade() throws Exception {
-    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
-        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> {
-              tsa.topology(topology)
-          .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")));
-            }
+        .tsa(tsa -> tsa
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
 
 //    System.setProperty("tc.qa.angela.skipUninstall", "true");
@@ -117,7 +115,7 @@ public class MultistripesTest {
           .startAll()
           .licenseAll();
 
-      TerracottaServer server = topology.findServer(0, 0);
+      TerracottaServer server = configContext.tsa().getTopology().findServer(0, 0);
 
       tsa.stop(server);
       tsa.browse(server, "dataroot/Server1-1").downloadTo(new File("target/dataroot"));
