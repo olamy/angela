@@ -154,6 +154,10 @@ public abstract class KitManager {
     throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
+  public Distribution getDistribution() {
+    return distribution;
+  }
+
   public File getKitInstallationPath() {
     return kitInstallationPath;
   }

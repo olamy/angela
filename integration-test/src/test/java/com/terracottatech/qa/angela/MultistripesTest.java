@@ -8,6 +8,7 @@ import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationCont
 import com.terracottatech.qa.angela.client.net.ClientToServerDisruptor;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -23,6 +24,7 @@ import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
 import org.junit.Test;
 
+import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.Optional;
@@ -93,6 +95,37 @@ public class MultistripesTest {
       factory.tsa()
           .startAll()
           .licenseAll();
+    }
+  }
+
+  @Test
+  public void testUpgrade() throws Exception {
+    Topology topology = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
+        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml")));
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> {
+              tsa.topology(topology)
+          .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")));
+            }
+        );
+
+//    System.setProperty("tc.qa.angela.skipUninstall", "true");
+
+    try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes", configContext)) {
+      Tsa tsa = factory.tsa()
+          .startAll()
+          .licenseAll();
+
+      TerracottaServer server = topology.findServer(0, 0);
+
+      tsa.stop(server);
+      tsa.browse(server, "dataroot/Server1-1").downloadTo(new File("target/dataroot"));
+      tsa.upgrade(server, distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB));
+      tsa.browse(server, ".").upload("dataroot/Server1-1", new File("target/dataroot"));
+      tsa.start(server);
+
+      tsa.stopAll();
     }
   }
 

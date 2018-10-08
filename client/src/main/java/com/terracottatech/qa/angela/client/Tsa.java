@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,10 +97,15 @@ public class Tsa implements AutoCloseable {
   }
 
   private void install(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory) {
+    installWithKitManager(terracottaServer, securityRootDirectory, this.localKitManager);
+  }
+
+  private void installWithKitManager(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory, LocalKitManager localKitManager) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
+    Distribution distribution = localKitManager.getDistribution();
 
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
     Topology topology = tsaConfigurationContext.getTopology();
@@ -113,22 +119,35 @@ public class Tsa implements AutoCloseable {
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
       isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(
-          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName(), topology.getDistribution()))
+          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName(), distribution))
           .get();
     } else {
       isRemoteInstallationSuccessful = false;
     }
     if (!isRemoteInstallationSuccessful) {
       try {
-        uploadKit(ignite, terracottaServer.getHostname(), instanceId, topology.getDistribution(),
+        uploadKit(ignite, terracottaServer.getHostname(), instanceId, distribution,
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
         executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, securityRootDirectory,
-            localKitManager.getKitInstallationName(), topology.getDistribution())).get();
+            localKitManager.getKitInstallationName(), distribution)).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);
       }
     }
+  }
+
+  public Tsa upgrade(TerracottaServer server, Distribution newDistribution) {
+    logger.info("Upgrading server {} to {}", server, newDistribution);
+    uninstall(server);
+    LocalKitManager localKitManager = new LocalKitManager(newDistribution);
+    TcConfig config = tsaConfigurationContext.getTopology().findTcConfigOf(server.getServerSymbolicName());
+    if (config instanceof SecureTcConfig) {
+      installWithKitManager(server, ((SecureTcConfig) config).securityRootDirectoryFor(server.getServerSymbolicName()), localKitManager);
+    } else {
+      installWithKitManager(server, null, localKitManager);
+    }
+    return this;
   }
 
   private void uninstallAll() {
