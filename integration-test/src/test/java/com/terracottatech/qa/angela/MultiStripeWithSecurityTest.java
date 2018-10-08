@@ -4,7 +4,6 @@ import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.test.Versions;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import java.nio.file.Path;
@@ -26,7 +25,6 @@ import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharacteristic.VALID;
 
-@Ignore("disabled due to TDB-3665")
 public class MultiStripeWithSecurityTest {
 
   @Rule
@@ -34,6 +32,8 @@ public class MultiStripeWithSecurityTest {
 
   @Test
   public void test2StripesWithSecurity() throws Exception {
+//    System.setProperty("tc.qa.angela.skipUninstall", "true");
+
     Path securityRootDirectory = new SecurityRootDirectoryBuilder(temporaryFolder.newFolder())
         .withTruststore(VALID)
         .withKeystore(VALID)
@@ -44,11 +44,15 @@ public class MultiStripeWithSecurityTest {
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
                 secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                     getClass().getResource("/terracotta/10/tc-config-multistripes1-with-security.xml"),
-                    withSecurityFor(new ServerSymbolicName("Server1-1"), securityRootDirectory(securityRootDirectory))),
+                    withSecurityFor(new ServerSymbolicName("Server1-1"), securityRootDirectory(securityRootDirectory)),
+                    withSecurityFor(new ServerSymbolicName("Server1-2"), securityRootDirectory(securityRootDirectory))
+                ),
                 secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                     getClass().getResource("/terracotta/10/tc-config-multistripes2-with-security.xml"),
-                    withSecurityFor(new ServerSymbolicName("Server1-2"), securityRootDirectory(securityRootDirectory)))))
-                .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+                    withSecurityFor(new ServerSymbolicName("Server2-1"), securityRootDirectory(securityRootDirectory)),
+                    withSecurityFor(new ServerSymbolicName("Server2-2"), securityRootDirectory(securityRootDirectory))
+                )
+            )).license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity", configContext)) {
