@@ -78,7 +78,7 @@ public class Tsa implements AutoCloseable {
     if (terracottaServerState == null) {
       throw new IllegalStateException("Cannot get license path: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
-    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId)).get();
+    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId, terracottaServer)).get();
   }
 
   private void installAll() {
@@ -113,7 +113,7 @@ public class Tsa implements AutoCloseable {
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
       isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(
-          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName()))
+          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName(), topology.getDistribution()))
           .get();
     } else {
       isRemoteInstallationSuccessful = false;
@@ -124,7 +124,7 @@ public class Tsa implements AutoCloseable {
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
         executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, securityRootDirectory,
-            localKitManager.getKitInstallationName())).get();
+            localKitManager.getKitInstallationName(), topology.getDistribution())).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);
       }

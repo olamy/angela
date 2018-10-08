@@ -47,8 +47,10 @@ public class MultistripesTest {
     InetAddress local = InetAddress.getLocalHost();
     TcConfig tcConfig1 = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml"));
     tcConfig1.updateServerHost(0, local.getHostName());
+    tcConfig1.updateServerHost(1, local.getHostName());
     TcConfig tcConfig2 = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"));
     tcConfig2.updateServerHost(0, local.getHostAddress());
+    tcConfig2.updateServerHost(1, local.getHostAddress());
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), tcConfig1, tcConfig2))

@@ -24,13 +24,17 @@ public class RemoteKitManager extends KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(RemoteKitManager.class);
 
-  private final String workingKitInstallationPath; // the location where we will copy the install
+  private final File workingKitInstallationPath; // the location where we will copy the install
 
   public RemoteKitManager(InstanceId instanceId, Distribution distribution, final String kitInstallationName) {
     super(distribution);
 
     this.kitInstallationPath = new File(this.rootInstallationPath, kitInstallationName);
-    this.workingKitInstallationPath = Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId;
+    this.workingKitInstallationPath = new File(Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId);
+  }
+
+  public File getWorkingKitInstallationPath() {
+    return workingKitInstallationPath;
   }
 
   public boolean verifyKitAvailability(final boolean offline) {
@@ -51,8 +55,8 @@ public class RemoteKitManager extends KitManager {
 
   private File createWorkingCopyFromLocalInstall(final License license, final File localInstall) {
     try {
-      logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingKitInstallationPath);
-      File workingInstallPath = new File(workingKitInstallationPath);
+      File workingInstallPath = new File(workingKitInstallationPath, distribution.getVersion().toString());
+      logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstallPath);
       boolean res = workingInstallPath.mkdirs();
       logger.info("Directories created? {}", res);
       FileUtils.copyDirectory(localInstall, workingInstallPath);
@@ -64,7 +68,7 @@ public class RemoteKitManager extends KitManager {
           String serverlib = (distribution.getPackageType() == SAG_INSTALLER ? "TerracottaDB" + File.separator : "")
                              + "server" + File.separator + "plugins" + File.separator + "lib";
           FileUtils.copyFileToDirectory(new File(path),
-              new File(workingKitInstallationPath + File.separator + localInstall.getName(), serverlib));
+              new File(workingInstallPath + File.separator + localInstall.getName(), serverlib));
         }
       }
       compressionUtils.cleanupPermissions(workingInstallPath);

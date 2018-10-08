@@ -40,16 +40,16 @@ public class Topology {
     this.tcConfigs = new ArrayList<>();
     this.tcConfigs.add(Objects.requireNonNull(tcConfig));
     this.tcConfigs.addAll(Arrays.asList(tcConfigs));
+    checkConfigsHaveNoSymbolicNameDuplicate();
     if (netDisruptionEnabled) {
-      for (TcConfig cfg : new ArrayList<TcConfig>()) {
+      for (TcConfig cfg : this.tcConfigs) {
         cfg.createOrUpdateTcProperty("topology.validate", "false");
         cfg.createOrUpdateTcProperty("l1redirect.enabled", "false");
       }
     }
-    checkConfigsHaveNoSymbolicNameDuplicate(tcConfigs);
   }
 
-  private void checkConfigsHaveNoSymbolicNameDuplicate(TcConfig[] tcConfigs) {
+  private void checkConfigsHaveNoSymbolicNameDuplicate() {
     Set<ServerSymbolicName> names = new HashSet<>();
     for (TcConfig tcConfig : tcConfigs) {
       tcConfig.getServers().forEach(server -> {
@@ -63,7 +63,7 @@ public class Topology {
     }
   }
 
-  public DistributionController createDistributionController() {
+  public DistributionController createDistributionController(Distribution distribution) {
     //TODO should it be validated early when constructing topology?
     if (distribution.getVersion().getMajor() == 10) {
       if (distribution.getVersion().getMinor() > 0) {
