@@ -182,7 +182,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         throw new RuntimeException("Agent SNAPSHOT jar file not found at " + snapshotLocation);
       } else {
         File agentFile = Files.createTempFile("angela-agent", ".jar").toFile();
-        String releaseUrl = "http://nexus.terracotta.eur.ad.sag/service/local/repositories/terracotta-ee-releases/content/com/terracottatech/qa/angela-agent/" +
+        String releaseUrl = "http://nexus.terracotta.eur.ad.sag:8080/service/local/repositories/terracotta-ee-releases/content/com/terracottatech/qa/angela-agent/" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +
                             "/angela-agent-" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +
