@@ -63,22 +63,6 @@ public class Topology {
     }
   }
 
-  public DistributionController createDistributionController(Distribution distribution) {
-    //TODO should it be validated early when constructing topology?
-    if (distribution.getVersion().getMajor() == 10) {
-      if (distribution.getVersion().getMinor() > 0) {
-        return new Distribution102Controller(distribution, this);
-      }
-    } else if (netDisruptionEnabled) {
-      throw new IllegalArgumentException("Network disruption not supported for older versions");
-    } else if (distribution.getVersion().getMajor() == 4) {
-      if (distribution.getVersion().getMinor() >= 3) {
-        return new Distribution43Controller(distribution, this);
-      }
-    }
-    throw new IllegalArgumentException("Version not supported : " + distribution.getVersion());
-  }
-
   public Collection<TerracottaServer> getServers() {
     List<TerracottaServer> servers = new ArrayList<>();
     for (TcConfig tcConfig : this.tcConfigs) {

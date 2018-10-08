@@ -38,6 +38,20 @@ public class Distribution {
     return licenseType;
   }
 
+  public DistributionController createDistributionController() {
+    //TODO should it be validated early when constructing topology?
+    if (this.getVersion().getMajor() == 10) {
+      if (this.getVersion().getMinor() > 0) {
+        return new Distribution102Controller(this);
+      }
+    } else if (this.getVersion().getMajor() == 4) {
+      if (this.getVersion().getMinor() >= 3) {
+        return new Distribution43Controller(this);
+      }
+    }
+    throw new IllegalArgumentException("Version not supported : " + this.getVersion());
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

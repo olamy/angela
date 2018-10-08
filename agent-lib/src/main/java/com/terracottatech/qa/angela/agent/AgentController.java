@@ -11,7 +11,6 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -100,11 +99,7 @@ public class AgentController {
       logger.info("Kit for {} already installed", terracottaServer);
     }
 
-    int stripeId = topology.findStripeIdOf(terracottaServer.getServerSymbolicName());
-    boolean netDisruptionEnabled = topology.isNetDisruptionEnabled();
-    DistributionController distributionController = topology.createDistributionController(distribution);
-    TcConfig tcConfig = topology.findTcConfigOf(terracottaServer.getServerSymbolicName());
-    terracottaInstall.addServer(terracottaServer, tcConfig, securityRootDirectory, installLocation, license, stripeId, distributionController, netDisruptionEnabled, distribution);
+    terracottaInstall.addServer(terracottaServer, securityRootDirectory, installLocation, license, distribution, topology);
 
     return true;
   }

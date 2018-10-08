@@ -48,7 +48,7 @@ public class TmsInstall {
   public DistributionController createDistributionController(Distribution distribution) {
     if (distribution.getVersion().getMajor() == 10) {
       if (distribution.getVersion().getMinor() > 0) {
-        return new Distribution102Controller(distribution, null);
+        return new Distribution102Controller(distribution);
       }
     }
     throw new IllegalArgumentException("Version not supported : " + this.distribution.getVersion());

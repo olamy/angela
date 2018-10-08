@@ -2,12 +2,12 @@ package com.terracottatech.qa.angela.agent.kit;
 
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.Topology;
 
 import java.io.File;
 import java.util.HashMap;
@@ -44,9 +44,12 @@ public class TerracottaInstall {
     }
   }
 
-  public void addServer(TerracottaServer terracottaServer, TcConfig tcConfig, SecurityRootDirectory securityRootDirectory, File installLocation, License license, int stripeId, DistributionController distributionController, boolean netDisruptionEnabled, Distribution distribution) {
+  public void addServer(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory, File installLocation, License license, Distribution distribution, Topology topology) {
     synchronized (terracottaServerInstances) {
-      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), distributionController, installLocation, tcConfig, netDisruptionEnabled, stripeId, securityRootDirectory, license, distribution));
+      int stripeId = topology.findStripeIdOf(terracottaServer.getServerSymbolicName());
+      boolean netDisruptionEnabled = topology.isNetDisruptionEnabled();
+      TcConfig tcConfig = topology.findTcConfigOf(terracottaServer.getServerSymbolicName());
+      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), installLocation, tcConfig, netDisruptionEnabled, stripeId, securityRootDirectory, license, distribution));
     }
   }
 

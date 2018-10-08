@@ -56,8 +56,8 @@ public class Distribution102Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
-  public Distribution102Controller(final Distribution distribution, final Topology topology) {
-    super(distribution, topology);
+  public Distribution102Controller(Distribution distribution) {
+    super(distribution);
   }
 
   @Override
@@ -103,7 +103,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stop(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     logger.info("Destroying L2 process for " + serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {

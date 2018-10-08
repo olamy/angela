@@ -2,23 +2,21 @@ package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
-
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
-import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,8 +44,8 @@ public class Distribution43Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution43Controller.class);
 
-  public Distribution43Controller(final Distribution distribution, final Topology topology) {
-    super(distribution, topology);
+  public Distribution43Controller(Distribution distribution) {
+    super(distribution);
   }
 
   @Override
@@ -79,9 +77,9 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stop(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     ProcessExecutor executor = new ProcessExecutor()
-        .command(stopCommand(serverSymbolicName, topology, installLocation))
+        .command(stopCommand(serverSymbolicName, tcConfig, installLocation))
         .directory(installLocation)
         .environment(buildEnv(tcEnv))
         .redirectError(System.err)
@@ -123,13 +121,9 @@ public class Distribution43Controller extends DistributionController {
 
   /**
    * Construct the Stop Command with the Version, Tc Config file and server name
-   *
-   * @param serverSymbolicName
-   * @param topology
-   * @param installLocation
    * @return String[] representing the start command and its parameters
    */
-  private String[] stopCommand(final ServerSymbolicName serverSymbolicName, final Topology topology, final File installLocation) {
+  private String[] stopCommand(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, final File installLocation) {
     List<String> options = new LinkedList<String>();
     options.add(getStopCmd(installLocation));
 
@@ -140,7 +134,6 @@ public class Distribution43Controller extends DistributionController {
     }
 
     // add -f if applicable
-    TcConfig tcConfig = topology.findTcConfigOf(serverSymbolicName);
     if (tcConfig.getPath() != null) {
       options.add("-f");
       options.add(tcConfig.getPath());
