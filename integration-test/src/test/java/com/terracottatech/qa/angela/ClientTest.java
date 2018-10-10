@@ -92,7 +92,7 @@ public class ClientTest {
 
   @Test
   public void testClientHardwareMetricsLog() throws Exception {
-    final File resultPath = new File(UUID.randomUUID().toString());
+    final File resultPath = new File("target", UUID.randomUUID().toString());
 
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
@@ -127,7 +127,7 @@ public class ClientTest {
 
     }
 
-    assertThat(new File(resultPath, "/" + clientHostname + "/metrics/vmstat.log").exists(), is(true));
+    assertThat(new File(resultPath, clientHostname + "/metrics/vmstat.log").exists(), is(true));
     resultPath.delete();
   }
 

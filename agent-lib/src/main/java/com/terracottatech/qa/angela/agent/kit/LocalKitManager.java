@@ -39,7 +39,7 @@ public class LocalKitManager extends KitManager {
     super(distribution);
   }
 
-  public void setupLocalInstall(final License license, final String kitInstallationPath, final boolean offline) {
+  public void setupLocalInstall(License license, String kitInstallationPath, boolean offline) {
     if (kitInstallationPath != null) {
       logger.info("Using kitInstallationPath: \"{}\"", kitInstallationPath);
       if (!new File(kitInstallationPath).isDirectory()) {
@@ -48,7 +48,7 @@ public class LocalKitManager extends KitManager {
       }
       this.kitInstallationPath = new File(kitInstallationPath);
     } else if (rootInstallationPath != null) {
-      logger.info("getting install from the kit/installer");
+      logger.debug("getting install from the kit/installer");
       File localInstallerFilename = new File(resolveLocalInstallerFilename());
       if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
         downloadLocalInstaller(localInstallerFilename);
@@ -68,7 +68,7 @@ public class LocalKitManager extends KitManager {
       }
     }
     if (this.kitInstallationPath != null) {
-      logger.info("Local install is located in {}", this.kitInstallationPath);
+      logger.info("Local distribution is located in {}", this.kitInstallationPath);
     }
   }
 
@@ -222,7 +222,7 @@ public class LocalKitManager extends KitManager {
     }
   }
 
-  private String getDirFromArchive(final File localInstaller) {
+  private String getDirFromArchive(File localInstaller) {
     try {
       if (distribution.getPackageType() == KIT) {
         if (distribution.getVersion().getMajor() == 4) {
@@ -243,7 +243,7 @@ public class LocalKitManager extends KitManager {
     throw new RuntimeException("Can not resolve the local kit distribution package: " + distribution + " from: " + localInstaller);
   }
 
-  private void createLocalInstallFromInstaller(License license, final File localInstallerFilename) {
+  private void createLocalInstallFromInstaller(License license, File localInstallerFilename) {
     File dest = new File(this.rootInstallationPath);
     if (distribution.getPackageType() == KIT) {
       compressionUtils.extract(localInstallerFilename, dest);

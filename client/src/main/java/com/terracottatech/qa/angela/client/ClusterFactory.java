@@ -1,9 +1,17 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
+import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
+import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.logger.NullLogger;
@@ -12,15 +20,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
-import com.terracottatech.qa.angela.client.config.ConfigurationContext;
-import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
-import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
-import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
-import com.terracottatech.qa.angela.common.cluster.Cluster;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -227,10 +226,9 @@ public class ClusterFactory implements AutoCloseable {
     if (ignite != null) {
       for (String nodeName : nodeToInstanceId.keySet()) {
         try {
-          ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-          nodeToInstanceId.get(nodeName)
-              .forEach(instanceId -> ignite.compute(location)
-                  .broadcast((IgniteRunnable)() -> Agent.CONTROLLER.cleanup(instanceId)));
+          nodeToInstanceId.get(nodeName).forEach(instanceId ->
+              IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteRunnable)() -> Agent.CONTROLLER.cleanup(instanceId))
+          );
         } catch (Exception e) {
           exceptions.add(e);
         }
@@ -255,7 +253,7 @@ public class ClusterFactory implements AutoCloseable {
     if (localhostAgent != null) {
       try {
         LOGGER.info("shutting down localhost agent");
-        localhostAgent.shutdown();
+        localhostAgent.close();
       } catch (Exception e) {
         exceptions.add(e);
       }

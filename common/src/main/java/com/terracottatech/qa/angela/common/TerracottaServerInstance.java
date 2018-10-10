@@ -96,7 +96,7 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public void create(TerracottaCommandLineEnvironment env) {
-    this.terracottaServerInstanceProcess = this.distributionController.create(serverSymbolicName, installLocation, tcConfig, env);
+    this.terracottaServerInstanceProcess = this.distributionController.createTsa(serverSymbolicName, installLocation, tcConfig, env);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
@@ -118,7 +118,7 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public void stop(TerracottaCommandLineEnvironment tcEnv) {
-    this.distributionController.stop(serverSymbolicName, tcConfig, installLocation, terracottaServerInstanceProcess, tcEnv);
+    this.distributionController.stopTsa(serverSymbolicName, tcConfig, installLocation, terracottaServerInstanceProcess, tcEnv);
   }
 
 
@@ -127,8 +127,8 @@ public class TerracottaServerInstance implements Closeable {
     removeDisruptionLinks();
   }
 
-  public void configureLicense(String clusterName, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
-    this.distributionController.configureLicense(clusterName, installLocation, licensePath, tcConfigs, securityRootDirectory, env, verbose);
+  public void configureTsaLicense(String clusterName, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
+    this.distributionController.configureTsaLicense(clusterName, installLocation, licensePath, tcConfigs, securityRootDirectory, env, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {
