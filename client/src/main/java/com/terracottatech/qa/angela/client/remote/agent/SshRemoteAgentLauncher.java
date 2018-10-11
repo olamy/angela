@@ -120,7 +120,12 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       LOGGER.info("starting agent");
       String joinHosts = nodesToJoin.stream().map(node -> {
         try {
-          return node + ":40000/" + InetAddress.getByName(node).getHostAddress();
+          String str = node + ":40000";
+          String resolvedIPAddr = InetAddress.getByName(node).getHostAddress();
+          if (!node.equals(resolvedIPAddr)) {
+            str += "/" + resolvedIPAddr;
+          }
+          return str;
         } catch (UnknownHostException e) {
           throw new IllegalArgumentException(e);
         }
