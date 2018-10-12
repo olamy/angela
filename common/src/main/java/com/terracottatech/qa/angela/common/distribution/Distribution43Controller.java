@@ -242,4 +242,9 @@ public class Distribution43Controller extends DistributionController {
         .collect(Collectors.joining(",", "", "")));
   }
 
+  @Override
+  public String clientJarsRootFolderName() {
+    return "apis";
+  }
+
 }

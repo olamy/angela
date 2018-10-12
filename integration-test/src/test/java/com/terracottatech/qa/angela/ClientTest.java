@@ -128,7 +128,6 @@ public class ClientTest {
     }
 
     assertThat(new File(resultPath, clientHostname + "/metrics/vmstat.log").exists(), is(true));
-    resultPath.delete();
   }
 
 

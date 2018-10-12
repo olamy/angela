@@ -349,4 +349,9 @@ public class Distribution102Controller extends DistributionController {
         .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts().getTsaPort()))
         .collect(Collectors.joining(",", "terracotta://", "")));
   }
+
+  @Override
+  public String clientJarsRootFolderName() {
+    return "client";
+  }
 }

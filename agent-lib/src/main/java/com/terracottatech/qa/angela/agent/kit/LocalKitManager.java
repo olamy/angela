@@ -20,12 +20,16 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import static java.util.stream.Collectors.toList;
 
 /**
  * @author Aurelien Broszniowski
@@ -34,6 +38,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
 public class LocalKitManager extends KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
+  private final Map<String, File> clientJars = new HashMap<>();
 
   public LocalKitManager(Distribution distribution) {
     super(distribution);
@@ -68,7 +73,39 @@ public class LocalKitManager extends KitManager {
       }
     }
     if (this.kitInstallationPath != null) {
+      initClientJarsMap();
       logger.info("Local distribution is located in {}", this.kitInstallationPath);
+    }
+  }
+
+  private void initClientJarsMap() {
+    if (kitInstallationPath == null) {
+      // no configured kit -> no client jars
+      return;
+    }
+
+    try {
+      String clientJarsRootFolderName = distribution.createDistributionController().clientJarsRootFolderName();
+      List<File> clientJars = Files.walk(new File(kitInstallationPath, clientJarsRootFolderName).toPath())
+          .filter(Files::isRegularFile)
+          .map(Path::toFile)
+          .collect(toList());
+
+      for (File clientJar : clientJars) {
+        /*
+         * Identify files by reading the JAR's MANIFEST.MF file and reading the "Bundle-SymbolicName" attribute.
+         * This is provided by all OSGi-enabled JARs (all TC jars do) and is meant to figure out if two JAR files
+         * are providing the same thing, barring any version differences.
+         * Only include jars that have their Bundle-SymbolicName start with "com.terracotta".
+         */
+        String bundleSymbolicName = loadManifestBundleSymbolicName(clientJar);
+        if (bundleSymbolicName != null && bundleSymbolicName.startsWith("com.terracotta")) {
+          this.clientJars.put(bundleSymbolicName, clientJar);
+        }
+      }
+      logger.debug("Kit client jars : {}", this.clientJars);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error listing client jars in " + kitInstallationPath, ioe);
     }
   }
 
@@ -254,30 +291,9 @@ public class LocalKitManager extends KitManager {
     }
   }
 
-  public File findEquivalent(String filename) throws IOException {
-    if (rootInstallationPath == null) {
-      // no configured kit -> no equivalent
-      return null;
-    }
-    /*
-     * Match files by reading the JAR's MANIFEST.MF file and reading the "Bundle-SymbolicName" attribute.
-     * This is provided by all OSGi-enabled JARs (all TC jars do) and is meant to figure out if two JAR files
-     * are providing the same thing, barring any version differences.
-     */
-    String sourceBundleSymbolicName = loadManifestBundleSymbolicName(new File(filename));
-    if (sourceBundleSymbolicName == null) {
-      return null;
-    }
-
-    // search for equivalent files in the kit's "client/" subfolder
-    Path found = Files.walk(new File(kitInstallationPath, "client").toPath())
-        .filter(Files::isRegularFile)
-        .filter(f -> sourceBundleSymbolicName.equals(loadManifestBundleSymbolicName(f.toFile())))
-        .findFirst()
-        .orElse(null);
-
-    logger.debug("Looking for {} in {} and found {}", new File(filename).getName(), kitInstallationPath, found);
-    return found == null ? null : found.toFile();
+  public File equivalentClientJar(File file) {
+    String sourceBundleSymbolicName = loadManifestBundleSymbolicName(file);
+    return clientJars.get(sourceBundleSymbolicName);
   }
 
   private String loadManifestBundleSymbolicName(File file) {

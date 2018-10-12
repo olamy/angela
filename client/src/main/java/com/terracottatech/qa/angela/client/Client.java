@@ -79,35 +79,38 @@ public class Client implements Closeable {
     }
   }
 
-  private List<File> listClasspathFiles(LocalKitManager localKitManager) throws IOException {
+  private List<File> listClasspathFiles(LocalKitManager localKitManager) {
     List<File> files = new ArrayList<>();
 
     File javaHome = new File(System.getProperty("java.home"));
     String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
+    boolean substituteClientJars = localKitManager.getDistribution() != null;
+    List<File> jars = new ArrayList<>();
     for (String classpathJarName : classpathJarNames) {
-      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile()
-          .getPath())) {
-        logger.debug("skipping {}", classpathJarName);
+      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile().getPath())) {
+        logger.debug("Skipping {} as it is part of the JVM", classpathJarName);
         continue; // part of the JVM, skip it
       }
+      File classpathFile = new File(classpathJarName);
 
-      File fileToUpload = checkKitContents(localKitManager, classpathJarName);
-      logger.debug("file to upload : {}", fileToUpload);
+      File equivalentClientJar = localKitManager.equivalentClientJar(classpathFile);
+      if (substituteClientJars && equivalentClientJar != null) {
+        logger.debug("Skipping upload of classpath file as kit contains equivalent jar in client libs : {}", classpathFile.getName());
+        jars.add(equivalentClientJar);
+        continue;
+      }
 
-      files.add(fileToUpload);
+      logger.debug("Uploading classpath file : {}", classpathFile.getName());
+      files.add(classpathFile);
+    }
+
+    if (substituteClientJars) {
+      logger.info("Enhancing client classpath with client jars of {}", localKitManager.getDistribution());
+      files.addAll(jars);
+      logger.debug("Adding clients jars : {}", jars);
     }
 
     return files;
-  }
-
-  private File checkKitContents(LocalKitManager localKitManager, String classpathJarName) throws IOException {
-    File fileInKit = localKitManager.findEquivalent(classpathJarName);
-    if (fileInKit != null) {
-      logger.info("Substituting '{}' with kit's equivalent JAR '{}'", new File(classpathJarName).getName(), fileInKit);
-      return fileInKit;
-    } else {
-      return new File(classpathJarName);
-    }
   }
 
   Future<Void> submit(ClientJob clientJob) {
