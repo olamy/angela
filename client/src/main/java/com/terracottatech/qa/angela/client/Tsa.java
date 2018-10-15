@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
@@ -53,15 +52,16 @@ public class Tsa implements AutoCloseable {
   private boolean closed = false;
 
   Tsa(Ignite ignite, InstanceId instanceId, TsaConfigurationContext tsaConfigurationContext) {
-    if (!tsaConfigurationContext.getTopology().getLicenseType().isOpenSource() && tsaConfigurationContext.getLicense() == null) {
-      throw new IllegalArgumentException("LicenseType " + tsaConfigurationContext.getTopology().getLicenseType() + " requires a license.");
-    }
     this.tsaConfigurationContext = tsaConfigurationContext;
     this.instanceId = instanceId;
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, tsaConfigurationContext.getTopology());
     this.localKitManager = new LocalKitManager(tsaConfigurationContext.getTopology().getDistribution());
     installAll();
+  }
+
+  public TsaConfigurationContext getTsaConfigurationContext() {
+    return tsaConfigurationContext;
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {
