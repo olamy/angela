@@ -32,10 +32,8 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * This holds the contents of the Tc Config
@@ -113,16 +111,16 @@ public abstract class TcConfigHolder {
         // remove below updatePorts method
 
         Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
-        int tsaPort = tsaPortNode == null ? 9510 : Integer.parseInt(tsaPortNode.getTextContent());
+        int tsaPort = tsaPortNode == null ? defaultTsaPort() : Integer.parseInt(tsaPortNode.getTextContent());
 
         Node jmxPortNode = (Node) xPath.evaluate("*[name()='jmx-port']", server, XPathConstants.NODE);
-        int jmxPort = jmxPortNode == null ? 9520 : Integer.parseInt(jmxPortNode.getTextContent());
+        int jmxPort = jmxPortNode == null ? defaultJmxPort() : Integer.parseInt(jmxPortNode.getTextContent());
 
         Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
-        int tsaGroupPort = tsaGroupPortNode == null ? 9530 : Integer.parseInt(tsaGroupPortNode.getTextContent());
+        int tsaGroupPort = tsaGroupPortNode == null ? defaultTsaGroupPort() : Integer.parseInt(tsaGroupPortNode.getTextContent());
 
         Node managementPortNode = (Node) xPath.evaluate("*[name()='management-port']", server, XPathConstants.NODE);
-        int managementPort = managementPortNode == null ? 9540 : Integer.parseInt(managementPortNode.getTextContent());
+        int managementPort = managementPortNode == null ? defaultManagementPort() : Integer.parseInt(managementPortNode.getTextContent());
 
         String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
@@ -133,6 +131,22 @@ public abstract class TcConfigHolder {
       throw new RuntimeException("Cannot parse tc-config xml", e);
     }
     return servers;
+  }
+
+  protected int defaultManagementPort() {
+    return 9540;
+  }
+
+  protected int defaultTsaGroupPort() {
+    return 9530;
+  }
+
+  protected int defaultJmxPort() {
+    return 9520;
+  }
+
+  protected int defaultTsaPort() {
+    return 9510;
   }
 
   public String getTcConfigContent() {
