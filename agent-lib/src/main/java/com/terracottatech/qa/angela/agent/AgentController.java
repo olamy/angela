@@ -353,16 +353,6 @@ public class AgentController {
     return remoteClientManager.spawnClient(instanceId, tcEnv, joinedNodes);
   }
 
-  public void cleanup(InstanceId instanceId) {
-    logger.info("Cleaning up instance {}", instanceId);
-    File instanceRootDir = new File(Agent.WORK_DIR, instanceId.toString());
-    try {
-      FileUtils.deleteDirectory(instanceRootDir);
-    } catch (IOException ioe) {
-      throw new RuntimeException("Error cleaning up instance root directory : " + instanceRootDir, ioe);
-    }
-  }
-
   public void downloadFiles(InstanceId instanceId, File installDir) {
     final BlockingQueue<Object> queue = IgniteCommonHelper.fileTransferQueue(ignite, instanceId);
     try {

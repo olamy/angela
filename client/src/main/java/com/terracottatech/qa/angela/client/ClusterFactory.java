@@ -6,14 +6,12 @@ import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
-import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -224,17 +222,6 @@ public class ClusterFactory implements AutoCloseable {
     controllers.clear();
 
     if (ignite != null) {
-      for (String nodeName : nodeToInstanceId.keySet()) {
-        try {
-          nodeToInstanceId.get(nodeName).forEach(instanceId ->
-              IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteRunnable)() -> Agent.CONTROLLER.cleanup(instanceId))
-          );
-        } catch (Exception e) {
-          exceptions.add(e);
-        }
-      }
-      nodeToInstanceId.clear();
-
       try {
         ignite.close();
       } catch (Exception e) {
@@ -242,6 +229,7 @@ public class ClusterFactory implements AutoCloseable {
       }
       ignite = null;
     }
+    nodeToInstanceId.clear();
 
     try {
       remoteAgentLauncher.close();
