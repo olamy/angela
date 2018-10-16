@@ -23,8 +23,11 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,12 +165,26 @@ public class Client implements Closeable {
 
     @Override
     public V get() throws InterruptedException, ExecutionException {
-      return igniteFuture.get();
+      try {
+        return igniteFuture.get();
+      } catch (IgniteInterruptedException iie) {
+        throw (InterruptedException) new InterruptedException().initCause(iie);
+      } catch (IgniteException ie) {
+        throw new ExecutionException(ie);
+      }
     }
 
     @Override
     public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-      return igniteFuture.get(timeout, unit);
+      try {
+        return igniteFuture.get(timeout, unit);
+      } catch (IgniteInterruptedException iie) {
+        throw (InterruptedException) new InterruptedException().initCause(iie);
+      } catch (IgniteFutureTimeoutException ifte) {
+        throw (TimeoutException) new TimeoutException().initCause(ifte);
+      } catch (IgniteException ie) {
+        throw new ExecutionException(ie);
+      }
     }
   }
 

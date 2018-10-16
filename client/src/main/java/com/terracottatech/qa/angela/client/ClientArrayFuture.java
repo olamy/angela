@@ -3,9 +3,11 @@ package com.terracottatech.qa.angela.client;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class ClientArrayFuture {
   private final Collection<Future<Void>> futures;
@@ -18,16 +20,16 @@ public class ClientArrayFuture {
     return futures;
   }
 
-  public void get(long timeout, TimeUnit unit) throws ExecutionException, InterruptedException {
+  public void get(long timeout, TimeUnit unit) throws CancellationException, ExecutionException, InterruptedException, TimeoutException {
     List<Exception> exceptions = new ArrayList<>();
     for (Future<Void> future : futures) {
       try {
-        if (timeout == 0L && unit == null) {
+        if (timeout == Long.MIN_VALUE && unit == null) {
           future.get();
         } else {
           future.get(timeout, unit);
         }
-      } catch (Exception e) {
+      } catch (RuntimeException | ExecutionException | InterruptedException | TimeoutException e) {
         exceptions.add(e);
       }
     }
@@ -40,14 +42,20 @@ public class ClientArrayFuture {
         throw (RuntimeException) exception;
       } else if (exception instanceof ExecutionException) {
         throw (ExecutionException) exception;
-      } else {
+      } else if (exception instanceof InterruptedException) {
         throw (InterruptedException) exception;
+      } else {
+        throw (TimeoutException) exception;
       }
     }
   }
 
-  public void get() throws ExecutionException, InterruptedException {
-    get(0L, null);
+  public void get() throws CancellationException, ExecutionException, InterruptedException, TimeoutException {
+    get(Long.MIN_VALUE, null);
+  }
+
+  public void cancel(boolean mayInterruptIfRunning) {
+    futures.forEach(f -> f.cancel(mayInterruptIfRunning));
   }
 
   public boolean isDone() {
