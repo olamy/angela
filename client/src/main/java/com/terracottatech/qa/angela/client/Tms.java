@@ -42,6 +42,10 @@ public class Tms implements AutoCloseable {
     install();
   }
 
+  public TmsConfigurationContext getTmsConfigurationContext() {
+    return tmsConfigurationContext;
+  }
+
   public String url() {
     boolean isHttps = false;
     TmsServerSecurityConfig tmsServerSecurityConfig = tmsConfigurationContext.getSecurityConfig();

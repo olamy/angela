@@ -96,6 +96,10 @@ public class ClientArray implements AutoCloseable {
     }
   }
 
+  public ClientArrayConfigurationContext getClientArrayConfigurationContext() {
+    return clientArrayConfigurationContext;
+  }
+
   public ClientArrayFuture executeOnAll(ClientJob clientJob) {
     List<Future<Void>> futures = new ArrayList<>();
     for (ClientId clientId : clientArrayConfigurationContext.getClientArrayTopology().getClientIds()) {
