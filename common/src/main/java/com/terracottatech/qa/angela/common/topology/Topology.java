@@ -7,6 +7,7 @@ import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.TsaConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +30,15 @@ public class Topology {
   private final List<TcConfig> tcConfigs;
   private final boolean netDisruptionEnabled;
 
+/*
+  public Topology(final Distribution distribution, final TsaConfig tsaConfig) {
+    this(distribution, tsaConfig.getTcConfigs());
+  }
+
+  public Topology(final Distribution distribution, final boolean netDisruptionEnabled, final TsaConfig tsaConfig) {
+    this(distribution, netDisruptionEnabled, tsaConfig.getTcConfigs());
+  }
+*/
 
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
     this(distribution, false, tcConfig, tcConfigs);
