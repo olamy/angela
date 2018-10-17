@@ -36,12 +36,13 @@ public class SecureTcConfig extends TcConfig {
   }
 
   private void validateConfig() {
-    for (ServerSymbolicName serverSymbolicName : getServers().keySet()) {
+    getServers().forEach(terracottaServer -> {
+      ServerSymbolicName serverSymbolicName = terracottaServer.getServerSymbolicName();
       if (!SecurityRootDirectoryMap.containsKey(serverSymbolicName)) {
         throw new IllegalArgumentException("NamedSecurityRootDirectory is not provided for server " +
-                                           serverSymbolicName.getSymbolicName());
+            serverSymbolicName.getSymbolicName());
       }
-    }
+    });
 
     if (SecurityRootDirectoryMap.size() != getServers().size()) {
       throw new IllegalArgumentException("Given NamedSecurityRootDirectory(s) contains extra servers " +

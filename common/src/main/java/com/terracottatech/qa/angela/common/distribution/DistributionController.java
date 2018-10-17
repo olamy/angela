@@ -27,14 +27,12 @@ public abstract class DistributionController {
   private final static Logger LOGGER = LoggerFactory.getLogger(DistributionController.class);
 
   protected final Distribution distribution;
-  protected final Topology topology;
 
   protected final JavaLocationResolver javaLocationResolver = new JavaLocationResolver();
 
 
-  public DistributionController(Distribution distribution, Topology topology) {
+  public DistributionController(Distribution distribution) {
     this.distribution = distribution;
-    this.topology = topology;
   }
 
   protected Map<String, String> buildEnv(TerracottaCommandLineEnvironment tcEnv) {
@@ -58,9 +56,9 @@ public abstract class DistributionController {
 
   public abstract void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void stop(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
+  public abstract void stop(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File location, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void configureLicense(String clusterName, File location, String licensePath, TcConfig[] tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
+  public abstract void configureLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 
   public abstract ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
 }

@@ -1,12 +1,5 @@
 package com.terracottatech.qa.angela.client.net;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteRunnable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.IgniteHelper;
 import com.terracottatech.qa.angela.common.net.Disruptor;
@@ -15,9 +8,16 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -53,7 +53,10 @@ public class ServerToServerDisruptor implements Disruptor {
 
     LOGGER.info("blocking {}", this);
     //invoke disruption remotely on each linked servers.
-    Map<ServerSymbolicName, TerracottaServer> topologyServers = topology.getServers();
+    Map<ServerSymbolicName, TerracottaServer> topologyServers = new HashMap<>();
+    for (TerracottaServer svr : topology.getServers()) {
+      topologyServers.put(svr.getServerSymbolicName(), svr);
+    }
     for (Map.Entry<ServerSymbolicName, Collection<ServerSymbolicName>> entry : linkedServers.entrySet()) {
       TerracottaServer server = topologyServers.get(entry.getKey());
       Collection<TerracottaServer> otherServers = Collections.unmodifiableCollection(entry.getValue()
@@ -73,7 +76,10 @@ public class ServerToServerDisruptor implements Disruptor {
     }
 
     LOGGER.info("undisrupting {}", this);
-    Map<ServerSymbolicName, TerracottaServer> topologyServers = topology.getServers();
+    Map<ServerSymbolicName, TerracottaServer> topologyServers = new HashMap<>();
+    for (TerracottaServer svr : topology.getServers()) {
+      topologyServers.put(svr.getServerSymbolicName(), svr);
+    }
     for (Map.Entry<ServerSymbolicName, Collection<ServerSymbolicName>> entry : linkedServers.entrySet()) {
       TerracottaServer server = topologyServers.get(entry.getKey());
       Collection<TerracottaServer> otherServers = Collections.unmodifiableCollection(entry.getValue()

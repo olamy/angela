@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.common.distribution.Distribution;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
 import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
@@ -79,31 +79,33 @@ public class Tsa implements AutoCloseable {
     if (terracottaServerState == null) {
       throw new IllegalStateException("Cannot get license path: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
-    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId)).get();
+    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId, terracottaServer)).get();
   }
 
   private void installAll() {
     Topology topology = tsaConfigurationContext.getTopology();
-    TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (int tcConfigIndex = 0; tcConfigIndex < tcConfigs.length; tcConfigIndex++) {
-      final TcConfig tcConfig = tcConfigs[tcConfigIndex];
-      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
-        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
+    for (TcConfig tcConfig : topology.getTcConfigs()) {
+      for (TerracottaServer terracottaServer : tcConfig.getServers()) {
         if (tcConfig instanceof SecureTcConfig) {
-          SecureTcConfig secureTcConfig = (SecureTcConfig)tcConfig;
-          install(tcConfigIndex, terracottaServer, secureTcConfig.securityRootDirectoryFor(serverSymbolicName));
+          SecureTcConfig secureTcConfig = (SecureTcConfig) tcConfig;
+          install(terracottaServer, secureTcConfig.securityRootDirectoryFor(terracottaServer.getServerSymbolicName()));
         } else {
-          install(tcConfigIndex, terracottaServer, null);
+          install(terracottaServer, null);
         }
       }
     }
   }
 
-  private void install(int tcConfigIndex, TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory) {
+  private void install(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory) {
+    installWithKitManager(terracottaServer, securityRootDirectory, this.localKitManager);
+  }
+
+  private void installWithKitManager(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory, LocalKitManager localKitManager) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
       throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
+    Distribution distribution = localKitManager.getDistribution();
 
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
     Topology topology = tsaConfigurationContext.getTopology();
@@ -116,33 +118,42 @@ public class Tsa implements AutoCloseable {
     logger.info("Attempting to remotely installing if existing install already exists on {}", terracottaServer.getHostname());
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
-      isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.attemptRemoteInstallation(
-          instanceId, topology, terracottaServer, offline, license, tcConfigIndex, securityRootDirectory, localKitManager
-              .getKitInstallationName()))
+      isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(
+          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName(), distribution))
           .get();
     } else {
       isRemoteInstallationSuccessful = false;
     }
     if (!isRemoteInstallationSuccessful) {
       try {
-        uploadKit(ignite, terracottaServer.getHostname(), instanceId, topology.getDistribution(),
+        uploadKit(ignite, terracottaServer.getHostname(), instanceId, distribution,
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, tcConfigIndex, securityRootDirectory,
-            localKitManager.getKitInstallationName())).get();
+        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, securityRootDirectory,
+            localKitManager.getKitInstallationName(), distribution)).get();
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);
       }
     }
   }
 
+  public Tsa upgrade(TerracottaServer server, Distribution newDistribution) {
+    logger.info("Upgrading server {} to {}", server, newDistribution);
+    uninstall(server);
+    LocalKitManager localKitManager = new LocalKitManager(newDistribution);
+    TcConfig config = tsaConfigurationContext.getTopology().findTcConfigOf(server.getServerSymbolicName());
+    if (config instanceof SecureTcConfig) {
+      installWithKitManager(server, ((SecureTcConfig) config).securityRootDirectoryFor(server.getServerSymbolicName()), localKitManager);
+    } else {
+      installWithKitManager(server, null, localKitManager);
+    }
+    return this;
+  }
+
   private void uninstallAll() {
     Topology topology = tsaConfigurationContext.getTopology();
-    TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (final TcConfig tcConfig : tcConfigs) {
-      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
-        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
-
+    for (TcConfig tcConfig : topology.getTcConfigs()) {
+      for (TerracottaServer terracottaServer : tcConfig.getServers()) {
         uninstall(terracottaServer);
       }
     }
@@ -163,8 +174,8 @@ public class Tsa implements AutoCloseable {
   }
 
   public Tsa createAll() {
-    Stream.of(tsaConfigurationContext.getTopology().getTcConfigs())
-        .flatMap(tcConfig -> tcConfig.getServers().values().stream())
+    tsaConfigurationContext.getTopology().getTcConfigs().stream()
+        .flatMap(tcConfig -> tcConfig.getServers().stream())
         .map(server -> CompletableFuture.runAsync(() -> create(server)))
         .reduce(CompletableFuture::allOf).ifPresent(CompletableFuture::join);
     return this;
@@ -186,8 +197,8 @@ public class Tsa implements AutoCloseable {
   }
 
   public Tsa startAll() {
-    Stream.of(tsaConfigurationContext.getTopology().getTcConfigs())
-        .flatMap(tcConfig -> tcConfig.getServers().values().stream())
+    tsaConfigurationContext.getTopology().getTcConfigs().stream()
+        .flatMap(tcConfig -> tcConfig.getServers().stream())
         .map(server -> CompletableFuture.runAsync(() -> start(server)))
         .reduce(CompletableFuture::allOf).ifPresent(CompletableFuture::join);
     return this;
@@ -209,10 +220,8 @@ public class Tsa implements AutoCloseable {
     List<Exception> exceptions = new ArrayList<>();
 
     Topology topology = tsaConfigurationContext.getTopology();
-    TcConfig[] tcConfigs = topology.getTcConfigs();
-    for (final TcConfig tcConfig : tcConfigs) {
-      for (ServerSymbolicName serverSymbolicName : tcConfig.getServers().keySet()) {
-        TerracottaServer terracottaServer = topology.getServers().get(serverSymbolicName);
+    for (TcConfig tcConfig : topology.getTcConfigs()) {
+      for (TerracottaServer terracottaServer : tcConfig.getServers()) {
         try {
           stop(terracottaServer);
         } catch (Exception e) {
@@ -257,20 +266,21 @@ public class Tsa implements AutoCloseable {
   public Tsa licenseAll(String clusterName, SecurityRootDirectory securityRootDirectory, boolean verbose) {
     Topology topology = tsaConfigurationContext.getTopology();
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
-    for (Map.Entry<ServerSymbolicName, TerracottaServer> entry : topology.getServers().entrySet()) {
-      TerracottaServerState terracottaServerState = getState(entry.getValue());
+    for (TerracottaServer terracottaServer : topology.getServers()) {
+      TerracottaServerState terracottaServerState = getState(terracottaServer);
       if ((terracottaServerState != STARTED_AS_ACTIVE) && (terracottaServerState != STARTED_AS_PASSIVE)) {
-        notStartedServers.add(entry.getKey());
+        notStartedServers.add(terracottaServer.getServerSymbolicName());
       }
     }
     if (!notStartedServers.isEmpty()) {
       throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    TcConfig[] tcConfigs = topology.isNetDisruptionEnabled() ? disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) : topology
-        .getTcConfigs();
+    List<TcConfig> tcConfigs = topology.isNetDisruptionEnabled() ?
+        disruptionController().updateTsaPortsWithProxy(topology.getTcConfigs()) :
+        topology.getTcConfigs();
 
-    TerracottaServer terracottaServer = tcConfigs[0].getServers().values().iterator().next();
+    TerracottaServer terracottaServer = tcConfigs.get(0).getServers().get(0);
     logger.info("Licensing all");
     executeRemotely(ignite, terracottaServer,
         () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), verbose)).get();
@@ -284,7 +294,7 @@ public class Tsa implements AutoCloseable {
 
   public Collection<TerracottaServer> getPassives() {
     Collection<TerracottaServer> result = new ArrayList<>();
-    for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers().values()) {
+    for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers()) {
       if (getState(terracottaServer) == STARTED_AS_PASSIVE) {
         result.add(terracottaServer);
       }
@@ -304,17 +314,9 @@ public class Tsa implements AutoCloseable {
     }
   }
 
-  public Collection<TerracottaServer> getServers() {
-    return tsaConfigurationContext.getTopology().getServers().values();
-  }
-
-  public TerracottaServer getServer(ServerSymbolicName symbolicName) {
-    return tsaConfigurationContext.getTopology().getServers().get(symbolicName);
-  }
-
   public Collection<TerracottaServer> getActives() {
     Collection<TerracottaServer> result = new ArrayList<>();
-    for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers().values()) {
+    for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers()) {
       if (getState(terracottaServer) == STARTED_AS_ACTIVE) {
         result.add(terracottaServer);
       }
@@ -351,7 +353,6 @@ public class Tsa implements AutoCloseable {
     final Map<ServerSymbolicName, Integer> proxyTsaPorts = topology.isNetDisruptionEnabled() ? disruptionController.getProxyTsaPorts() : Collections
         .emptyMap();
     return URI.create(topology.getServers()
-        .values()
         .stream()
         .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts().getTsaPort()))
         .collect(Collectors.joining(",", prefix, "")));
@@ -390,4 +391,3 @@ public class Tsa implements AutoCloseable {
   }
 
 }
-

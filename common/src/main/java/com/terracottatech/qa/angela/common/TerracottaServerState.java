@@ -9,5 +9,4 @@ public enum TerracottaServerState {
   STARTING,
   STARTED_AS_ACTIVE,
   STARTED_AS_PASSIVE,
-  PAUSED,
 }

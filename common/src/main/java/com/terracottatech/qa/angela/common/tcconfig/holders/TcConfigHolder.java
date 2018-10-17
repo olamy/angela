@@ -87,8 +87,8 @@ public abstract class TcConfigHolder {
 
   protected abstract NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException;
 
-  public Map<ServerSymbolicName, TerracottaServer> getServers() {
-    Map<ServerSymbolicName, TerracottaServer> servers = new LinkedHashMap<>();
+  public List<TerracottaServer> getServers() {
+    List<TerracottaServer> servers = new ArrayList<>();
 
     // read servers list from XML
     try {
@@ -127,7 +127,7 @@ public abstract class TcConfigHolder {
         String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
         TerracottaServer terracottaServer = new TerracottaServer(symbolicName, hostname, tsaPort, tsaGroupPort, managementPort, jmxPort);
-        servers.put(terracottaServer.getServerSymbolicName(), terracottaServer);
+        servers.add(terracottaServer);
       }
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);
@@ -143,7 +143,7 @@ public abstract class TcConfigHolder {
     return this.installedTcConfigPath;
   }
 
-  public synchronized void updateLogsLocation(final File kitDir, final int tcConfigIndex) {
+  public synchronized void updateLogsLocation(final File kitDir, final int stripeId) {
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       int cnt = 1;
@@ -151,7 +151,7 @@ public abstract class TcConfigHolder {
         Node server = serversList.item(i);
         Node logsNode = (Node) xPath.evaluate("*[name()='logs']", server, XPathConstants.NODE);
 
-        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "logs-" + tcConfigIndex + "-" + cnt;
+        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "logs-" + stripeId + "-" + cnt;
         logsPathList.add(logsPath);
         if (logsNode != null) {
           logsNode.setTextContent(logsPath);
@@ -244,7 +244,7 @@ public abstract class TcConfigHolder {
 
   public abstract void updateHostname(final String serverName, final String hostname);
 
-  public abstract void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex);
+  public abstract void updateAuditDirectoryLocation(final File kitDir, final int stripeId);
 
   public abstract List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy);
 

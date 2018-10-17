@@ -175,12 +175,12 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
-  public synchronized void updateAuditDirectoryLocation(final File kitDir, final int tcConfigIndex) {
+  public synchronized void updateAuditDirectoryLocation(final File kitDir, final int stripeId) {
     modifyXml((tcConfigXml, xPath) -> {
       Node auditLogNode = (Node) xPath.evaluate("//*[local-name()='audit-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       if (auditLogNode != null) {
 
-        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "audit-" + tcConfigIndex;
+        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "audit-" + stripeId;
 
         Files.createDirectories(Paths.get(logsPath));
 

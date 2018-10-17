@@ -1,18 +1,5 @@
 package com.terracottatech.qa.angela.agent;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.PidProcess;
-import org.zeroturnaround.process.PidUtil;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
-
 import com.terracottatech.qa.angela.agent.kit.MonitoringInstance;
 import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
@@ -35,6 +22,18 @@ import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.StartedProcess;
+import org.zeroturnaround.process.PidProcess;
+import org.zeroturnaround.process.PidUtil;
+import org.zeroturnaround.process.ProcessUtil;
+import org.zeroturnaround.process.Processes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,7 +42,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -82,38 +80,26 @@ public class AgentController {
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
   }
 
-  public boolean attemptRemoteInstallation(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
+  public boolean install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, SecurityRootDirectory securityRootDirectory, String kitInstallationName, Distribution distribution) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
 
-    if (terracottaInstall == null) {
-      logger.info("Installing kit for " + terracottaServer);
-      RemoteKitManager kitManager = new RemoteKitManager(instanceId, topology.getDistribution(), kitInstallationName);
-
+    File installLocation;
+    if (terracottaInstall == null || !terracottaInstall.installed(distribution)) {
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
       boolean isKitAvailable = kitManager.verifyKitAvailability(offline);
-      if (isKitAvailable) {
-        File kitDir = kitManager.installKit(license);
-
-        setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
-
-        logger.info("Installing the tc-configs");
-        for (TcConfig tcConfig : topology.getTcConfigs()) {
-          tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
-          tcConfig.writeTcConfigFile(kitDir);
-          logger.info("Tc Config installed config path : {}", tcConfig.getPath());
-        }
-        terracottaInstall = new TerracottaInstall(topology, kitDir, license.getFilename());
-        kitsInstalls.put(instanceId, terracottaInstall);
-      } else {
+      if (!isKitAvailable) {
         return false;
       }
+
+      logger.info("Installing kit for {} from {}", terracottaServer, distribution);
+      installLocation = kitManager.installKit(license);
+      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(kitManager.getWorkingKitInstallationPath()));
     } else {
-      logger.info("Kit for " + terracottaServer + " already installed");
-      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
+      installLocation = terracottaInstall.installLocation(distribution);
+      logger.info("Kit for {} already installed", terracottaServer);
     }
 
-    TcConfig tcConfig = topology.get(tcConfigIndex);
-    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(), tcConfigIndex);
-    terracottaInstall.addServer(terracottaServer, tcConfig);
+    terracottaInstall.addServer(terracottaServer, securityRootDirectory, installLocation, license, distribution, topology);
 
     return true;
   }
@@ -163,79 +149,27 @@ public class AgentController {
     }
   }
 
-  public void install(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, int tcConfigIndex, SecurityRootDirectory securityRootDirectory, final String kitInstallationName) {
-    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
-    if (terracottaInstall == null) {
-      logger.info("Installing kit for " + terracottaServer);
-      RemoteKitManager kitManager = new RemoteKitManager(instanceId, topology.getDistribution(), kitInstallationName);
-
-      File kitDir = kitManager.installKit(license);
-
-      setupSecurityDirectories(securityRootDirectory, kitDir, terracottaServer, topology, tcConfigIndex);
-      logger.info("Installing the tc-configs");
-      for (TcConfig tcConfig : topology.getTcConfigs()) {
-        tcConfig.updateLogsLocation(kitDir, tcConfigIndex);
-        tcConfig.writeTcConfigFile(kitDir);
-        logger.info("Tc Config installed config path : {}", tcConfig.getPath());
-      }
-      terracottaInstall = new TerracottaInstall(topology, kitDir, license.getFilename());
-      kitsInstalls.put(instanceId, terracottaInstall);
-    } else {
-      logger.info("Kit for " + terracottaServer + " already installed");
-      setupSecurityDirectories(securityRootDirectory, terracottaInstall.getInstallLocation(), terracottaServer, topology, tcConfigIndex);
-    }
-
-    TcConfig tcConfig = topology.get(tcConfigIndex);
-    tcConfig.updateLogsLocation(terracottaInstall.getInstallLocation(), tcConfigIndex);
-    terracottaInstall.addServer(terracottaServer, tcConfig);
-  }
-
   public String getInstallPath(InstanceId instanceId, TerracottaServer terracottaServer) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     TerracottaServerInstance terracottaServerInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
     if (terracottaServerInstance == null) {
       throw new IllegalStateException("Server " + terracottaServer + " has not been installed");
     }
-    return terracottaInstall.getInstallLocation().getPath();
+    return terracottaInstall.getInstallLocation(terracottaServer).getPath();
   }
 
-  public String getLicensePath(InstanceId instanceId) {
+  public String getLicensePath(InstanceId instanceId, TerracottaServer terracottaServer) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall == null) {
       throw new IllegalStateException("Server has not been installed");
     }
-    return terracottaInstall.getLicenseFileLocation().getPath();
+    return terracottaInstall.getLicenseFileLocation(terracottaServer).getPath();
   }
 
-  private void setupSecurityDirectories(SecurityRootDirectory securityRootDirectory, File installLocation,
-                                        TerracottaServer terracottaServer,
-                                        Topology topology, int tcConfigIndex){
-    if(securityRootDirectory != null) {
-      installSecurityRootDirectory(securityRootDirectory, installLocation, terracottaServer, topology, tcConfigIndex);
-      createAuditDirectory(installLocation, topology, tcConfigIndex);
-    }
-  }
-
-  private void installSecurityRootDirectory(SecurityRootDirectory securityRootDirectory, File installLocation,
-                                            TerracottaServer terracottaServer,
-                                            Topology topology, int tcConfigIndex) {
-
-      final String serverName = terracottaServer.getServerSymbolicName().getSymbolicName();
-      Path securityRootDirectoryPath = installLocation.toPath().resolve("security-root-directory-" + serverName);
-      logger.info("Installing SecurityRootDirectory in {} for server {}", securityRootDirectoryPath, serverName);
-      securityRootDirectory.createSecurityRootDirectory(securityRootDirectoryPath);
-      topology.get(tcConfigIndex).updateSecurityRootDirectoryLocation(securityRootDirectoryPath.toString());
-  }
-
-  private void createAuditDirectory(File installLocation,Topology topology, int tcConfigIndex) {
-    topology.get(tcConfigIndex).updateAuditDirectoryLocation(installLocation,tcConfigIndex);
-  }
-
-
-  public boolean attemptRemoteTmsInstallation(final InstanceId instanceId, final String tmsHostname,
-                                              final Distribution distribution, final boolean offline, final License license,
-                                              final TmsServerSecurityConfig tmsServerSecurityConfig, final String kitInstallationName,
-                                              TerracottaCommandLineEnvironment tcEnv) {
+  public boolean installTms(final InstanceId instanceId, final String tmsHostname,
+                            final Distribution distribution, final boolean offline, final License license,
+                            final TmsServerSecurityConfig tmsServerSecurityConfig, final String kitInstallationName,
+                            TerracottaCommandLineEnvironment tcEnv) {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       logger.info("Kit for " + tmsHostname + " already installed");
@@ -260,59 +194,28 @@ public class AgentController {
     }
   }
 
-  public void installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, License license, TmsServerSecurityConfig tmsServerSecurityConfig, String kitInstallationName, TerracottaCommandLineEnvironment tcEnv) {
-    TmsInstall tmsInstall = tmsInstalls.get(instanceId);
-    if (tmsInstall != null) {
-      logger.info("Kit for " + tmsHostname + " already installed");
-      tmsInstall.addTerracottaManagementServer();
-    } else {
-      logger.info("Installing kit for " + tmsHostname);
-      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
-      File kitDir = kitManager.installKit(license);
-      File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
-      if (tmsServerSecurityConfig != null) {
-        enableSecurity(tmcProperties, tmsServerSecurityConfig);
-      }
-
-      tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir, tcEnv));
-    }
-  }
-
   private void enableSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
-
     Properties properties = new Properties();
 
-    try (InputStream inputStream = new FileInputStream(tmcProperties);)
-    {
+    try (InputStream inputStream = new FileInputStream(tmcProperties)) {
       properties.load(inputStream);
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
 
-    tmsServerSecurityConfig.toMap().entrySet().forEach(entry-> {
-      if (entry.getValue() == null) properties.remove(entry.getKey());
-      else properties.put(entry.getKey(), entry.getValue());
-    } );
+    tmsServerSecurityConfig.toMap().forEach((key, value) -> {
+      if (value == null) {
+        properties.remove(key);
+      } else {
+        properties.put(key, value);
+      }
+    });
 
-    try (OutputStream outputStream = new FileOutputStream(tmcProperties);)
-    {
+    try (OutputStream outputStream = new FileOutputStream(tmcProperties)) {
       properties.store(outputStream, null);
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       throw new RuntimeException("Unable to enable security in TMS tmc.properties file", ex);
     }
-
-  }
-
-  private String adaptToWindowsPaths(Path path) {
-    String pathAsString = path.toString();
-    if (OS.INSTANCE.isWindows()) {
-      //Replace "\" with "\\"
-      pathAsString = pathAsString.replace("\\", "\\\\");
-      return pathAsString;
-    }
-    return pathAsString;
   }
 
   public void startTms(final InstanceId instanceId) {
@@ -350,15 +253,16 @@ public class AgentController {
       int installationsCount = terracottaInstall.removeServer(terracottaServer);
       TmsInstall tmsInstall = tmsInstalls.get(instanceId);
       if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null)) {
+        File installLocation = terracottaInstall.getRootInstallLocation();
         try {
-          logger.info("Uninstalling kit for {}", terracottaServer);
+          logger.info("Uninstalling kit(s) from {}", installLocation);
           RemoteKitManager kitManager = new RemoteKitManager(instanceId, topology.getDistribution(), kitInstallationName);
           // TODO : get log files
 
-          kitManager.deleteInstall(terracottaInstall.getInstallLocation());
+          kitManager.deleteInstall(installLocation);
           kitsInstalls.remove(instanceId);
         } catch (IOException ioe) {
-          throw new RuntimeException("Unable to uninstall kit at " + terracottaInstall.getInstallLocation().getAbsolutePath() + " on " + terracottaServer, ioe);
+          throw new RuntimeException("Unable to uninstall kit at " + installLocation.getAbsolutePath() + " on " + terracottaServer, ioe);
         }
       } else {
         logger.info("Kit install still in use by {} Terracotta servers",
@@ -375,7 +279,7 @@ public class AgentController {
     if (tmsInstall != null) {
       tmsInstall.removeServer();
       TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
-      int numberOfTerracottaInstances = (terracottaInstall != null ? terracottaInstall.numberOfTerracottaInstances() : 0);
+      int numberOfTerracottaInstances = (terracottaInstall != null ? terracottaInstall.terracottaServerInstanceCount() : 0);
       if (numberOfTerracottaInstances == 0) {
         try {
           logger.info("Uninstalling kit for " + tmsHostname);
@@ -447,11 +351,11 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
-  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final TcConfig[] tcConfigs,
+  public void configureLicense(final InstanceId instanceId, final TerracottaServer terracottaServer, final List<TcConfig> tcConfigs,
                                String clusterName, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv,
                                boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
-    String licensePath = getLicensePath(instanceId);
+    String licensePath = getLicensePath(instanceId, terracottaServer);
     if (clusterName == null) {
       clusterName = instanceId.toString();
     }

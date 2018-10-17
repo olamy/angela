@@ -56,8 +56,8 @@ public class Distribution102Controller extends DistributionController {
 
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
-  public Distribution102Controller(final Distribution distribution, final Topology topology) {
-    super(distribution, topology);
+  public Distribution102Controller(Distribution distribution) {
+    super(distribution);
   }
 
   @Override
@@ -103,7 +103,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void stop(final ServerSymbolicName serverSymbolicName, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stop(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, final File installLocation, final TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     logger.info("Destroying L2 process for " + serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
@@ -145,7 +145,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureLicense(String clusterName, final File location, String licensePath, final TcConfig[] tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configureLicense(String clusterName, final File location, String licensePath, final List<TcConfig> tcConfigs, final SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     Map<String, String> env = buildEnv(tcEnv);
 
     String[] commands = configureCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory, verbose);
@@ -169,7 +169,7 @@ public class Distribution102Controller extends DistributionController {
     }
   }
 
-  private synchronized String[] configureCommand(final File location, String licensePath, final TcConfig[] tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory, boolean verbose) {
+  private synchronized String[] configureCommand(final File location, String licensePath, final List<TcConfig> tcConfigs, String clusterName, final SecurityRootDirectory securityRootDirectory, boolean verbose) {
     List<String> command = new ArrayList<>();
 
     StringBuilder sb = null;

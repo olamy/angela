@@ -38,8 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class ClusterFactory implements AutoCloseable {
-  static final boolean SKIP_UNINSTALL = Boolean.getBoolean("tc.qa.angela.skipUninstall")
-                                        || Boolean.getBoolean("skipUninstall"); // legacy system prop name
+  static final boolean SKIP_UNINSTALL = Boolean.getBoolean("tc.qa.angela.skipUninstall");
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
 

@@ -10,16 +10,21 @@
     </config>
     <config>
       <data:data-directories xmlns:data="http://www.terracottatech.com/config/data-roots">
-        <data:directory name="dataroot">root2</data:directory>
+        <data:directory name="dataroot">dataroot</data:directory>
       </data:data-directories>
     </config>
   </plugins>
 
   <servers>
-    <server host="localhost" name="Server1-2">
+    <server host="localhost" name="Server2-1">
+      <logs>logs1</logs>
+      <tsa-port>9611</tsa-port>
+      <tsa-group-port>9631</tsa-group-port>
+    </server>
+    <server host="localhost" name="Server2-2">
       <logs>logs2</logs>
-      <tsa-port>9512</tsa-port>
-      <tsa-group-port>9532</tsa-group-port>
+      <tsa-port>9612</tsa-port>
+      <tsa-group-port>9632</tsa-group-port>
     </server>
   </servers>
 
