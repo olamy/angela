@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -118,10 +120,22 @@ public class Client implements Closeable {
 
   Future<Void> submit(ClientJob clientJob) {
     IgniteFuture<Void> igniteFuture = IgniteClientHelper.executeRemotelyAsync(ignite, instanceId.toString(), (IgniteCallable<Void>) () -> {
-      clientJob.run(new Cluster(ignite));
-      return null;
+      try {
+        clientJob.run(new Cluster(ignite));
+        return null;
+      } catch (Throwable t) {
+        throw new RemoteExecutionException("Remote ClientJob failed; remote stack trace is:\n{{{\n" + exceptionToString(t) + "\n}}}");
+      }
     });
     return new ClientJobFuture(igniteFuture);
+  }
+
+  private static String exceptionToString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    t.printStackTrace(pw);
+    pw.close();
+    return sw.toString();
   }
 
   public RemoteFolder browse(String root) {
@@ -170,7 +184,12 @@ public class Client implements Closeable {
       } catch (IgniteInterruptedException iie) {
         throw (InterruptedException) new InterruptedException().initCause(iie);
       } catch (IgniteException ie) {
-        throw new ExecutionException(ie);
+        RemoteExecutionException ree = lookForRemoteExecutionException(ie);
+        if (ree != null) {
+          throw new ExecutionException("Client job execution failed", ree);
+        } else {
+          throw new ExecutionException("Client job execution failed", ie);
+        }
       }
     }
 
@@ -183,8 +202,29 @@ public class Client implements Closeable {
       } catch (IgniteFutureTimeoutException ifte) {
         throw (TimeoutException) new TimeoutException().initCause(ifte);
       } catch (IgniteException ie) {
-        throw new ExecutionException(ie);
+        RemoteExecutionException ree = lookForRemoteExecutionException(ie);
+        if (ree != null) {
+          throw new ExecutionException("Client job execution failed", ree);
+        } else {
+          throw new ExecutionException("Client job execution failed", ie);
+        }
       }
+    }
+
+    private static RemoteExecutionException lookForRemoteExecutionException(Throwable t) {
+      if (t instanceof RemoteExecutionException) {
+        return (RemoteExecutionException) t;
+      } else if (t == null) {
+        return null;
+      } else {
+        return lookForRemoteExecutionException(t.getCause());
+      }
+    }
+  }
+
+  private static class RemoteExecutionException extends Exception {
+    RemoteExecutionException(String message) {
+      super(message);
     }
   }
 

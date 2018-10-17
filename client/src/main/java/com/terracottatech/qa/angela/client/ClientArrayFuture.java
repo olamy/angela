@@ -58,7 +58,14 @@ public class ClientArrayFuture {
     futures.forEach(f -> f.cancel(mayInterruptIfRunning));
   }
 
-  public boolean isDone() {
+  public boolean isAnyDone() {
+    return futures.stream()
+        .map(Future::isDone)
+        .reduce((b1, b2) -> b1 || b2)
+        .orElse(true);
+  }
+
+  public boolean isAllDone() {
     return futures.stream()
         .map(Future::isDone)
         .reduce((b1, b2) -> b1 && b2)
