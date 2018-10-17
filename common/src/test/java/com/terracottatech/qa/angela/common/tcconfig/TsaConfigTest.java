@@ -20,7 +20,7 @@ public class TsaConfigTest {
 
   @Test
   public void testAddServer() {
-    final TsaConfig tsaConfig = new TsaConfig().stripes(Version.version("10.0.0.0.0"), "host1", "host2");
+    final TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0")).stripes( "host1", "host2");
     final TcConfig[] tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.length, equalTo(1));
     final Collection<TerracottaServer> servers = tcConfigs[0].getServers().values();

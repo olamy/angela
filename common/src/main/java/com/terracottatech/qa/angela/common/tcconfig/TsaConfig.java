@@ -11,20 +11,30 @@ import java.util.List;
 
 public class TsaConfig {
 
+  private final Version version;
   private List<TcConfig> tcConfigs = new ArrayList<>();
   private int stripeCount = 1;
 
-  public TsaConfig stripes(Version version, String hostname, int hostCount) {
+
+  TsaConfig(final Version version) {
+    this.version = version;
+  }
+
+  public static TsaConfig tsaConfig(Version version) {
+    return new TsaConfig(version);
+  }
+
+  public TsaConfig stripes( String hostname, int hostCount) {
     String[] hostnames = new String[hostCount];
     for (int i = 0; i < hostCount; i++) {
       hostnames[i] = hostname;
     }
-    return stripes(version, hostnames);
+    return stripes( hostnames);
   }
 
-  public TsaConfig stripes(Version version, String... hostnames) {
+  public TsaConfig stripes( String... hostnames) {
     if (version.getMajor() < 10) {
-      throw new UnsupportedOperationException("Dynamic Tcconfig generation for BigMemory is not supported");
+      throw new UnsupportedOperationException("Dynamic TcConfig generation for BigMemory is not supported");
     }
     TcConfig tcConfig = new TcConfig(version, TsaConfig.class.getResource("/terracotta/10/tc-config.xml"));
 
