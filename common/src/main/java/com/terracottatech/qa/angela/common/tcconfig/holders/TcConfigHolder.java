@@ -1,8 +1,5 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -12,6 +9,21 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
+
+import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -24,16 +36,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * This holds the contents of the Tc Config
@@ -195,6 +197,41 @@ public abstract class TcConfigHolder {
     });
   }
 
+  public void addServer(final int stripeIndex, final String hostname) {
+    try {
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
+
+      Node serverElt = (Node)xPath.evaluate("//*[name()='servers']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+
+      Element node = tcConfigXml.createElement("server");
+      node.setAttribute("host", hostname);
+      node.setAttribute("name", "Server" + stripeIndex + "-" + serverIndex);
+
+      Element node2 = tcConfigXml.createElement("logs");
+      node2.appendChild(tcConfigXml.createTextNode("logs" + serverIndex));
+      node.appendChild(node2);
+
+      Element node3  = tcConfigXml.createElement("tsa-port");
+      node3.appendChild(tcConfigXml.createTextNode("9" + stripeIndex + "1" +  serverIndex));
+      node.appendChild(node3);
+
+      Element node4  = tcConfigXml.createElement("tsa-group-port");
+      node4.appendChild(tcConfigXml.createTextNode("9" + stripeIndex + "3" +  serverIndex));
+      node.appendChild(node4);
+
+      serverElt.appendChild(node);
+
+      this.tcConfigContent = domToString(tcConfigXml);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot dynamically add server to tc-config xml", e);
+    }
+  }
+
+
   public void createOrUpdateTcProperty(String name, String value) {
     modifyXml((tcConfigXml, xPath) -> {
       String indentation = guessIndentation(tcConfigXml);
@@ -268,7 +305,7 @@ public abstract class TcConfigHolder {
       this.tcConfigContent = this.tcConfigContent.replaceAll(token, value);
   }
 
-  protected void modifyXml(XmlModifier xmlModifier) {
+  void modifyXml(XmlModifier xmlModifier) {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -287,7 +324,7 @@ public abstract class TcConfigHolder {
     void modify(Document tcConfigXml, XPath xPath) throws Exception;
   }
 
-  protected static String domToString(Document document) throws TransformerException, IOException {
+  private static String domToString(Document document) throws TransformerException, IOException {
     DOMSource domSource = new DOMSource(document);
     try (StringWriter writer = new StringWriter()) {
       StreamResult result = new StreamResult(writer);

@@ -123,6 +123,10 @@ public class TcConfig {
     tcConfigHolder.updateServerHost(serverIndex, newServerName);
   }
 
+  public void addServer(final int stripeIndex, final String hostname) {
+    tcConfigHolder.addServer(stripeIndex, hostname);
+  }
+
   public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy){
     return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy);
   }
@@ -134,5 +138,5 @@ public class TcConfig {
   public void substituteToken(final String token, final String value){
     tcConfigHolder.substituteToken(token, value);
   }
-  
+
 }
