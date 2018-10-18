@@ -15,31 +15,31 @@
  */
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteFutureTimeoutException;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
-import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
-import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.cluster.Cluster;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.util.FileMetadata;
-
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collection;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -69,22 +69,13 @@ public class Client implements Closeable {
     );
   }
 
-  private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv, final LocalKitManager localKitManager) {
+  private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv, LocalKitManager localKitManager) {
     logger.info("Spawning client '{}' on {}", instanceId, nodeName);
-    IgniteHelper.checkAgentHealth(ignite, nodeName);
+
     try {
-      final BlockingQueue<Object> queue = ignite.queue("file-transfer-queue@" + instanceId, 100, new CollectionConfiguration());
+      IgniteClientHelper.uploadClientJars(ignite, nodeName, instanceId, listClasspathFiles(localKitManager));
 
-      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      IgniteFuture<Void> remoteDownloadFuture = ignite.compute(location)
-          .broadcastAsync((IgniteRunnable)() -> Agent.CONTROLLER.downloadClient(instanceId));
-
-      uploadClasspath(queue, localKitManager);
-      remoteDownloadFuture.get();
-
-      Collection<Integer> results = ignite.compute(location)
-          .broadcast((IgniteCallable<Integer>)() -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
-      int pid = results.iterator().next();
+      int pid = IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
       logger.info("client '{}' on {} started with PID {}", instanceId, nodeName, pid);
 
       return pid;
@@ -93,79 +84,58 @@ public class Client implements Closeable {
     }
   }
 
-  private void uploadClasspath(BlockingQueue<Object> queue, LocalKitManager localKitManager) throws InterruptedException, IOException {
+  private List<File> listClasspathFiles(LocalKitManager localKitManager) {
+    List<File> files = new ArrayList<>();
+
     File javaHome = new File(System.getProperty("java.home"));
     String[] classpathJarNames = System.getProperty("java.class.path").split(File.pathSeparator);
+    boolean substituteClientJars = localKitManager.getDistribution() != null;
+    List<File> jars = new ArrayList<>();
     for (String classpathJarName : classpathJarNames) {
-      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile()
-          .getPath())) {
-        logger.debug("skipping {}", classpathJarName);
+      if (classpathJarName.startsWith(javaHome.getPath()) || classpathJarName.startsWith(javaHome.getParentFile().getPath())) {
+        logger.debug("Skipping {} as it is part of the JVM", classpathJarName);
         continue; // part of the JVM, skip it
       }
+      File classpathFile = new File(classpathJarName);
 
-      File fileToUpload = checkKitContents(localKitManager, classpathJarName);
-      logger.debug("file uploading to remote : {}", fileToUpload);
-
-      uploadFile(queue, fileToUpload, null);
-    }
-    queue.put(Boolean.TRUE); // end of upload marker
-  }
-
-  private File checkKitContents(LocalKitManager localKitManager, String classpathJarName) throws IOException {
-    File fileInKit = localKitManager.findEquivalent(classpathJarName);
-    if (fileInKit != null) {
-      logger.info("Substituting '{}' with kit's equivalent JAR '{}'", new File(classpathJarName).getName(), fileInKit);
-      return fileInKit;
-    } else {
-      return new File(classpathJarName);
-    }
-  }
-
-  private void uploadFile(BlockingQueue<Object> queue, File file, String path) throws InterruptedException, IOException {
-    FileMetadata fileMetadata = new FileMetadata(path, file);
-    if (!file.exists()) {
-      logger.debug("skipping upload of non-existent classpath entry {}", fileMetadata);
-      return;
-    }
-    queue.put(fileMetadata);
-    logger.debug("uploading {}", fileMetadata);
-
-    if (file.isDirectory()) {
-      File[] files = file.listFiles();
-      for (File _file : files) {
-        String parentPath = path == null ? "" : path + "/";
-        uploadFile(queue, _file, parentPath + file.getName());
+      File equivalentClientJar = localKitManager.equivalentClientJar(classpathFile);
+      if (substituteClientJars && equivalentClientJar != null) {
+        logger.debug("Skipping upload of classpath file as kit contains equivalent jar in client libs : {}", classpathFile.getName());
+        jars.add(equivalentClientJar);
+        continue;
       }
-    } else {
-      byte[] buffer = new byte[64 * 1024];
-      try (FileInputStream fis = new FileInputStream(file)) {
-        while (true) {
-          int read = fis.read(buffer);
-          if (read < 0) {
-            break;
-          }
-          byte[] toSend;
-          if (read != buffer.length) {
-            toSend = new byte[read];
-            System.arraycopy(buffer, 0, toSend, 0, read);
-          } else {
-            toSend = buffer;
-          }
-          queue.put(toSend);
-        }
-      }
-      logger.debug("uploaded {}", fileMetadata);
+
+      logger.debug("Uploading classpath file : {}", classpathFile.getName());
+      files.add(classpathFile);
     }
+
+    if (substituteClientJars) {
+      logger.info("Enhancing client classpath with client jars of {}", localKitManager.getDistribution());
+      files.addAll(jars);
+      logger.debug("Adding clients jars : {}", jars);
+    }
+
+    return files;
   }
 
   Future<Void> submit(ClientJob clientJob) {
-    IgniteHelper.checkAgentHealth(ignite, instanceId.toString());
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", instanceId.toString());
-    IgniteFuture<?> igniteFuture = ignite.compute(location).broadcastAsync((IgniteCallable<Void>)() -> {
-      clientJob.run(new Cluster(ignite));
-      return null;
+    IgniteFuture<Void> igniteFuture = IgniteClientHelper.executeRemotelyAsync(ignite, instanceId.toString(), (IgniteCallable<Void>) () -> {
+      try {
+        clientJob.run(new Cluster(ignite));
+        return null;
+      } catch (Throwable t) {
+        throw new RemoteExecutionException("Remote ClientJob failed; remote stack trace is:\n{{{\n" + exceptionToString(t) + "\n}}}");
+      }
     });
     return new ClientJobFuture(igniteFuture);
+  }
+
+  private static String exceptionToString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    t.printStackTrace(pw);
+    pw.close();
+    return sw.toString();
   }
 
   public RemoteFolder browse(String root) {
@@ -181,10 +151,7 @@ public class Client implements Closeable {
 
     if (!ClusterFactory.SKIP_UNINSTALL) {
       logger.info("Wiping up client '{}' on {}", instanceId, nodeName);
-      IgniteHelper.checkAgentHealth(ignite, nodeName);
-      ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
-      ignite.compute(location)
-          .broadcast((IgniteRunnable)() -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
+      IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteRunnable)() -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
     }
   }
 
@@ -212,12 +179,52 @@ public class Client implements Closeable {
 
     @Override
     public V get() throws InterruptedException, ExecutionException {
-      return igniteFuture.get();
+      try {
+        return igniteFuture.get();
+      } catch (IgniteInterruptedException iie) {
+        throw (InterruptedException) new InterruptedException().initCause(iie);
+      } catch (IgniteException ie) {
+        RemoteExecutionException ree = lookForRemoteExecutionException(ie);
+        if (ree != null) {
+          throw new ExecutionException("Client job execution failed", ree);
+        } else {
+          throw new ExecutionException("Client job execution failed", ie);
+        }
+      }
     }
 
     @Override
     public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-      return igniteFuture.get(timeout, unit);
+      try {
+        return igniteFuture.get(timeout, unit);
+      } catch (IgniteInterruptedException iie) {
+        throw (InterruptedException) new InterruptedException().initCause(iie);
+      } catch (IgniteFutureTimeoutException ifte) {
+        throw (TimeoutException) new TimeoutException().initCause(ifte);
+      } catch (IgniteException ie) {
+        RemoteExecutionException ree = lookForRemoteExecutionException(ie);
+        if (ree != null) {
+          throw new ExecutionException("Client job execution failed", ree);
+        } else {
+          throw new ExecutionException("Client job execution failed", ie);
+        }
+      }
+    }
+
+    private static RemoteExecutionException lookForRemoteExecutionException(Throwable t) {
+      if (t instanceof RemoteExecutionException) {
+        return (RemoteExecutionException) t;
+      } else if (t == null) {
+        return null;
+      } else {
+        return lookForRemoteExecutionException(t.getCause());
+      }
+    }
+  }
+
+  private static class RemoteExecutionException extends Exception {
+    RemoteExecutionException(String message) {
+      super(message);
     }
   }
 

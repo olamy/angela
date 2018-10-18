@@ -120,7 +120,7 @@ public class MultistripesTest {
       tsa.stop(server);
       tsa.browse(server, "dataroot/Server1-1").downloadTo(new File("target/dataroot"));
       tsa.upgrade(server, distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB));
-      tsa.browse(server, ".").upload("dataroot/Server1-1", new File("target/dataroot"));
+      tsa.browse(server, "dataroot/Server1-1").upload(new File("target/dataroot"));
       tsa.start(server);
 
       tsa.stopAll();

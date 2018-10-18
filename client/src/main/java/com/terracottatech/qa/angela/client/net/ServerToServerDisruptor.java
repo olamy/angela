@@ -1,7 +1,7 @@
 package com.terracottatech.qa.angela.client.net;
 
 import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.IgniteHelper;
+import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
 import com.terracottatech.qa.angela.common.net.Disruptor;
 import com.terracottatech.qa.angela.common.net.DisruptorState;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
@@ -9,8 +9,6 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +61,7 @@ public class ServerToServerDisruptor implements Disruptor {
           .stream()
           .map(topologyServers::get)
           .collect(Collectors.toList()));
-      executeRemotely(server, blockRemotely(instanceId, server, otherServers)).get();
+      IgniteClientHelper.executeRemotely(ignite, server.getHostname(), blockRemotely(instanceId, server, otherServers));
     }
 
     state = DisruptorState.DISRUPTED;
@@ -86,7 +84,7 @@ public class ServerToServerDisruptor implements Disruptor {
           .stream()
           .map(topologyServers::get)
           .collect(Collectors.toList()));
-      executeRemotely(server, undisruptRemotely(instanceId, server, otherServers)).get();
+      IgniteClientHelper.executeRemotelyAsync(ignite, server.getHostname(), undisruptRemotely(instanceId, server, otherServers)).get();
     }
     state = DisruptorState.UNDISRUPTED;
   }
@@ -114,12 +112,6 @@ public class ServerToServerDisruptor implements Disruptor {
 
   private static IgniteRunnable undisruptRemotely(InstanceId instanceId, TerracottaServer server, Collection<TerracottaServer> otherServers) {
     return (IgniteRunnable)() -> Agent.CONTROLLER.undisrupt(instanceId, server, otherServers);
-  }
-
-  private IgniteFuture<Void> executeRemotely(final TerracottaServer hostname, final IgniteRunnable runnable) {
-    IgniteHelper.checkAgentHealth(ignite, hostname.getHostname());
-    ClusterGroup location = ignite.cluster().forAttribute("nodename", hostname.getHostname());
-    return ignite.compute(location).runAsync(runnable);
   }
 
   @Override

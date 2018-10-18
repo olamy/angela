@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.client;
 
+import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
@@ -29,10 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
-import static com.terracottatech.qa.angela.client.IgniteHelper.executeRemotely;
-import static com.terracottatech.qa.angela.client.IgniteHelper.uploadKit;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
@@ -45,7 +43,6 @@ import static java.util.EnumSet.of;
 public class Tsa implements AutoCloseable {
 
   private final static Logger logger = LoggerFactory.getLogger(Tsa.class);
-  private static final long TIMEOUT = 60000;
 
   private final Ignite ignite;
   private final InstanceId instanceId;
@@ -55,15 +52,16 @@ public class Tsa implements AutoCloseable {
   private boolean closed = false;
 
   Tsa(Ignite ignite, InstanceId instanceId, TsaConfigurationContext tsaConfigurationContext) {
-    if (!tsaConfigurationContext.getTopology().getLicenseType().isOpenSource() && tsaConfigurationContext.getLicense() == null) {
-      throw new IllegalArgumentException("LicenseType " + tsaConfigurationContext.getTopology().getLicenseType() + " requires a license.");
-    }
     this.tsaConfigurationContext = tsaConfigurationContext;
     this.instanceId = instanceId;
     this.ignite = ignite;
     this.disruptionController = new DisruptionController(ignite, instanceId, tsaConfigurationContext.getTopology());
     this.localKitManager = new LocalKitManager(tsaConfigurationContext.getTopology().getDistribution());
     installAll();
+  }
+
+  public TsaConfigurationContext getTsaConfigurationContext() {
+    return tsaConfigurationContext;
   }
 
   public ClusterTool clusterTool(TerracottaServer terracottaServer) {
@@ -79,7 +77,7 @@ public class Tsa implements AutoCloseable {
     if (terracottaServerState == null) {
       throw new IllegalStateException("Cannot get license path: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
-    return executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getLicensePath(instanceId, terracottaServer)).get();
+    return IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.getTsaLicensePath(instanceId, terracottaServer));
   }
 
   private void installAll() {
@@ -111,26 +109,25 @@ public class Tsa implements AutoCloseable {
     Topology topology = tsaConfigurationContext.getTopology();
     License license = tsaConfigurationContext.getLicense();
 
-    logger.info("Setting up locally the extracted install to be deployed remotely");
     String kitInstallationPath = System.getProperty("kitInstallationPath");
     localKitManager.setupLocalInstall(license, kitInstallationPath, offline);
 
-    logger.info("Attempting to remotely installing if existing install already exists on {}", terracottaServer.getHostname());
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
-      isRemoteInstallationSuccessful = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(
-          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName(), distribution))
-          .get();
+      logger.info("Attempting to remotely install if distribution already exists on {}", terracottaServer.getHostname());
+      isRemoteInstallationSuccessful = IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.installTsa(
+          instanceId, topology, terracottaServer, offline, license, securityRootDirectory, localKitManager.getKitInstallationName(), distribution));
     } else {
       isRemoteInstallationSuccessful = false;
     }
     if (!isRemoteInstallationSuccessful) {
       try {
-        uploadKit(ignite, terracottaServer.getHostname(), instanceId, distribution,
+        logger.info("Uploading {} on {}", distribution, terracottaServer.getHostname());
+        IgniteClientHelper.uploadKit(ignite, terracottaServer.getHostname(), instanceId, distribution,
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
 
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.install(instanceId, topology, terracottaServer, offline, license, securityRootDirectory,
-            localKitManager.getKitInstallationName(), distribution)).get();
+        IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.installTsa(instanceId, topology, terracottaServer, offline, license, securityRootDirectory,
+            localKitManager.getKitInstallationName(), distribution));
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + terracottaServer.getHostname(), e);
       }
@@ -168,9 +165,9 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("Cannot uninstall: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
     }
 
-    logger.info("uninstalling from {}", terracottaServer.getHostname());
-    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.uninstall(instanceId, tsaConfigurationContext.getTopology(), terracottaServer, localKitManager
-        .getKitInstallationName())).get();
+    logger.info("Uninstalling TC server from {}", terracottaServer.getHostname());
+    IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.uninstallTsa(instanceId, tsaConfigurationContext.getTopology(), terracottaServer, localKitManager
+        .getKitInstallationName()));
   }
 
   public Tsa createAll() {
@@ -181,7 +178,7 @@ public class Tsa implements AutoCloseable {
     return this;
   }
 
-  public Tsa create(final TerracottaServer terracottaServer) {
+  public Tsa create(TerracottaServer terracottaServer) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     switch (terracottaServerState) {
       case STARTING:
@@ -189,8 +186,8 @@ public class Tsa implements AutoCloseable {
       case STARTED_AS_PASSIVE:
         return this;
       case STOPPED:
-        logger.info("creating on {}", terracottaServer.getHostname());
-        executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.create(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment())).get(TIMEOUT);
+        logger.info("Creating TC server on {}", terracottaServer.getHostname());
+        IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.createTsa(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment()));
         return this;
     }
     throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
@@ -209,10 +206,9 @@ public class Tsa implements AutoCloseable {
   }
 
 
-  public Tsa start(final TerracottaServer terracottaServer) {
+  public Tsa start(TerracottaServer terracottaServer) {
     create(terracottaServer);
-    executeRemotely(ignite, terracottaServer,
-        () -> Agent.CONTROLLER.waitForState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE))).get(TIMEOUT);
+    IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.waitForTsaInState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE)));
     return this;
   }
 
@@ -238,13 +234,13 @@ public class Tsa implements AutoCloseable {
     return this;
   }
 
-  public Tsa stop(final TerracottaServer terracottaServer) {
+  public Tsa stop(TerracottaServer terracottaServer) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState == STOPPED) {
       return this;
     }
-    logger.info("stopping on {}", terracottaServer.getHostname());
-    executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.stop(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment())).get(TIMEOUT);
+    logger.info("Stopping TC server on {}", terracottaServer.getHostname());
+    IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.stopTsa(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment()));
     return this;
   }
 
@@ -281,15 +277,13 @@ public class Tsa implements AutoCloseable {
         topology.getTcConfigs();
 
     TerracottaServer terracottaServer = tcConfigs.get(0).getServers().get(0);
-    logger.info("Licensing all");
-    executeRemotely(ignite, terracottaServer,
-        () -> Agent.CONTROLLER.configureLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), verbose)).get();
+    logger.info("Licensing cluster from {}", terracottaServer.getHostname());
+    IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.configureTsaLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), verbose));
     return this;
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
-    return executeRemotely(ignite, terracottaServer,
-        () -> Agent.CONTROLLER.getTerracottaServerState(instanceId, terracottaServer)).get();
+    return IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.getTsaState(instanceId, terracottaServer));
   }
 
   public Collection<TerracottaServer> getPassives() {
@@ -341,26 +335,12 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("uri cannot be built from a client lambda - please call uri() from the test code instead");
     }
     Topology topology = tsaConfigurationContext.getTopology();
-    String prefix;
-    if (topology.getDistribution().getVersion().getMajor() == 10) {
-      prefix = "terracotta://";
-    } else if (topology.getDistribution().getVersion().getMajor() == 4) {
-      prefix = "";
-    } else {
-      throw new UnsupportedOperationException("Version " + topology.getDistribution()
-          .getVersion() + " is not supported");
-    }
-    final Map<ServerSymbolicName, Integer> proxyTsaPorts = topology.isNetDisruptionEnabled() ? disruptionController.getProxyTsaPorts() : Collections
-        .emptyMap();
-    return URI.create(topology.getServers()
-        .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts().getTsaPort()))
-        .collect(Collectors.joining(",", prefix, "")));
+    Map<ServerSymbolicName, Integer> proxyTsaPorts = topology.isNetDisruptionEnabled() ? disruptionController.getProxyTsaPorts() : Collections.emptyMap();
+    return topology.getDistribution().createDistributionController().tsaUri(topology.getServers(), proxyTsaPorts);
   }
 
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
-    String path = executeRemotely(ignite, terracottaServer, () -> Agent.CONTROLLER.getInstallPath(instanceId, terracottaServer))
-        .get();
+    String path = IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.getTsaInstallPath(instanceId, terracottaServer));
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
   }
 

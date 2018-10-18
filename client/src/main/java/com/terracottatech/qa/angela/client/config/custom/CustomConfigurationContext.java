@@ -55,6 +55,9 @@ public class CustomConfigurationContext implements ConfigurationContext {
     if (customTsaConfigurationContext.getTopology() == null) {
       throw new IllegalArgumentException("You added a tsa to the Configuration but did not define its topology");
     }
+    if (!customTsaConfigurationContext.getTopology().getLicenseType().isOpenSource() && customTsaConfigurationContext.getLicense() == null) {
+      throw new IllegalArgumentException("LicenseType " + customTsaConfigurationContext.getTopology().getLicenseType() + " requires a license.");
+    }
     return this;
   }
 

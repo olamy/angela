@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import com.terracottatech.qa.angela.agent.Agent;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static com.terracottatech.qa.angela.agent.Agent.ROOT_DIR;
-import static com.terracottatech.qa.angela.agent.Agent.ROOT_DIR_SYSPROP_NAME;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
 
@@ -25,26 +24,14 @@ public abstract class KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(KitManager.class);
 
-  protected Distribution distribution;
-  protected CompressionUtils compressionUtils = new CompressionUtils();
-
+  protected final Distribution distribution;
+  protected final CompressionUtils compressionUtils = new CompressionUtils();
   protected final String rootInstallationPath;  // the work directory where installs are stored for caching
   protected File kitInstallationPath; // the extracted install to be used as a cached install
 
-  public KitManager(final Distribution distribution) {
+  public KitManager(Distribution distribution) {
     this.distribution = distribution;
-
-    String localWorkRootDir;
-    final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
-    if (dir == null || dir.isEmpty()) {
-      localWorkRootDir = new File(ROOT_DIR).getAbsolutePath();
-    } else if (dir.startsWith(".")) {
-      throw new IllegalArgumentException("Can not use relative path for the ROOT_DIR. Please use a fixed one.");
-    } else {
-      localWorkRootDir = dir;
-    }
-
-    this.rootInstallationPath = distribution == null ? null : localWorkRootDir + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
+    this.rootInstallationPath = distribution == null ? null : Agent.ROOT_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
                                 + File.separator + distribution.getVersion().getVersion(false);
   }
 

@@ -46,6 +46,26 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
+  protected int defaultManagementPort() {
+    return 9440;
+  }
+
+  @Override
+  protected int defaultTsaGroupPort() {
+    return 9430;
+  }
+
+  @Override
+  protected int defaultJmxPort() {
+    return 9420;
+  }
+
+  @Override
+  protected int defaultTsaPort() {
+    return 9410;
+  }
+
+  @Override
   protected NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException {
     return (NodeList) xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
   }

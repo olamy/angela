@@ -26,20 +26,19 @@ public class RemoteKitManager extends KitManager {
 
   private final File workingKitInstallationPath; // the location where we will copy the install
 
-  public RemoteKitManager(InstanceId instanceId, Distribution distribution, final String kitInstallationName) {
+  public RemoteKitManager(InstanceId instanceId, Distribution distribution, String kitInstallationName) {
     super(distribution);
 
     this.kitInstallationPath = new File(this.rootInstallationPath, kitInstallationName);
-    this.workingKitInstallationPath = new File(Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId);
+    this.workingKitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
   }
 
   public File getWorkingKitInstallationPath() {
     return workingKitInstallationPath;
   }
 
-  public boolean verifyKitAvailability(final boolean offline) {
-    logger.info("verifying if the extracted kit is already available locally to setup an install");
-
+  public boolean verifyKitAvailability(boolean offline) {
+    logger.debug("verifying if the extracted kit is already available locally to setup an install");
     if (!isValidKitInstallationPath(offline, kitInstallationPath)) {
       logger.debug("Local kit installation is not available");
       return false;
@@ -53,12 +52,12 @@ public class RemoteKitManager extends KitManager {
     return workingCopyFromLocalInstall;
   }
 
-  private File createWorkingCopyFromLocalInstall(final License license, final File localInstall) {
+  private File createWorkingCopyFromLocalInstall(License license, File localInstall) {
     try {
       File workingInstallPath = new File(workingKitInstallationPath, distribution.getVersion().toString());
-      logger.info("Copying {} to {}", localInstall.getAbsolutePath(), workingInstallPath);
+      logger.debug("Copying {} to {}", localInstall.getAbsolutePath(), workingInstallPath);
       boolean res = workingInstallPath.mkdirs();
-      logger.info("Directories created? {}", res);
+      logger.debug("Directories created? {}", res);
       FileUtils.copyDirectory(localInstall, workingInstallPath);
       license.writeToFile(workingInstallPath);
 
@@ -78,7 +77,7 @@ public class RemoteKitManager extends KitManager {
     }
   }
 
-  public void deleteInstall(final File installLocation) throws IOException {
+  public void deleteInstall(File installLocation) throws IOException {
     logger.info("deleting installation in {}", installLocation.getAbsolutePath());
     FileUtils.deleteDirectory(installLocation);
   }

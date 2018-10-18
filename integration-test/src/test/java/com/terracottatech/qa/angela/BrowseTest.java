@@ -60,7 +60,7 @@ public class BrowseTest {
         dos.writeUTF("uploaded : hello, world!");
       }
 
-      client.browse(".").upload("uploaded", new File("target/toUpload"));
+      client.browse("uploaded").upload(new File("target/toUpload"));
 
       clientArray.executeOnAll(cluster -> {
         try (DataInputStream dis = new DataInputStream(new FileInputStream("uploaded/uploaded-data.txt"))) {

@@ -13,15 +13,15 @@ import java.io.File;
 
 public class MonitoringInstance {
 
-  private final String workingKitInstallationPath;
+  private final File workingKitInstallationPath;
   private final HardwareMetricsCollector hardwareMetricsCollector = new HardwareMetricsCollector();
 
-  public MonitoringInstance(final InstanceId instanceId) {
-    this.workingKitInstallationPath = Agent.ROOT_DIR + File.separator + "work" + File.separator + instanceId;
+  public MonitoringInstance(InstanceId instanceId) {
+    this.workingKitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
   }
 
   public void startHardwareMonitoring() {
-    hardwareMetricsCollector.startMonitoring(new File(workingKitInstallationPath), HardwareMetricsCollector.TYPE.vmstat);
+    hardwareMetricsCollector.startMonitoring(workingKitInstallationPath, HardwareMetricsCollector.TYPE.vmstat);
   }
 
   public void stopHardwareMonitoring() {

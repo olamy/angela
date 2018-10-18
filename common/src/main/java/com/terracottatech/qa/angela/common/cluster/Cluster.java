@@ -17,4 +17,8 @@ public class Cluster {
     return new AtomicCounter(ignite, name, initialValue);
   }
 
+  public AtomicBoolean atomicBoolean(String name, boolean initialValue) {
+    return new AtomicBoolean(ignite, name, initialValue);
+  }
+
 }

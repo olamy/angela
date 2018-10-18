@@ -90,9 +90,6 @@ public class JavaLocationResolver {
   private static List<JDK> findJDKs() {
     try {
       List<JDK> jdks = findJDKs(new File(System.getProperty("user.home") + File.separator + ".m2" + File.separator + "toolchains.xml").toURI().toURL());
-      if (jdks.isEmpty()) {
-        jdks = findJDKs(new URL("file:///data/jenkins-slave" + File.separator + ".m2" + File.separator + "toolchains.xml"));
-      }
       return Collections.unmodifiableList(jdks);
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
