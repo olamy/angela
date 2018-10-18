@@ -30,26 +30,34 @@ public class Topology {
   private final List<TcConfig> tcConfigs;
   private final boolean netDisruptionEnabled;
 
-/*
-  public Topology(final Distribution distribution, final TsaConfig tsaConfig) {
-    this(distribution, tsaConfig.getTcConfigs());
+  public Topology(Distribution distribution, TsaConfig tsaConfig) {
+    this(distribution, false, tsaConfig.getTcConfigs());
   }
 
-  public Topology(final Distribution distribution, final boolean netDisruptionEnabled, final TsaConfig tsaConfig) {
+public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
     this(distribution, netDisruptionEnabled, tsaConfig.getTcConfigs());
   }
-*/
+
 
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
     this(distribution, false, tcConfig, tcConfigs);
   }
 
   public Topology(Distribution distribution, boolean netDisruptionEnabled, TcConfig tcConfig, TcConfig... tcConfigs) {
+    this(distribution, netDisruptionEnabled, mergeTcConfigs(tcConfig, tcConfigs));
+  }
+
+  private static List<TcConfig> mergeTcConfigs(final TcConfig tcConfig, final TcConfig[] tcConfigs) {
+    final ArrayList<TcConfig> configs = new ArrayList<>();
+    configs.add(tcConfig);
+    configs.addAll(Arrays.asList(tcConfigs));
+    return configs;
+  }
+
+  private Topology(Distribution distribution, boolean netDisruptionEnabled, List<TcConfig> tcConfigs) {
     this.distribution = distribution;
     this.netDisruptionEnabled = netDisruptionEnabled;
-    this.tcConfigs = new ArrayList<>();
-    this.tcConfigs.add(Objects.requireNonNull(tcConfig));
-    this.tcConfigs.addAll(Arrays.asList(tcConfigs));
+    this.tcConfigs = tcConfigs;
     checkConfigsHaveNoSymbolicNameDuplicate();
     if (netDisruptionEnabled) {
       for (TcConfig cfg : this.tcConfigs) {

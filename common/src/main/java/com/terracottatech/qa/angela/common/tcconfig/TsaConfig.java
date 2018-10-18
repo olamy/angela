@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.common.tcconfig;
 import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -12,47 +13,45 @@ import java.util.List;
 public class TsaConfig {
 
   private final Version version;
-  private List<TcConfig> tcConfigs = new ArrayList<>();
-  private int stripeCount = 1;
+  private final List<TsaStripeConfig> stripeConfigs;
 
-
-  TsaConfig(final Version version) {
-    this.version = version;
-  }
-
-  public static TsaConfig tsaConfig(Version version) {
-    return new TsaConfig(version);
-  }
-
-  public TsaConfig stripes( String hostname, int hostCount) {
-    String[] hostnames = new String[hostCount];
-    for (int i = 0; i < hostCount; i++) {
-      hostnames[i] = hostname;
-    }
-    return stripes( hostnames);
-  }
-
-  public TsaConfig stripes( String... hostnames) {
+  TsaConfig(Version version, TsaStripeConfig stripeConfig, TsaStripeConfig... stripeConfigs) {
     if (version.getMajor() < 10) {
       throw new UnsupportedOperationException("Dynamic TcConfig generation for BigMemory is not supported");
     }
-    TcConfig tcConfig = new TcConfig(version, TsaConfig.class.getResource("/terracotta/10/tc-config.xml"));
+    this.version = version;
+    this.stripeConfigs = new ArrayList<>();
+    this.stripeConfigs.add(stripeConfig);
+    Collections.addAll(this.stripeConfigs, stripeConfigs);
+  }
 
-    for (int i = 0; i < stripeCount; i++) {
-      for (final String hostname : hostnames) {
-        tcConfig.addServer(i + 1, hostname);
+  public static TsaConfig tsaConfig(Version version, TsaStripeConfig stripeConfig, TsaStripeConfig... stripeConfigs) {
+    return new TsaConfig(version, stripeConfig, stripeConfigs);
+  }
+
+  public List<TcConfig> getTcConfigs() {
+    List<TcConfig> tcConfigs = new ArrayList<>();
+
+    for (int i = 0; i < stripeConfigs.size(); i++) {
+      final TsaStripeConfig stripeConfig = stripeConfigs.get(i);
+      TcConfig tcConfig = new TcConfig(version, TsaConfig.class.getResource("/tsa-config-tc-config-template-10.xml"));
+      for (String hostname : stripeConfig.getHostnames()) {
+        tcConfig.addServer((i + 1), hostname);
       }
+
+      final TsaStripeConfig.TsaOffheapConfig tsaOffheapConfig = stripeConfig.getTsaOffheapConfig();
+      if (tsaOffheapConfig != null) {
+        tcConfig.addOffheap(tsaOffheapConfig.getResourceName(), tsaOffheapConfig.getSize(),
+            tsaOffheapConfig.getUnit());
+      }
+
+      final TsaStripeConfig.TsaDataDirectory tsaDataDirectory = stripeConfig.getTsaDataDirectory();
+      if (tsaDataDirectory != null) {
+        tcConfig.addDataDirectory(tsaDataDirectory.getDataName(), tsaDataDirectory.getLocation());
+      }
+      tcConfigs.add(tcConfig);
     }
-    this.tcConfigs.add(tcConfig);
-    return this;
-  }
 
-  public TsaConfig times(int stripeCount) {
-    this.stripeCount = stripeCount;
-    return this;
-  }
-
-  public TcConfig[] getTcConfigs() {
-    return tcConfigs.toArray(new TcConfig[0]);
+    return tcConfigs;
   }
 }

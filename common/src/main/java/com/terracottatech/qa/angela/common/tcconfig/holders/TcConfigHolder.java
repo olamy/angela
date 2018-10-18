@@ -54,7 +54,7 @@ public abstract class TcConfigHolder {
   public TcConfigHolder() {
   }
 
-  public TcConfigHolder(TcConfigHolder tcConfigHolder){
+  public TcConfigHolder(TcConfigHolder tcConfigHolder) {
     this.tcConfigContent = tcConfigHolder.tcConfigContent;
     this.installedTcConfigPath = tcConfigHolder.installedTcConfigPath;
     this.logsPathList.addAll(tcConfigHolder.logsPathList);
@@ -97,31 +97,31 @@ public abstract class TcConfigHolder {
       Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
 
       NodeList serversList = getServersList(tcConfigXml, xPath);
-      for (int i=0; i<serversList.getLength(); i++) {
+      for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
 
-        Node hostNode = (Node) xPath.evaluate("@host", server, XPathConstants.NODE);
+        Node hostNode = (Node)xPath.evaluate("@host", server, XPathConstants.NODE);
         String hostname =
             hostNode == null || hostNode.getTextContent().equals("%i") || hostNode.getTextContent()
                 .equals("%h") ? "localhost" : hostNode.getTextContent();
 
-        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
+        Node nameNode = (Node)xPath.evaluate("@name", server, XPathConstants.NODE);
 
         //TODO : create client and send command to get free port -> can't connect ? agent exception!
         // add into xml the port!!
         // log it!!!
         // remove below updatePorts method
 
-        Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
+        Node tsaPortNode = (Node)xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
         int tsaPort = tsaPortNode == null ? defaultTsaPort() : Integer.parseInt(tsaPortNode.getTextContent());
 
-        Node jmxPortNode = (Node) xPath.evaluate("*[name()='jmx-port']", server, XPathConstants.NODE);
+        Node jmxPortNode = (Node)xPath.evaluate("*[name()='jmx-port']", server, XPathConstants.NODE);
         int jmxPort = jmxPortNode == null ? defaultJmxPort() : Integer.parseInt(jmxPortNode.getTextContent());
 
-        Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
+        Node tsaGroupPortNode = (Node)xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
         int tsaGroupPort = tsaGroupPortNode == null ? defaultTsaGroupPort() : Integer.parseInt(tsaGroupPortNode.getTextContent());
 
-        Node managementPortNode = (Node) xPath.evaluate("*[name()='management-port']", server, XPathConstants.NODE);
+        Node managementPortNode = (Node)xPath.evaluate("*[name()='management-port']", server, XPathConstants.NODE);
         int managementPort = managementPortNode == null ? defaultManagementPort() : Integer.parseInt(managementPortNode.getTextContent());
 
         String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
@@ -163,9 +163,9 @@ public abstract class TcConfigHolder {
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       int cnt = 1;
-      for (int i=0; i<serversList.getLength(); i++) {
+      for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
-        Node logsNode = (Node) xPath.evaluate("*[name()='logs']", server, XPathConstants.NODE);
+        Node logsNode = (Node)xPath.evaluate("*[name()='logs']", server, XPathConstants.NODE);
 
         String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "logs-" + stripeId + "-" + cnt;
         logsPathList.add(logsPath);
@@ -198,11 +198,7 @@ public abstract class TcConfigHolder {
   }
 
   public void addServer(final int stripeIndex, final String hostname) {
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
-
+    modifyXml((tcConfigXml, xPath) -> {
       int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
 
       Node serverElt = (Node)xPath.evaluate("//*[name()='servers']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
@@ -211,31 +207,23 @@ public abstract class TcConfigHolder {
       node.setAttribute("host", hostname);
       node.setAttribute("name", "Server" + stripeIndex + "-" + serverIndex);
 
-      Element node2 = tcConfigXml.createElement("logs");
-      node2.appendChild(tcConfigXml.createTextNode("logs" + serverIndex));
-      node.appendChild(node2);
-
-      Element node3  = tcConfigXml.createElement("tsa-port");
-      node3.appendChild(tcConfigXml.createTextNode("9" + stripeIndex + "1" +  serverIndex));
+      Element node3 = tcConfigXml.createElement("tsa-port");
+      node3.appendChild(tcConfigXml.createTextNode("" + (9 + stripeIndex) + "1" + serverIndex));
       node.appendChild(node3);
 
-      Element node4  = tcConfigXml.createElement("tsa-group-port");
-      node4.appendChild(tcConfigXml.createTextNode("9" + stripeIndex + "3" +  serverIndex));
+      Element node4 = tcConfigXml.createElement("tsa-group-port");
+      node4.appendChild(tcConfigXml.createTextNode("" + (9 + stripeIndex) + "3" + serverIndex));
       node.appendChild(node4);
 
       serverElt.appendChild(node);
-
-      this.tcConfigContent = domToString(tcConfigXml);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot dynamically add server to tc-config xml", e);
-    }
+    });
   }
 
 
   public void createOrUpdateTcProperty(String name, String value) {
     modifyXml((tcConfigXml, xPath) -> {
       String indentation = guessIndentation(tcConfigXml);
-      Node tcProperties = (Node) xPath.evaluate("//*[name()='tc-properties']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node tcProperties = (Node)xPath.evaluate("//*[name()='tc-properties']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       boolean createdTcProperties = false;
 
       if (tcProperties == null) {
@@ -255,7 +243,7 @@ public abstract class TcConfigHolder {
         NamedNodeMap attributes = tcProperty.getAttributes();
         Node nameAttribute = attributes != null ? attributes.getNamedItem("name") : null;
         if (nameAttribute != null && nameAttribute.getNodeValue().equals(name)) {
-          existingProperty = (Element) tcProperty;
+          existingProperty = (Element)tcProperty;
           break;
         }
       }
@@ -301,8 +289,8 @@ public abstract class TcConfigHolder {
 
   public abstract Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy);
 
-  public void substituteToken(String token, String value){
-      this.tcConfigContent = this.tcConfigContent.replaceAll(token, value);
+  public void substituteToken(String token, String value) {
+    this.tcConfigContent = this.tcConfigContent.replaceAll(token, value);
   }
 
   void modifyXml(XmlModifier xmlModifier) {
@@ -318,6 +306,10 @@ public abstract class TcConfigHolder {
       throw new RuntimeException("Cannot modify tc-config xml", e);
     }
   }
+
+  public abstract void addOffheap(String resourceName, String size, String unit);
+
+  public abstract void addDataDirectory(String dataName, File location);
 
   @FunctionalInterface
   protected interface XmlModifier {

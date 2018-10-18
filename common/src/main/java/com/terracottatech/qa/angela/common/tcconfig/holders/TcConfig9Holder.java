@@ -1,17 +1,19 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
+import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+
 import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 
 /**
  * Terracotta config for Terracotta 4.1+
@@ -24,7 +26,7 @@ import java.util.Map;
  */
 public class TcConfig9Holder extends TcConfigHolder {
 
-  public TcConfig9Holder(TcConfig9Holder tcConfig9Holder){
+  public TcConfig9Holder(TcConfig9Holder tcConfig9Holder) {
     super(tcConfig9Holder);
   }
 
@@ -34,7 +36,7 @@ public class TcConfig9Holder extends TcConfigHolder {
 
   @Override
   protected NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException {
-    return (NodeList) xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
+    return (NodeList)xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
   }
 
   @Override
@@ -60,6 +62,16 @@ public class TcConfig9Holder extends TcConfigHolder {
   @Override
   public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy) {
     throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
+  public void addOffheap(String resourceName, String size, String unit) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void addDataDirectory(String dataName, File location) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
