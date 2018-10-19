@@ -103,19 +103,19 @@ public class TcConfig {
     return this.tcConfigHolder.getLogsLocation();
   }
 
-  public void updateLogsLocation(final File kitDir, final int stripeId) {
+  public void updateLogsLocation(File kitDir, int stripeId) {
     tcConfigHolder.updateLogsLocation(kitDir, stripeId);
   }
 
-  public void updateSecurityRootDirectoryLocation(final String securityRootDirectory) {
+  public void updateSecurityRootDirectoryLocation(String securityRootDirectory) {
     tcConfigHolder.updateSecurityRootDirectoryLocation(securityRootDirectory);
   }
 
-  public void updateAuditDirectoryLocation(final File kitDir, final int stripeId) {
+  public void updateAuditDirectoryLocation(File kitDir, int stripeId) {
     tcConfigHolder.updateAuditDirectoryLocation(kitDir, stripeId);
   }
 
-  public void updateDataDirectory(final String rootId, final String newlocation) {
+  public void updateDataDirectory(String rootId, String newlocation) {
     tcConfigHolder.updateDataDirectory(rootId, newlocation);
   }
 
@@ -123,16 +123,27 @@ public class TcConfig {
     tcConfigHolder.updateServerHost(serverIndex, newServerName);
   }
 
-  public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy){
+  public void addServer(int stripeIndex, String hostname) {
+    tcConfigHolder.addServer(stripeIndex, hostname);
+  }
+
+  public List<GroupMember> retrieveGroupMembers(String serverName, boolean updateProxy) {
     return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy);
   }
 
-  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy) {
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(boolean updateForProxy) {
     return tcConfigHolder.retrieveTsaPorts(updateForProxy);
   }
 
-  public void substituteToken(final String token, final String value){
+  public void substituteToken(String token, String value) {
     tcConfigHolder.substituteToken(token, value);
   }
-  
+
+  public void addOffheap(String resourceName, String size, String unit) {
+    tcConfigHolder.addOffheap(resourceName, size, unit);
+  }
+
+  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
+    tcConfigHolder.addDataDirectory(dataName, location, useForPlatform);
+  }
 }

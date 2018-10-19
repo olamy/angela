@@ -1,19 +1,16 @@
 package com.terracottatech.qa.angela.common.topology;
 
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.distribution.Distribution102Controller;
-import com.terracottatech.qa.angela.common.distribution.Distribution43Controller;
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.TsaConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,17 +26,34 @@ public class Topology {
   private final List<TcConfig> tcConfigs;
   private final boolean netDisruptionEnabled;
 
+  public Topology(Distribution distribution, TsaConfig tsaConfig) {
+    this(distribution, false, tsaConfig.buildTcConfigs());
+  }
+
+public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
+    this(distribution, netDisruptionEnabled, tsaConfig.buildTcConfigs());
+  }
+
 
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
     this(distribution, false, tcConfig, tcConfigs);
   }
 
   public Topology(Distribution distribution, boolean netDisruptionEnabled, TcConfig tcConfig, TcConfig... tcConfigs) {
+    this(distribution, netDisruptionEnabled, mergeTcConfigs(tcConfig, tcConfigs));
+  }
+
+  private static List<TcConfig> mergeTcConfigs(final TcConfig tcConfig, final TcConfig[] tcConfigs) {
+    final ArrayList<TcConfig> configs = new ArrayList<>();
+    configs.add(tcConfig);
+    configs.addAll(Arrays.asList(tcConfigs));
+    return configs;
+  }
+
+  private Topology(Distribution distribution, boolean netDisruptionEnabled, List<TcConfig> tcConfigs) {
     this.distribution = distribution;
     this.netDisruptionEnabled = netDisruptionEnabled;
-    this.tcConfigs = new ArrayList<>();
-    this.tcConfigs.add(Objects.requireNonNull(tcConfig));
-    this.tcConfigs.addAll(Arrays.asList(tcConfigs));
+    this.tcConfigs = tcConfigs;
     checkConfigsHaveNoSymbolicNameDuplicate();
     if (netDisruptionEnabled) {
       for (TcConfig cfg : this.tcConfigs) {
