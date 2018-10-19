@@ -47,9 +47,9 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
   private final Map<String, RemoteAgentHolder> clients = new HashMap<>();
   private final String remoteUserName;
   private final String remoteUserNameKeyPath;
-  private final File agentJarFile;
-  private final boolean agentJarFileShouldBeRemoved;
   private final TerracottaCommandLineEnvironment tcEnv;
+  private File agentJarFile;
+  private boolean agentJarFileShouldBeRemoved;
 
   static class RemoteAgentHolder {
     RemoteAgentHolder(SSHClient sshClient, Session session, Session.Command command) {
@@ -72,6 +72,12 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
     this.tcEnv = tcEnv;
     this.remoteUserName = System.getProperty("tc.qa.angela.ssh.user.name", System.getProperty("user.name"));
     this.remoteUserNameKeyPath = System.getProperty("tc.qa.angela.ssh.user.name.key.path");
+  }
+
+  private void initAgentJar() {
+    if (agentJarFile != null) {
+      return;
+    }
     Map.Entry<File, Boolean> agentJar = findAgentJarFile();
     this.agentJarFile = agentJar.getKey();
     this.agentJarFileShouldBeRemoved = agentJar.getValue();
@@ -82,6 +88,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   @Override
   public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin) {
+    initAgentJar();
     if (clients.containsKey(targetServerName)) {
       return;
     }
@@ -171,8 +178,8 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         }
 
         // are we building angela? if yes, find the built agent jar in the module's target folder
-        String mavenBaseDir = System.getProperty("basedir", ".");
-        if (mavenBaseDir != null) {
+        String mavenBaseDir = System.getProperty("basedir");
+        if (mavenBaseDir != null && new File(mavenBaseDir + "/../agent").isDirectory()) {
           snapshotLocation = mavenBaseDir + "/../agent/target" +
               "/angela-agent-" +
               AngelaVersions.INSTANCE.getAngelaVersion() +
