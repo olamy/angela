@@ -143,7 +143,7 @@ public class TcConfig {
     tcConfigHolder.addOffheap(resourceName, size, unit);
   }
 
-  public void addDataDirectory(String dataName, File location) {
-    tcConfigHolder.addDataDirectory(dataName, location);
+  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
+    tcConfigHolder.addDataDirectory(dataName, location, useForPlatform);
   }
 }

@@ -24,7 +24,7 @@ public class TsaConfigTest {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
     assertThat(tcConfigs.size(), equalTo(1));
     final Collection<TerracottaServer> servers = tcConfigs.get(0).getServers();
     assertThat(servers.size(), equalTo(2));
@@ -38,17 +38,17 @@ public class TsaConfigTest {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
         stripe("host1", "host2").offheap("primary", "50", "GB")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
     assertThat(tcConfigs.size(), equalTo(1));
   }
 
   @Test
   public void TestWithTimesParam() {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
-        stripe("host1", "host2").offheap("primary", "50", "GB"),
+        stripe("host1", "host2").offheap("primary", "50", "GB").data("data", "root1"),
         stripe("host1", "host2").offheap("primary", "50", "GB")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
     assertThat(tcConfigs.size(), equalTo(2));
   }
 }

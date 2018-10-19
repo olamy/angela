@@ -207,10 +207,8 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
-  public void addDataDirectory(String dataName, File location) {
+  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
     modifyXml((tcConfigXml, xPath) -> {
-      int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
-
       Node serverElt = (Node)xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       Element node = tcConfigXml.createElement("config");
@@ -221,12 +219,12 @@ public class TcConfig10Holder extends TcConfigHolder {
 
       Element node3 = tcConfigXml.createElement("data:directory");
       node3.setAttribute("name", dataName);
-      node3.appendChild(tcConfigXml.createTextNode("" + location.getPath()));
+      node3.setAttribute("use-for-platform", "" + useForPlatform);
+      node3.appendChild(tcConfigXml.createTextNode(location));
       node2.appendChild(node3);
 
       serverElt.appendChild(node);
     });
-
   }
 
   String getSecurityRootDirectory() {

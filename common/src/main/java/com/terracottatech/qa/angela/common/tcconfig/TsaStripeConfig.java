@@ -43,7 +43,11 @@ public class TsaStripeConfig {
   }
 
   public TsaStripeConfig data(String dataName, String pathname) {
-    this.tsaDataDirectory = new TsaDataDirectory(dataName, new File(pathname));
+    return data(dataName, pathname, false);
+  }
+
+  public TsaStripeConfig data(String dataName, String pathname, boolean useForPlatform) {
+    this.tsaDataDirectory = new TsaDataDirectory(dataName, pathname, useForPlatform);
     return this;
   }
 
@@ -87,19 +91,25 @@ public class TsaStripeConfig {
   public class TsaDataDirectory {
 
     private final String dataName;
-    private final File location;
+    private final String location;
+    private final boolean useForPlatform;
 
-    public TsaDataDirectory(final String dataName, final File location) {
+    public TsaDataDirectory(String dataName, String location, boolean useForPlatform) {
       this.dataName = dataName;
       this.location = location;
+      this.useForPlatform = useForPlatform;
     }
 
     public String getDataName() {
       return dataName;
     }
 
-    public File getLocation() {
+    public String getLocation() {
       return location;
+    }
+
+    public boolean isUseForPlatform() {
+      return useForPlatform;
     }
   }
 }

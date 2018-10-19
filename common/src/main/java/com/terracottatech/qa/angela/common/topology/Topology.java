@@ -1,9 +1,6 @@
 package com.terracottatech.qa.angela.common.topology;
 
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.distribution.Distribution102Controller;
-import com.terracottatech.qa.angela.common.distribution.Distribution43Controller;
-import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -14,7 +11,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,11 +27,11 @@ public class Topology {
   private final boolean netDisruptionEnabled;
 
   public Topology(Distribution distribution, TsaConfig tsaConfig) {
-    this(distribution, false, tsaConfig.getTcConfigs());
+    this(distribution, false, tsaConfig.buildTcConfigs());
   }
 
 public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
-    this(distribution, netDisruptionEnabled, tsaConfig.getTcConfigs());
+    this(distribution, netDisruptionEnabled, tsaConfig.buildTcConfigs());
   }
 
 

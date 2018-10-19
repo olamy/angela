@@ -69,7 +69,7 @@ public class TcConfig8Holder extends TcConfigHolder {
   }
 
   @Override
-  public void addDataDirectory(String dataName, File location) {
+  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
     throw new UnsupportedOperationException();
   }
 

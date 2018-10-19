@@ -201,6 +201,10 @@ public abstract class TcConfigHolder {
     modifyXml((tcConfigXml, xPath) -> {
       int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
 
+      if (serverIndex > 9 || stripeIndex > 54) {
+        throw new IllegalArgumentException("Too many stripes (" + stripeIndex +") or passives (" + serverIndex + ")");
+      }
+
       Node serverElt = (Node)xPath.evaluate("//*[name()='servers']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       Element node = tcConfigXml.createElement("server");
@@ -309,7 +313,7 @@ public abstract class TcConfigHolder {
 
   public abstract void addOffheap(String resourceName, String size, String unit);
 
-  public abstract void addDataDirectory(String dataName, File location);
+  public abstract void addDataDirectory(String dataName, String location, boolean useForPlatform);
 
   @FunctionalInterface
   protected interface XmlModifier {

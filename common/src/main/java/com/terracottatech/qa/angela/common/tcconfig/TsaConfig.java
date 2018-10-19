@@ -29,12 +29,12 @@ public class TsaConfig {
     return new TsaConfig(version, stripeConfig, stripeConfigs);
   }
 
-  public List<TcConfig> getTcConfigs() {
+  public List<TcConfig> buildTcConfigs() {
     List<TcConfig> tcConfigs = new ArrayList<>();
 
     for (int i = 0; i < stripeConfigs.size(); i++) {
       final TsaStripeConfig stripeConfig = stripeConfigs.get(i);
-      TcConfig tcConfig = new TcConfig(version, TsaConfig.class.getResource("/tsa-config-tc-config-template-10.xml"));
+      TcConfig tcConfig = new TcConfig(version, TsaConfig.class.getResource("tsa-config-tc-config-template-10.xml"));
       for (String hostname : stripeConfig.getHostnames()) {
         tcConfig.addServer((i + 1), hostname);
       }
@@ -47,7 +47,7 @@ public class TsaConfig {
 
       final TsaStripeConfig.TsaDataDirectory tsaDataDirectory = stripeConfig.getTsaDataDirectory();
       if (tsaDataDirectory != null) {
-        tcConfig.addDataDirectory(tsaDataDirectory.getDataName(), tsaDataDirectory.getLocation());
+        tcConfig.addDataDirectory(tsaDataDirectory.getDataName(), tsaDataDirectory.getLocation(), tsaDataDirectory.isUseForPlatform());
       }
       tcConfigs.add(tcConfig);
     }
