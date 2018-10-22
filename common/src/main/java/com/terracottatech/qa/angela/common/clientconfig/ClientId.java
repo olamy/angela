@@ -9,9 +9,9 @@ import java.util.Objects;
 public class ClientId {
 
   private final ClientSymbolicName symbolicName;
-  private final String hostname;
+  private final ClientHostname hostname;
 
-  public ClientId(ClientSymbolicName symbolicName, String hostname) {
+  public ClientId(ClientSymbolicName symbolicName, ClientHostname hostname) {
     this.symbolicName = Objects.requireNonNull(symbolicName);
     this.hostname = Objects.requireNonNull(hostname);
   }
@@ -20,7 +20,7 @@ public class ClientId {
     return symbolicName;
   }
 
-  public String getHostname() {
+  public ClientHostname getClientHostname() {
     return hostname;
   }
 
