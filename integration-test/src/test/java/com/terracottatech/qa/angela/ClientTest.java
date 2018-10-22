@@ -43,6 +43,24 @@ import static org.junit.Assert.fail;
 public class ClientTest {
 
   @Test
+  public void testMultipleClientsOnSameHost() throws Exception {
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
+        .clientArray(clientArray -> clientArray.license(license)
+            .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig()
+                .host("localhost").host("localhost").host("localhost")
+            )));
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testMultipleClientsOnSameHost", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> System.out.println("hello world"));
+        f.get();
+      }
+    }
+  }
+
+  @Test
   public void testRemoteClient() throws Exception {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
@@ -82,7 +100,8 @@ public class ClientTest {
     try {
       CustomConfigurationContext.customConfigurationContext()
           .clientArray(clientArray -> clientArray
-              .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+              .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig()
+                  .host("localhost")))
           );
       fail("expected IllegalArgumentException");
     } catch (IllegalArgumentException e) {

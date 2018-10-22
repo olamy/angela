@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 
@@ -57,9 +58,9 @@ public class ClientArray implements AutoCloseable {
     try {
       logger.info("installing the client jars to {}", clientId);
 // TODO : refactor Client to extract the uploading step and the execution step
-//     uploadClientJars(ignite, terracottaClient.getHostname(), instanceId, );
+//     uploadClientJars(ignite, terracottaClient.getClientHostname(), instanceId, );
 
-      Client client = new Client(ignite, instanceIdSupplier.get(), clientId.getHostname(), clientArrayConfigurationContext.getTerracottaCommandLineEnvironment(), localKitManager);
+      Client client = new Client(ignite, instanceIdSupplier.get(), clientId.getClientHostname().getHostname(), clientArrayConfigurationContext.getTerracottaCommandLineEnvironment(), localKitManager);
       clients.put(clientId, client);
     } catch (Exception e) {
       throw new RuntimeException("Cannot upload client jars to " + clientId, e);
@@ -103,7 +104,9 @@ public class ClientArray implements AutoCloseable {
   public ClientArrayFuture executeOnAll(ClientJob clientJob) {
     List<Future<Void>> futures = new ArrayList<>();
     for (ClientId clientId : clientArrayConfigurationContext.getClientArrayTopology().getClientIds()) {
-      futures.add(executeOn(clientId, clientJob));
+      for (int i = 0; i < clientId.getClientHostname().getHostsCount().get(); i++) {
+        futures.add(executeOn(clientId, clientJob));
+      }
     }
     return new ClientArrayFuture(futures);
   }
