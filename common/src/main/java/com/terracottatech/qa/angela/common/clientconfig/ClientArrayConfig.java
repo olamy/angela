@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class ClientArrayConfig {
 
-  private final Map<ClientSymbolicName, String> hosts = new HashMap<>();
+  private final Map<ClientSymbolicName, ClientHostname> hosts = new HashMap<>();
 
   private ClientArrayConfig() {}
 
@@ -25,20 +25,21 @@ public class ClientArrayConfig {
   public ClientArrayConfig host(String clientSymbolicName, String hostname) {
     ClientSymbolicName key = new ClientSymbolicName(clientSymbolicName);
     if (this.hosts.containsKey(key)) {
-      throw new IllegalArgumentException("Client with symbolic name '" + clientSymbolicName + "' already present in the client array config");
+      this.hosts.get(key).getHostsCount().incrementAndGet();
+      return this;
     }
-    this.hosts.put(key, hostname);
+    this.hosts.put(key, new ClientHostname(hostname));
 
     return this;
   }
 
-  public Map<ClientSymbolicName, String> getHosts() {
+  public Map<ClientSymbolicName, ClientHostname> getHosts() {
     return Collections.unmodifiableMap(hosts);
   }
 
   public ClientArrayConfig hostSerie(int serieLength, String hostname) {
     for (int i = 0; i < serieLength; i++) {
-      String clientSymbolicName =  hostname + "-" + i;
+      String clientSymbolicName = hostname + "-" + i;
       host(clientSymbolicName, hostname);
     }
     return this;
