@@ -21,14 +21,12 @@ import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.FileMetadata;
 import com.terracottatech.qa.angela.common.util.IgniteCommonHelper;
+import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zeroturnaround.process.PidProcess;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -47,7 +45,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -337,8 +334,7 @@ public class AgentController {
   public void destroyClient(InstanceId instanceId, int pid) {
     try {
       logger.info("killing client '{}' with PID {}", instanceId, pid);
-      PidProcess pidProcess = Processes.newPidProcess(pid);
-      ProcessUtil.destroyGracefullyOrForcefullyAndWait(pidProcess, 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+      ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid);
 
       File subAgentRoot = new RemoteClientManager(instanceId).getClientInstallationPath();
       logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, instanceId);
