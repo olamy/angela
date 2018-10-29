@@ -13,6 +13,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -21,8 +22,6 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -112,7 +110,7 @@ public class Distribution102Controller extends DistributionController {
     logger.debug("Destroying TC server process for {}", serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
       } catch (Exception e) {
         logger.error("Could not destroy TC server process with PID '{}'", pid, e);
       }
@@ -304,7 +302,7 @@ public class Distribution102Controller extends DistributionController {
     logger.debug("Destroying TMS process");
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(pid.intValue()), 30, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
       } catch (Exception e) {
         logger.error("Could not destroy TMS process {}", pid, e);
       }

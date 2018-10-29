@@ -1,13 +1,12 @@
 package com.terracottatech.qa.angela.common.metrics;
 
+import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.process.ProcessUtil;
-import org.zeroturnaround.process.Processes;
-
-import com.terracottatech.qa.angela.common.util.OS;
+import org.zeroturnaround.process.PidUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -77,7 +76,7 @@ public class HardwareMetricsCollector {
   public void stopMonitoring() {
     if (this.process != null) {
       try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(Processes.newPidProcess(process.getProcess()));
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(PidUtil.getPid(this.process.getProcess()));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
