@@ -27,16 +27,15 @@ public class Topology {
   private final boolean netDisruptionEnabled;
 
   public Topology(Distribution distribution, TsaConfig tsaConfig) {
-    this(distribution, false, tsaConfig.buildTcConfigs());
+    this(distribution, false, tsaConfig.getTcConfigs());
   }
 
-public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
-    this(distribution, netDisruptionEnabled, tsaConfig.buildTcConfigs());
+  public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
+    this(distribution, netDisruptionEnabled, tsaConfig.getTcConfigs());
   }
-
 
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
-    this(distribution, false, tcConfig, tcConfigs);
+    this(distribution, false, mergeTcConfigs(tcConfig, tcConfigs));
   }
 
   public Topology(Distribution distribution, boolean netDisruptionEnabled, TcConfig tcConfig, TcConfig... tcConfigs) {

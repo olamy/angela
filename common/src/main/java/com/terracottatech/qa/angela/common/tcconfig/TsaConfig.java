@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.common.tcconfig;
 import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -12,24 +13,38 @@ import java.util.List;
 
 public class TsaConfig {
 
-  private final Version version;
-  private final List<TsaStripeConfig> stripeConfigs;
+  private final List<TcConfig> tcConfigs;
 
-  TsaConfig(Version version, TsaStripeConfig stripeConfig, TsaStripeConfig... stripeConfigs) {
-    if (version.getMajor() < 10) {
-      throw new UnsupportedOperationException("Dynamic TcConfig generation for BigMemory is not supported");
-    }
-    this.version = version;
-    this.stripeConfigs = new ArrayList<>();
-    this.stripeConfigs.add(stripeConfig);
-    Collections.addAll(this.stripeConfigs, stripeConfigs);
+  TsaConfig(List<TcConfig> tcConfigs) {
+    this.tcConfigs = tcConfigs;
   }
 
   public static TsaConfig tsaConfig(Version version, TsaStripeConfig stripeConfig, TsaStripeConfig... stripeConfigs) {
-    return new TsaConfig(version, stripeConfig, stripeConfigs);
+    if (version.getMajor() < 10) {
+      throw new UnsupportedOperationException("Dynamic TcConfig generation for BigMemory is not supported");
+    }
+    List<TsaStripeConfig> cfgs = new ArrayList<>();
+    cfgs.add(stripeConfig);
+    cfgs.addAll(Arrays.asList(stripeConfigs));
+    return new TsaConfig(buildTcConfigs(version, cfgs));
   }
 
-  public List<TcConfig> buildTcConfigs() {
+  public static TsaConfig tsaConfig(TcConfig tcConfig, TcConfig... tcConfigs) {
+    List<TcConfig> cfgs = new ArrayList<>();
+    cfgs.add(tcConfig);
+    cfgs.addAll(Arrays.asList(tcConfigs));
+    return new TsaConfig(cfgs);
+  }
+
+  public static TsaConfig tsaConfig(List<TcConfig> tcConfigs) {
+    return new TsaConfig(new ArrayList<>(tcConfigs));
+  }
+
+  public List<TcConfig> getTcConfigs() {
+    return Collections.unmodifiableList(tcConfigs);
+  }
+
+  private static List<TcConfig> buildTcConfigs(Version version, List<TsaStripeConfig> stripeConfigs) {
     List<TcConfig> tcConfigs = new ArrayList<>();
 
     for (int i = 0; i < stripeConfigs.size(); i++) {
@@ -53,5 +68,12 @@ public class TsaConfig {
     }
 
     return tcConfigs;
+  }
+
+  @Override
+  public String toString() {
+    return "TsaConfig{" +
+        "tcConfigs=" + tcConfigs +
+        '}';
   }
 }
