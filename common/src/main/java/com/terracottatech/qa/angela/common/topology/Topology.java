@@ -84,6 +84,18 @@ public class Topology {
     return servers;
   }
 
+  public TerracottaServer findServer(ServerSymbolicName serverSymbolicName) {
+    for (TcConfig tcConfig : tcConfigs) {
+      List<TerracottaServer> servers = tcConfig.getServers();
+      for (TerracottaServer server : servers) {
+        if (server.getServerSymbolicName().equals(serverSymbolicName)) {
+          return server;
+        }
+      }
+    }
+    return null;
+  }
+
   public TerracottaServer findServer(int stripeId, int serverIndex) {
     if (stripeId >= tcConfigs.size()) {
       throw new IllegalArgumentException("No such stripe #" + stripeId + " (there are: " + tcConfigs.size() + ")");
