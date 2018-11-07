@@ -27,16 +27,15 @@ public class Topology {
   private final boolean netDisruptionEnabled;
 
   public Topology(Distribution distribution, TsaConfig tsaConfig) {
-    this(distribution, false, tsaConfig.buildTcConfigs());
+    this(distribution, false, tsaConfig.getTcConfigs());
   }
 
-public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
-    this(distribution, netDisruptionEnabled, tsaConfig.buildTcConfigs());
+  public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
+    this(distribution, netDisruptionEnabled, tsaConfig.getTcConfigs());
   }
-
 
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
-    this(distribution, false, tcConfig, tcConfigs);
+    this(distribution, false, mergeTcConfigs(tcConfig, tcConfigs));
   }
 
   public Topology(Distribution distribution, boolean netDisruptionEnabled, TcConfig tcConfig, TcConfig... tcConfigs) {
@@ -83,6 +82,18 @@ public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConf
       servers.addAll(tcConfig.getServers());
     }
     return servers;
+  }
+
+  public TerracottaServer findServer(ServerSymbolicName serverSymbolicName) {
+    for (TcConfig tcConfig : tcConfigs) {
+      List<TerracottaServer> servers = tcConfig.getServers();
+      for (TerracottaServer server : servers) {
+        if (server.getServerSymbolicName().equals(serverSymbolicName)) {
+          return server;
+        }
+      }
+    }
+    return null;
   }
 
   public TerracottaServer findServer(int stripeId, int serverIndex) {

@@ -8,6 +8,7 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 public class CustomTsaConfigurationContext implements TsaConfigurationContext {
   private Topology topology;
   private License license;
+  private String clusterName;
   private TerracottaCommandLineEnvironment terracottaCommandLineEnvironment = new TerracottaCommandLineEnvironment(CustomConfigurationContext.DEFAULT_JDK_VERSION, CustomConfigurationContext.DEFAULT_ALLOWED_JDK_VENDORS, null);
 
   protected CustomTsaConfigurationContext() {
@@ -30,6 +31,16 @@ public class CustomTsaConfigurationContext implements TsaConfigurationContext {
 
   public CustomTsaConfigurationContext license(License license) {
     this.license = license;
+    return this;
+  }
+
+  @Override
+  public String getClusterName() {
+    return clusterName;
+  }
+
+  public CustomTsaConfigurationContext clusterName(String clusterName) {
+    this.clusterName = clusterName;
     return this;
   }
 

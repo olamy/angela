@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import com.terracottatech.qa.angela.common.topology.Version;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -24,7 +25,7 @@ public class TsaConfigTest {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(1));
     final Collection<TerracottaServer> servers = tcConfigs.get(0).getServers();
     assertThat(servers.size(), equalTo(2));
@@ -34,21 +35,46 @@ public class TsaConfigTest {
   }
 
   @Test
-  public void TestWithouttimesParam() {
+  public void testSingleStripe() {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
         stripe("host1", "host2").offheap("primary", "50", "GB")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(1));
   }
 
   @Test
-  public void TestWithTimesParam() {
+  public void testMultiStripe() {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("data", "root1"),
         stripe("host1", "host2").offheap("primary", "50", "GB")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(2));
   }
+
+  @Test
+  public void testOneTcConfig() {
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")));
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+    assertThat(tcConfigs.size(), equalTo(1));
+  }
+
+  @Test
+  public void testMultipleTcConfigs() {
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")),
+        TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")));
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+    assertThat(tcConfigs.size(), equalTo(2));
+  }
+
+  @Test
+  public void testListOfTcConfigs() {
+    List<TcConfig> tcConfigList = Arrays.asList(TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")),
+        TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")));
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(tcConfigList);
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+    assertThat(tcConfigs.size(), equalTo(2));
+  }
+
 }
