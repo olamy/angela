@@ -30,13 +30,19 @@ public class Topology {
     this(distribution, false, tsaConfig.buildTcConfigs());
   }
 
-public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
+  public Topology(Distribution distribution, boolean netDisruptionEnabled, TsaConfig tsaConfig) {
     this(distribution, netDisruptionEnabled, tsaConfig.buildTcConfigs());
   }
 
-
+  public Topology(Distribution distribution, TcConfig[] tcConfigs) {
+    this(distribution, false, Arrays.asList(tcConfigs));
+  }
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
     this(distribution, false, tcConfig, tcConfigs);
+  }
+
+  public Topology(Distribution distribution, boolean netDisruptionEnabled, TcConfig[] tcConfigs) {
+    this(distribution, netDisruptionEnabled, Arrays.asList(tcConfigs));
   }
 
   public Topology(Distribution distribution, boolean netDisruptionEnabled, TcConfig tcConfig, TcConfig... tcConfigs) {
