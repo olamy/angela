@@ -124,7 +124,7 @@ public class Client implements Closeable {
         clientJob.run(new Cluster(ignite));
         return null;
       } catch (Throwable t) {
-        throw new RemoteExecutionException("Remote ClientJob failed; remote stack trace is:\n{{{\n" + exceptionToString(t) + "\n}}}");
+        throw new RemoteExecutionException("Remote ClientJob failed", exceptionToString(t));
       }
     });
     return new ClientJobFuture(igniteFuture);
@@ -222,9 +222,30 @@ public class Client implements Closeable {
     }
   }
 
-  private static class RemoteExecutionException extends Exception {
-    RemoteExecutionException(String message) {
+  public static class RemoteExecutionException extends Exception {
+    private final String remoteStackTrace;
+    private String tabulation = "\t";
+
+    RemoteExecutionException(String message, String remoteStackTrace) {
       super(message);
+      this.remoteStackTrace = remoteStackTrace;
+    }
+
+    @Override
+    public String getMessage() {
+      return super.getMessage() + "; Remote stack trace is:" + System.lineSeparator() + tabulation + "{{{" + System.lineSeparator() + tabulation + remoteStackTrace() + "}}}";
+    }
+
+    private String remoteStackTrace() {
+      return remoteStackTrace.replaceAll(System.lineSeparator(), System.lineSeparator() + tabulation);
+    }
+
+    public void setRemoteStackTraceIndentation(int indentation) {
+      StringBuilder sb = new StringBuilder(indentation);
+      for (int i = 0; i < indentation; i++) {
+        sb.append('\t');
+      }
+      tabulation = sb.toString();
     }
   }
 

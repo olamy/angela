@@ -36,7 +36,14 @@ public class ClientArrayFuture {
     if (!exceptions.isEmpty()) {
       Exception exception = exceptions.get(0);
       for (int i = 1; i < exceptions.size(); i++) {
-        exception.addSuppressed(exceptions.get(i));
+        Throwable t = exceptions.get(i);
+        if (t instanceof ExecutionException) {
+          t = t.getCause();
+        }
+        if (t instanceof Client.RemoteExecutionException) {
+          ((Client.RemoteExecutionException) t).setRemoteStackTraceIndentation(2);
+        }
+        exception.addSuppressed(t);
       }
       if (exception instanceof RuntimeException) {
         throw (RuntimeException) exception;

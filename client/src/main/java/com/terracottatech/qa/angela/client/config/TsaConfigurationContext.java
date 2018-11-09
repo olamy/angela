@@ -9,5 +9,7 @@ public interface TsaConfigurationContext {
 
   License getLicense();
 
+  String getClusterName();
+
   TerracottaCommandLineEnvironment getTerracottaCommandLineEnvironment();
 }

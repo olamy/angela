@@ -245,21 +245,16 @@ public class Tsa implements AutoCloseable {
   }
 
   public Tsa licenseAll() {
-    licenseAll(null, null, false);
-    return this;
-  }
-
-  public Tsa licenseAll(String clusterName) {
-    licenseAll(clusterName, null, false);
+    licenseAll(null, false);
     return this;
   }
 
   public Tsa licenseAll(SecurityRootDirectory securityRootDirectory) {
-    licenseAll(null, securityRootDirectory, false);
+    licenseAll(securityRootDirectory, false);
     return this;
   }
 
-  public Tsa licenseAll(String clusterName, SecurityRootDirectory securityRootDirectory, boolean verbose) {
+  public Tsa licenseAll(SecurityRootDirectory securityRootDirectory, boolean verbose) {
     Topology topology = tsaConfigurationContext.getTopology();
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
     for (TerracottaServer terracottaServer : topology.getServers()) {
@@ -278,7 +273,7 @@ public class Tsa implements AutoCloseable {
 
     TerracottaServer terracottaServer = tcConfigs.get(0).getServers().get(0);
     logger.info("Licensing cluster from {}", terracottaServer.getHostname());
-    IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.configureTsaLicense(instanceId, terracottaServer, tcConfigs, clusterName, securityRootDirectory, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), verbose));
+    IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.configureTsaLicense(instanceId, terracottaServer, tcConfigs, tsaConfigurationContext.getClusterName(), securityRootDirectory, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), verbose));
     return this;
   }
 
