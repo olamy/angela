@@ -41,7 +41,7 @@ public class TsaConfigTest {
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1"),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")
     );
-    final List<TcConfig> tcConfigs = tsaConfig.buildTcConfigs();
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
 
     for (int tcConfigIndex = 0; tcConfigIndex < 2; tcConfigIndex++) {
       for (int tcServerIndex = 0; tcServerIndex < 2; tcServerIndex++) {
