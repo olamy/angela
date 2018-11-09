@@ -212,11 +212,11 @@ public abstract class TcConfigHolder {
       node.setAttribute("name", "Server" + stripeIndex + "-" + serverIndex);
 
       Element node3 = tcConfigXml.createElement("tsa-port");
-      node3.appendChild(tcConfigXml.createTextNode("" + (9 + stripeIndex) + "1" + serverIndex));
+      node3.appendChild(tcConfigXml.createTextNode("" + (90 + stripeIndex) + "1" + serverIndex));
       node.appendChild(node3);
 
       Element node4 = tcConfigXml.createElement("tsa-group-port");
-      node4.appendChild(tcConfigXml.createTextNode("" + (9 + stripeIndex) + "3" + serverIndex));
+      node4.appendChild(tcConfigXml.createTextNode("" + (90 + stripeIndex) + "3" + serverIndex));
       node.appendChild(node4);
 
       serverElt.appendChild(node);
