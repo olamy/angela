@@ -1,7 +1,5 @@
 package com.terracottatech.qa.angela;
 
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientArray;
 import com.terracottatech.qa.angela.client.ClientArrayFuture;
@@ -22,13 +20,17 @@ import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
+import org.junit.Test;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +38,7 @@ import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
@@ -93,6 +96,36 @@ public class ClientTest {
         f.get();
       }
     }
+  }
+
+  @Test
+  public void testClientArrayExceptionReported() throws Exception {
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(2, "localhost"))));
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testClientArrayExceptionReported", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> {
+          String message = "Just Say No (tm) " + cluster.atomicCounter("testClientArrayExceptionReportedCounter", 0L).getAndIncrement();
+          throw new RuntimeException(message);
+        });
+        try {
+          f.get();
+          fail("expected ExecutionException");
+        } catch (ExecutionException ee) {
+          assertThat(exceptionToString(ee), containsString("Just Say No (tm) 0"));
+          assertThat(exceptionToString(ee), containsString("Just Say No (tm) 1"));
+        }
+      }
+    }
+  }
+
+  private static String exceptionToString(Throwable t) {
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    t.printStackTrace(pw);
+    pw.close();
+    return sw.toString();
   }
 
   @Test
