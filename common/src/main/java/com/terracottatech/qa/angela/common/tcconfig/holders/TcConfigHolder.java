@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public abstract class TcConfigHolder {
     this.logsPathList.addAll(tcConfigHolder.logsPathList);
   }
 
-  public TcConfigHolder(final InputStream tcConfigInputStream) {
+  public TcConfigHolder(InputStream tcConfigInputStream) {
     try {
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       Document tcConfigXml = builder.parse(tcConfigInputStream);
@@ -174,7 +175,7 @@ public abstract class TcConfigHolder {
         } else {
           Element newElement = tcConfigXml.createElement("logs");
           newElement.setTextContent(logsPath);
-          server.getParentNode().insertBefore(newElement, server.getNextSibling());
+          server.appendChild(newElement);
         }
         cnt++;
 
@@ -202,7 +203,7 @@ public abstract class TcConfigHolder {
       int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
 
       if (serverIndex > 9 || stripeIndex > 54) {
-        throw new IllegalArgumentException("Too many stripes (" + stripeIndex +") or passives (" + serverIndex + ")");
+        throw new IllegalArgumentException("Too many stripes (" + stripeIndex + ") or passives (" + serverIndex + ")");
       }
 
       Node serverElt = (Node)xPath.evaluate("//*[name()='servers']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);

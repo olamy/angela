@@ -27,6 +27,7 @@ public class TsaConfigTest {
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")
     );
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+
     assertThat(tcConfigs.size(), equalTo(1));
     final Collection<TerracottaServer> servers = tcConfigs.get(0).getServers();
     assertThat(servers.size(), equalTo(2));
