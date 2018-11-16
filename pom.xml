@@ -89,7 +89,7 @@
       </dependency>
       <dependency>
         <groupId>com.terracottatech.internal</groupId>
-        <artifactId>terracotta-common-client</artifactId>
+        <artifactId>security-common-test</artifactId>
         <version>${terracotta.version}</version>
       </dependency>
       <dependency>
