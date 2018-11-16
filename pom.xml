@@ -49,7 +49,7 @@
       </dependency>
       <dependency>
         <groupId>com.terracottatech.qa</groupId>
-        <artifactId>test-utils</artifactId>
+        <artifactId>angela-test-utils</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

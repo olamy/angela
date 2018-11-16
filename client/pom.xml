@@ -27,7 +27,7 @@
     </dependency>
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
-      <artifactId>test-utils</artifactId>
+      <artifactId>angela-test-utils</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
