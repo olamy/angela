@@ -10,7 +10,7 @@
     <version>2.0.6-SNAPSHOT</version>
   </parent>
 
-  <artifactId>integration-test</artifactId>
+  <artifactId>angela-integration-test</artifactId>
 
   <dependencies>
     <dependency>
@@ -21,7 +21,6 @@
     <dependency>
       <groupId>com.terracottatech.internal</groupId>
       <artifactId>security-common-test</artifactId>
-      <version>${terracotta.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -36,7 +35,7 @@
     </dependency>
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
-      <artifactId>test-utils</artifactId>
+      <artifactId>angela-test-utils</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

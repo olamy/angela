@@ -9,7 +9,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>test-utils</artifactId>
+  <artifactId>angela-test-utils</artifactId>
 
   <!-- This is required to pass the 'terracotta.version' from the pom, via the versions.properties resource -->
   <build>
