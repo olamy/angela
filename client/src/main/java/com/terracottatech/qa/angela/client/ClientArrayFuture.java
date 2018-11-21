@@ -57,8 +57,13 @@ public class ClientArrayFuture {
     }
   }
 
-  public void get() throws CancellationException, ExecutionException, InterruptedException, TimeoutException {
-    get(Long.MIN_VALUE, null);
+  public void get() throws CancellationException, ExecutionException, InterruptedException {
+    try {
+      get(Long.MIN_VALUE, null);
+    } catch (TimeoutException te) {
+      // This should never happen
+      throw new RuntimeException(te);
+    }
   }
 
   public void cancel(boolean mayInterruptIfRunning) {

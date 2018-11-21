@@ -34,4 +34,9 @@ public class AtomicCounter {
   public boolean compareAndSet(long expVal, long newVal) {
     return igniteCounter.compareAndSet(expVal, newVal);
   }
+
+  @Override
+  public String toString() {
+    return "" + get();
+  }
 }

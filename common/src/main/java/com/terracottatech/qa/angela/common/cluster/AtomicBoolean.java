@@ -30,4 +30,9 @@ public class AtomicBoolean {
   public boolean compareAndSet(boolean expVal, boolean newVal) {
     return igniteCounter.compareAndSet(expVal ? 1L : 0L, newVal ? 1L : 0L);
   }
+
+  @Override
+  public String toString() {
+    return "" + get();
+  }
 }
