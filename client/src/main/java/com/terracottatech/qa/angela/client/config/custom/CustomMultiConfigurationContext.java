@@ -5,7 +5,9 @@ import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class CustomMultiConfigurationContext extends CustomConfigurationContext {
@@ -70,5 +72,20 @@ public class CustomMultiConfigurationContext extends CustomConfigurationContext 
     customClientArrayConfigurationContexts.add(customClientArrayConfigurationContext);
     clientArray.accept(customClientArrayConfigurationContext);
     return this;
+  }
+
+  @Override
+  public Set<String> allHostnames() {
+    Set<String> hostnames = new HashSet<>();
+    for (CustomTsaConfigurationContext customTsaConfigurationContext : customTsaConfigurationContexts) {
+      hostnames.addAll(customTsaConfigurationContext.getTopology().getServersHostnames());
+    }
+    for (CustomTmsConfigurationContext customTmsConfigurationContext : customTmsConfigurationContexts) {
+      hostnames.add(customTmsConfigurationContext.getHostname());
+    }
+    for (CustomClientArrayConfigurationContext customClientArrayConfigurationContext : customClientArrayConfigurationContexts) {
+      hostnames.addAll(customClientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
+    }
+    return hostnames;
   }
 }

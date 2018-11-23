@@ -190,17 +190,7 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public ClusterMonitor monitor() {
-    final Set<String> hostnames = new HashSet<>();
-    if (configurationContext.tsa() != null) {
-      hostnames.addAll(configurationContext.tsa().getTopology().getServersHostnames());
-    }
-    if (configurationContext.tms() != null) {
-      hostnames.add(configurationContext.tms().getHostname());
-    }
-    if (configurationContext.clientArray() != null) {
-      hostnames.addAll(configurationContext.clientArray().getClientArrayTopology().getClientHostnames());
-    }
-
+    Set<String> hostnames = configurationContext.allHostnames();
     InstanceId instanceId = init(MONITOR, hostnames);
 
     ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, instanceId, hostnames);

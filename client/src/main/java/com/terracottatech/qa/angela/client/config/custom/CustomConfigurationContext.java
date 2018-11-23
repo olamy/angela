@@ -96,4 +96,19 @@ public class CustomConfigurationContext implements ConfigurationContext {
     return this;
   }
 
+  @Override
+  public Set<String> allHostnames() {
+    Set<String> hostnames = new HashSet<>();
+    if (customTsaConfigurationContext != null) {
+      hostnames.addAll(customTsaConfigurationContext.getTopology().getServersHostnames());
+    }
+    if (customTmsConfigurationContext != null) {
+      hostnames.add(customTmsConfigurationContext.getHostname());
+    }
+    if (customClientArrayConfigurationContext != null) {
+      hostnames.addAll(customClientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
+    }
+    return hostnames;
+  }
+
 }
