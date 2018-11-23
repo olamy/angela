@@ -1,8 +1,6 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetricsCollector;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 
 import java.io.File;
 
@@ -13,15 +11,15 @@ import java.io.File;
 
 public class MonitoringInstance {
 
-  private final File workingKitInstallationPath;
+  private final File workingPath;
   private final HardwareMetricsCollector hardwareMetricsCollector = new HardwareMetricsCollector();
 
-  public MonitoringInstance(InstanceId instanceId) {
-    this.workingKitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
+  public MonitoringInstance(File workingPath) {
+    this.workingPath = workingPath;
   }
 
   public void startHardwareMonitoring() {
-    hardwareMetricsCollector.startMonitoring(workingKitInstallationPath, HardwareMetricsCollector.TYPE.vmstat);
+    hardwareMetricsCollector.startMonitoring(workingPath, HardwareMetricsCollector.TYPE.vmstat);
   }
 
   public void stopHardwareMonitoring() {

@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela.client.config;
 
+import java.util.Set;
+
 public interface ConfigurationContext {
 
   RemotingConfigurationContext remoting();
@@ -9,5 +11,7 @@ public interface ConfigurationContext {
   TmsConfigurationContext tms();
 
   ClientArrayConfigurationContext clientArray();
+
+  Set<String> allHostnames();
 
 }

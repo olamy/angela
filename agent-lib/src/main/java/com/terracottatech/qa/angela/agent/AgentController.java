@@ -60,9 +60,9 @@ public class AgentController {
 
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
-  private final Map<InstanceId, MonitoringInstance> monitoringInstances = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
+  private volatile MonitoringInstance monitoringInstance;
 
   AgentController(Ignite ignite, Collection<String> joinedNodes) {
     this.ignite = ignite;
@@ -314,21 +314,18 @@ public class AgentController {
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
   }
 
-  public void startHardwareMonitoring(InstanceId instanceId) {
-    if (monitoringInstances.containsKey(instanceId)) {
-      return;
+  public void startHardwareMonitoring(String workingPath) {
+    if (monitoringInstance == null) {
+      monitoringInstance = new MonitoringInstance(new File(workingPath));
+      monitoringInstance.startHardwareMonitoring();
     }
-    MonitoringInstance monitoringInstall = new MonitoringInstance(instanceId);
-    monitoringInstall.startHardwareMonitoring();
-    this.monitoringInstances.put(instanceId, monitoringInstall);
   }
 
-  public void stopHardwareMonitoring(InstanceId instanceId) {
-    if (!monitoringInstances.containsKey(instanceId)) {
-      return;
+  public void stopHardwareMonitoring() {
+    if (monitoringInstance != null) {
+      monitoringInstance.stopHardwareMonitoring();
+      monitoringInstance = null;
     }
-    monitoringInstances.get(instanceId).stopHardwareMonitoring();
-    this.monitoringInstances.remove(instanceId);
   }
 
   public void destroyClient(InstanceId instanceId, int pid) {

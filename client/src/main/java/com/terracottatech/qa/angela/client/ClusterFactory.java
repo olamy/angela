@@ -54,6 +54,7 @@ public class ClusterFactory implements AutoCloseable {
   private Ignite ignite;
   private Agent.Node localhostAgent;
   private transient RemoteAgentLauncher remoteAgentLauncher;
+  private InstanceId monitorInstanceId;
 
   public ClusterFactory(String idPrefix, ConfigurationContext configurationContext) {
     // Using UTC to have consistent layout even in case of timezone skew between client and server.
@@ -190,22 +191,15 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public ClusterMonitor monitor() {
-    final Set<String> hostnames = new HashSet<>();
-    if (configurationContext.tsa() != null) {
-      hostnames.addAll(configurationContext.tsa().getTopology().getServersHostnames());
+    if (monitorInstanceId == null) {
+      Set<String> hostnames = configurationContext.allHostnames();
+      monitorInstanceId = init(MONITOR, hostnames);
+      ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, monitorInstanceId, hostnames);
+      controllers.add(clusterMonitor);
+      return clusterMonitor;
+    } else {
+      return new ClusterMonitor(ignite, monitorInstanceId, configurationContext.allHostnames());
     }
-    if (configurationContext.tms() != null) {
-      hostnames.add(configurationContext.tms().getHostname());
-    }
-    if (configurationContext.clientArray() != null) {
-      hostnames.addAll(configurationContext.clientArray().getClientArrayTopology().getClientHostnames());
-    }
-
-    InstanceId instanceId = init(MONITOR, hostnames);
-
-    ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, instanceId, hostnames);
-    controllers.add(clusterMonitor);
-    return clusterMonitor;
   }
 
   @Override
@@ -230,6 +224,8 @@ public class ClusterFactory implements AutoCloseable {
       ignite = null;
     }
     nodeToInstanceId.clear();
+
+    monitorInstanceId = null;
 
     try {
       remoteAgentLauncher.close();

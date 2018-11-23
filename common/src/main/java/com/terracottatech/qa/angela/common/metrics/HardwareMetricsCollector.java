@@ -9,7 +9,6 @@ import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.PidUtil;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -49,19 +48,12 @@ public class HardwareMetricsCollector {
 
   public void startMonitoring(final File installLocation, final TYPE stats) {
     if (stats != TYPE.none) {
+      File statsDirectory = new File(installLocation, METRICS_DIRECTORY);
+      statsDirectory.mkdirs();
+      File logFile = new File(statsDirectory, "vmstat.log");
+      logger.info("stat log file: {}", logFile.getAbsolutePath());
 
-      final FileOutputStream output;
-      try {
-        final File statsDirectory = new File(installLocation, METRICS_DIRECTORY);
-        statsDirectory.mkdirs();
-        final File logFile = new File(statsDirectory, "vmstat.log");
-        logger.info("stat log file: {}", logFile.getAbsolutePath());
-        output = new FileOutputStream(logFile);
-      } catch (FileNotFoundException e) {
-        throw new RuntimeException(e);
-      }
-
-      try {
+      try (FileOutputStream output = new FileOutputStream(logFile)) {
         process = new ProcessExecutor()
             .command(startCommand(stats))
             .directory(installLocation)
@@ -77,6 +69,7 @@ public class HardwareMetricsCollector {
     if (this.process != null) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(PidUtil.getPid(this.process.getProcess()));
+        this.process = null;
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

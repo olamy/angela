@@ -68,6 +68,36 @@ public class InstallTest {
   }
 
   @Test
+  public void testMultipleHardwareMetricsLogs() throws Exception {
+    final File resultPath = new File("target", UUID.randomUUID().toString());
+
+    ConfigurationContext config = CustomMultiConfigurationContext.customMultiConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        )
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+        );
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
+      Tsa tsa = factory.tsa();
+      Tsa tsa2 = factory.tsa();
+
+      TerracottaServer server = tsa.getTsaConfigurationContext().getTopology().findServer(0,0);
+      tsa.create(server);
+      ClusterMonitor monitor = factory.monitor().startOnAll();
+
+      Thread.sleep(3000);
+
+      monitor.downloadTo(resultPath);
+    }
+
+    assertThat(new File(resultPath, "/localhost/metrics/vmstat.log").exists(), is(true));
+  }
+
+  @Test
   public void testSsh() throws Exception {
     TcConfig tcConfig = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"));
     tcConfig.updateServerHost(0, InetAddress.getLocalHost().getHostName());
