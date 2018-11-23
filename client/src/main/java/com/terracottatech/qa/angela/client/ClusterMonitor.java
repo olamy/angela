@@ -19,15 +19,13 @@ import java.util.Set;
 public class ClusterMonitor implements AutoCloseable {
 
   private final Ignite ignite;
-  private final InstanceId instanceId;
-  private final File workingKitInstallationPath;
+  private final File workingPath;
   private final Set<String> hostnames;
   private boolean closed = false;
 
   ClusterMonitor(Ignite ignite, InstanceId instanceId, Set<String> hostnames) {
     this.ignite = ignite;
-    this.instanceId = instanceId;
-    this.workingKitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
+    this.workingPath = new File(Agent.WORK_DIR, instanceId.toString());
     this.hostnames = hostnames;
   }
 
@@ -36,7 +34,7 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.startHardwareMonitoring(instanceId));
+        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.startHardwareMonitoring(workingPath.getPath()));
       } catch (Exception e) {
         exceptions.add(e);
       }
@@ -55,7 +53,7 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.stopHardwareMonitoring(instanceId));
+        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.stopHardwareMonitoring());
       } catch (Exception e) {
         exceptions.add(e);
       }
@@ -74,7 +72,7 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        new RemoteFolder(ignite, hostname, null, workingKitInstallationPath.getPath()).downloadTo(new File(location, hostname));
+        new RemoteFolder(ignite, hostname, null, workingPath.getPath()).downloadTo(new File(location, hostname));
       } catch (IOException e) {
         exceptions.add(e);
       }
