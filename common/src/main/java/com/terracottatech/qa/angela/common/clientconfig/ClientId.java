@@ -9,9 +9,9 @@ import java.util.Objects;
 public class ClientId {
 
   private final ClientSymbolicName symbolicName;
-  private final ClientHostname hostname;
+  private final String hostname;
 
-  public ClientId(ClientSymbolicName symbolicName, ClientHostname hostname) {
+  public ClientId(ClientSymbolicName symbolicName, String hostname) {
     this.symbolicName = Objects.requireNonNull(symbolicName);
     this.hostname = Objects.requireNonNull(hostname);
   }
@@ -20,7 +20,7 @@ public class ClientId {
     return symbolicName;
   }
 
-  public ClientHostname getClientHostname() {
+  public String getHostname() {
     return hostname;
   }
 
@@ -30,7 +30,7 @@ public class ClientId {
     if (o == null || getClass() != o.getClass()) return false;
     ClientId clientId = (ClientId) o;
     return Objects.equals(symbolicName, clientId.symbolicName) &&
-        Objects.equals(hostname, clientId.hostname);
+           Objects.equals(hostname, clientId.hostname);
   }
 
   @Override
