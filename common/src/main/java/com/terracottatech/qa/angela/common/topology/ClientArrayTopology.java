@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -25,19 +26,11 @@ public class ClientArrayTopology {
   }
 
   public Collection<ClientId> getClientIds() {
-    return clientArrayConfig.getHosts()
-        .entrySet()
-        .stream()
-        .map(entry -> new ClientId(entry.getKey(), entry.getValue()))
-        .collect(Collectors.toList());
+    return clientArrayConfig.getHosts().entrySet().stream().map(entry -> new ClientId(entry.getKey(), entry.getValue())).collect(Collectors.toList());
   }
 
   public Collection<String> getClientHostnames() {
-    return clientArrayConfig.getHosts()
-        .entrySet()
-        .stream()
-        .map(entry -> entry.getValue().getHostname())
-        .collect(Collectors.toList());
+    return clientArrayConfig.getHosts().entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
   }
 
   public Distribution getDistribution() {

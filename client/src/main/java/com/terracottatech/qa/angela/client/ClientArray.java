@@ -1,13 +1,17 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
-import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
-import com.terracottatech.qa.angela.common.clientconfig.ClientId;
-import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.terracottatech.qa.angela.agent.client.RemoteClientManager;
+import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
+import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.common.clientconfig.ClientId;
+import com.terracottatech.qa.angela.common.topology.InstanceId;
+
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 
@@ -38,7 +41,8 @@ public class ClientArray implements AutoCloseable {
     this.clientArrayConfigurationContext = clientArrayConfigurationContext;
     this.instanceIdSupplier = instanceIdSupplier;
     this.ignite = ignite;
-    this.localKitManager = new LocalKitManager(clientArrayConfigurationContext.getClientArrayTopology().getDistribution());
+    this.localKitManager = new LocalKitManager(clientArrayConfigurationContext.getClientArrayTopology()
+        .getDistribution());
     installAll();
   }
 
@@ -60,7 +64,8 @@ public class ClientArray implements AutoCloseable {
 // TODO : refactor Client to extract the uploading step and the execution step
 //     uploadClientJars(ignite, terracottaClient.getClientHostname(), instanceId, );
 
-      Client client = new Client(ignite, instanceIdSupplier.get(), clientId.getClientHostname().getHostname(), clientArrayConfigurationContext.getTerracottaCommandLineEnvironment(), localKitManager);
+      Client client = new Client(ignite, instanceIdSupplier.get(), clientId.getHostname(), clientArrayConfigurationContext
+          .getTerracottaCommandLineEnvironment(), localKitManager);
       clients.put(clientId, client);
     } catch (Exception e) {
       throw new RuntimeException("Cannot upload client jars to " + clientId, e);
@@ -104,15 +109,37 @@ public class ClientArray implements AutoCloseable {
   public ClientArrayFuture executeOnAll(ClientJob clientJob) {
     List<Future<Void>> futures = new ArrayList<>();
     for (ClientId clientId : clientArrayConfigurationContext.getClientArrayTopology().getClientIds()) {
-      for (int i = 0; i < clientId.getClientHostname().getHostsCount().get(); i++) {
-        futures.add(executeOn(clientId, clientJob));
-      }
+      futures.add(executeOn(clientId, clientJob));
     }
     return new ClientArrayFuture(futures);
   }
 
   public Future<Void> executeOn(ClientId clientId, ClientJob clientJob) {
     return clients.get(clientId).submit(clientJob);
+  }
+
+  public RemoteFolder browse(Client client, String root) {
+    File path = new RemoteClientManager( client.getInstanceId()).getClientInstallationPath();
+    return new RemoteFolder(ignite, client.getHostname(), path.getAbsolutePath(), root);
+  }
+
+  public void downloadTo(String remoteLocation, String location) {
+    List<Exception> exceptions = new ArrayList<>();
+
+    for (Client client : clients.values()) {
+      try {
+        browse(client, remoteLocation).downloadTo(new File(location, client.getHostname()));
+      } catch (IOException e) {
+        exceptions.add(e);
+      }
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException re = new RuntimeException("Error downloading cluster monitor remote files");
+      exceptions.forEach(re::addSuppressed);
+      throw re;
+    }
+
   }
 
   @Override
