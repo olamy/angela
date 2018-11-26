@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.client.remote.agent;
 
+import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.util.AngelaVersions;
@@ -29,6 +30,8 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -112,11 +115,13 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         ssh.authPublickey(remoteUserName, remoteUserNameKeyPath);
       }
 
-      exec(ssh, "mkdir -p $HOME/" + angelaHome + "/jars");
-      if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e $HOME/" + angelaHome + "/jars/" + agentJarFile.getName() + " ]") != 0) {
+      Path baseDir = Paths.get(Agent.ROOT_DIR, angelaHome);
+      Path jarsDir = baseDir.resolve("jars");
+      exec(ssh, "mkdir -p " + jarsDir.toString());
+      if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e " + jarsDir.resolve(agentJarFile.getName()).toString() + " ]") != 0) {
         // jar file is a snapshot or does not exist, upload it
         LOGGER.info("uploading agent jar {} ...", agentJarFile.getName());
-        uploadJar(ssh, agentJarFile, angelaHome + "/jars");
+        uploadJar(ssh, agentJarFile, jarsDir);
       }
 
       LOGGER.info("looking up remote JDK ...");
@@ -141,9 +146,9 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Session.Command cmd = session.exec(remoteJavaHome + "/bin/java " +
           "-Dtc.qa.nodeName=" + targetServerName + " " +
           "-Dtc.qa.directjoin=" + joinHosts + " " +
-          "-DkitsDir=$HOME/" + angelaHome + " " +
+          "-DkitsDir=" + baseDir.toString() + " " +
           "-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE) + " " +
-          "-jar $HOME/" + angelaHome + "/jars/" + agentJarFile.getName());
+          "-jar " + jarsDir.resolve(agentJarFile.getName()).toString());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
       new StreamCopier(cmd.getInputStream(), sshLogOutputStream, net.schmizz.sshj.common.LoggerFactory.DEFAULT).bufSize(MAX_LINE_LENGTH)
@@ -223,8 +228,9 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
     }
   }
 
-  private void uploadJar(SSHClient ssh, File agentJarFile, String targetFolder) throws IOException {
-    ssh.newSCPFileTransfer().upload(agentJarFile.getPath(), targetFolder + "/" + agentJarFile.getName());
+  private void uploadJar(SSHClient ssh, File agentJarFile, Path targetFolder) throws IOException {
+    String remotePath = targetFolder.resolve(agentJarFile.getName()).toString();
+    ssh.newSCPFileTransfer().upload(agentJarFile.getPath(), remotePath);
   }
 
   private String findJavaHomeFromRemoteToolchains(SSHClient ssh) throws IOException {
