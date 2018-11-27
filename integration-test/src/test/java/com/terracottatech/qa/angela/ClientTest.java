@@ -35,7 +35,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -62,22 +64,22 @@ public class ClientTest {
         .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().host(clientHostname))));
 
     String remoteFolder = "testFolder";
-    String downloadedFile = "myNewFile";
-    String fileContennt = "Test data";
-    String localFolder = "myNewFolder";
+    String downloadedFile = "myNewFile.txt";
+    String fileContent = "Test data";
+    String localFolder = "myNewFolderCLient";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
         ClientArrayFuture f = clientArray.executeOnAll((cluster) -> {
           System.out.println("Writing to file");
           new File(remoteFolder).mkdirs();
-          Files.write(Paths.get(remoteFolder, downloadedFile), fileContennt.getBytes());
+          Files.write(Paths.get(remoteFolder, downloadedFile), fileContent.getBytes());
           System.out.println("Done");
         });
         f.get();
         clientArray.downloadTo(remoteFolder, localFolder);
-        String fileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname, downloadedFile)));
-        assertThat(fileContent, is(equalTo(fileContennt)));
+        String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-1", downloadedFile)));
+        assertThat(downloadedFileContent, is(equalTo(fileContent)));
         Files.walk(Paths.get(localFolder))
             .sorted(Comparator.reverseOrder())
             .map(Path::toFile)
@@ -87,6 +89,47 @@ public class ClientTest {
     }
   }
 
+  @Test
+  public void testMultipleCLientsSameHostArrayDownloadFiles() throws Exception {
+    String clientHostname = "localhost";
+    int clientsCount = 3;
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(clientsCount, clientHostname))));
+
+    String remoteFolder = "testFolder";
+    String downloadedFile = "myNewFile.txt";
+    String fileContent = "Test data";
+    String localFolder = "myNewFolderMultipleClients";
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        Set<String> filecontents = new HashSet<>();
+
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> {
+          String clientFileContent = fileContent + UUID.randomUUID();
+          filecontents.add(clientFileContent);
+          System.out.println("Writing to file : " + clientFileContent);
+          new File(remoteFolder).mkdirs();
+          Files.write(Paths.get(remoteFolder, downloadedFile), clientFileContent.getBytes());
+          System.out.println("Done");
+        });
+        f.get();
+        clientArray.downloadTo(remoteFolder, localFolder);
+
+        for (int i = 1; i < clientsCount + 1; i++) {
+          String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-" + i, downloadedFile)));
+          filecontents.remove(downloadedFileContent);
+        }
+        assertThat(filecontents.size(), is(equalTo(0)));
+
+        Files.walk(Paths.get(localFolder))
+            .sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .peek(System.out::println)
+            .forEach(File::delete);
+      }
+    }
+  }
 
   @Test
   public void testMultipleClientsOnSameHost() throws Exception {
