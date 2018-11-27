@@ -78,7 +78,7 @@ public class ClientTest {
         });
         f.get();
         clientArray.downloadTo(remoteFolder, localFolder);
-        String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname, downloadedFile)));
+        String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-1", downloadedFile)));
         assertThat(downloadedFileContent, is(equalTo(fileContent)));
         Files.walk(Paths.get(localFolder))
             .sorted(Comparator.reverseOrder())
