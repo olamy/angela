@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 
@@ -125,10 +126,18 @@ public class ClientArray implements AutoCloseable {
 
   public void downloadTo(String remoteLocation, String location) {
     List<Exception> exceptions = new ArrayList<>();
+    Map<String, AtomicInteger> hostnamesCounter = new HashMap<>();
 
     for (Client client : clients.values()) {
       try {
-        browse(client, remoteLocation).downloadTo(new File(location, client.getHostname()));
+
+        String hostname = client.getHostname();
+        if (!hostnamesCounter.containsKey(hostname)) {
+          hostnamesCounter.put(hostname, new AtomicInteger());
+        }
+        String locationChild = hostname + "-" + hostnamesCounter.get(hostname).incrementAndGet();
+
+        browse(client, remoteLocation).downloadTo(new File(location, locationChild));
       } catch (IOException e) {
         exceptions.add(e);
       }
