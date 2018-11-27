@@ -66,7 +66,7 @@ public class ClientTest {
     String remoteFolder = "testFolder";
     String downloadedFile = "myNewFile.txt";
     String fileContent = "Test data";
-    String localFolder = "myNewFolder";
+    String localFolder = "myNewFolderCLient";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
@@ -99,7 +99,7 @@ public class ClientTest {
     String remoteFolder = "testFolder";
     String downloadedFile = "myNewFile.txt";
     String fileContent = "Test data";
-    String localFolder = "myNewFolder";
+    String localFolder = "myNewFolderMultipleClients";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
