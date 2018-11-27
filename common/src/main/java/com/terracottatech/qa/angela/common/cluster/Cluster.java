@@ -21,4 +21,7 @@ public class Cluster {
     return new AtomicBoolean(ignite, name, initialValue);
   }
 
+  public <T> AtomicReference<T> atomicReference(String name, T initialValue) {
+    return new AtomicReference<>(ignite, name, initialValue);
+  }
 }

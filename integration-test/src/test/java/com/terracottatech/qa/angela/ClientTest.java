@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.common.cluster.AtomicReference;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.Client;
@@ -47,6 +49,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
 
 public class ClientTest {
@@ -356,4 +360,30 @@ public class ClientTest {
     }
   }
 
+  @Test
+  public void testClientArrayReferenceShared() throws Exception {
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+            .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(2, "localhost"))));
+
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientArrayReferenceShared", configContext)) {
+      try (ClientArray clientArray = factory.clientArray()) {
+        clientArray.getClients().size();
+        ClientArrayFuture f = clientArray.executeOnAll((cluster) -> {
+          AtomicReference<String> strRef = cluster.atomicReference("string", null);
+          strRef.set("A");
+
+          AtomicReference<Integer> intRef = cluster.atomicReference("int", 0);
+          intRef.compareAndSet(0, 1);
+        });
+        f.get();
+        Cluster cluster = factory.cluster();
+
+        AtomicReference<String> strRef = cluster.atomicReference("string", "X");
+        assertThat(strRef.get(), is("A"));
+
+        AtomicReference<Integer> intRef = cluster.atomicReference("int", 0);
+        assertThat(intRef.get(), is(1));
+      }
+    }
+  }
 }
