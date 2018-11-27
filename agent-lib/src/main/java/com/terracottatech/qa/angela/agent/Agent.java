@@ -186,6 +186,7 @@ public class Agent {
       }
 
       try {
+        java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
         ignite = Ignition.start(cfg);
         IgniteCommonHelper.checkForDuplicateAgent(ignite, nodeName);
       } catch (IgniteException e) {
