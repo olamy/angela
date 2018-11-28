@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +38,7 @@ import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
 
 /**
@@ -87,7 +89,7 @@ public class BrowseTest {
   public void testTsa() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
+            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
 
@@ -103,6 +105,11 @@ public class BrowseTest {
         String line = br.readLine();
         assertThat(line.contains("TCServerMain - Terracotta"), is(true));
       }
+
+      tsa.downloadDataDirectories(new File("target/data-directories"));
+      assertThat(Arrays.asList(new File("target/data-directories").list()), containsInAnyOrder("Server1", "Server2"));
+      assertThat(Arrays.asList(new File("target/data-directories/Server1").list()), containsInAnyOrder("data-folder", "platform-folder"));
+      assertThat(Arrays.asList(new File("target/data-directories/Server2").list()), containsInAnyOrder("data-folder", "platform-folder"));
     }
   }
 

@@ -17,8 +17,8 @@
     </config>
     <config>
       <data:data-directories>
-        <data:directory use-for-platform="true" name="platform">platform</data:directory>
-        <data:directory name="data">data</data:directory>
+        <data:directory use-for-platform="true" name="platform">platform-folder</data:directory>
+        <data:directory name="data">data-folder</data:directory>
       </data:data-directories>
     </config>
     <service>
