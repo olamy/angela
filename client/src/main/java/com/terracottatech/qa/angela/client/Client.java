@@ -20,6 +20,7 @@ import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
@@ -118,10 +119,10 @@ public class Client implements Closeable {
     return files;
   }
 
-  Future<Void> submit(ClientJob clientJob) {
+  Future<Void> submit(ClientId clientId, ClientJob clientJob) {
     IgniteFuture<Void> igniteFuture = IgniteClientHelper.executeRemotelyAsync(ignite, instanceId.toString(), (IgniteCallable<Void>) () -> {
       try {
-        clientJob.run(new Cluster(ignite));
+        clientJob.run(new Cluster(ignite, clientId));
         return null;
       } catch (Throwable t) {
         throw new RemoteExecutionException("Remote ClientJob failed", exceptionToString(t));
