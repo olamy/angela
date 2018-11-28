@@ -341,7 +341,7 @@ public class Tsa implements AutoCloseable {
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
   }
 
-  public void downloadDataDirectories(File targetRoot) {
+  public void downloadDataDirectories(File localRootPath) {
     List<Exception> exceptions = new ArrayList<>();
 
     Topology topology = tsaConfigurationContext.getTopology();
@@ -353,7 +353,7 @@ public class Tsa implements AutoCloseable {
         for (Map.Entry<String, String> entry : dataDirectories.entrySet()) {
           String directory = entry.getValue();
           try {
-            browse(server, directory).downloadTo(new File(targetRoot + "/" + server.getServerSymbolicName().getSymbolicName(), directory));
+            browse(server, directory).downloadTo(new File(localRootPath + "/" + server.getServerSymbolicName().getSymbolicName(), directory));
           } catch (IOException ioe) {
             exceptions.add(ioe);
           }

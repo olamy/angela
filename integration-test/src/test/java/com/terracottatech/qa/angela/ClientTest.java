@@ -30,11 +30,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetAddress;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,14 +49,12 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
 
 public class ClientTest {
 
   @Test
-  public void testCLientArrayDownloadFiles() throws Exception {
+  public void testClientArrayDownloadFiles() throws Exception {
     final String clientHostname = "localhost";
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().host(clientHostname))));
@@ -66,7 +62,7 @@ public class ClientTest {
     String remoteFolder = "testFolder";
     String downloadedFile = "myNewFile.txt";
     String fileContent = "Test data";
-    String localFolder = "myNewFolderCLient";
+    String localFolder = "target/myNewFolderClient";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
@@ -77,20 +73,15 @@ public class ClientTest {
           System.out.println("Done");
         });
         f.get();
-        clientArray.downloadTo(remoteFolder, localFolder);
+        clientArray.download(remoteFolder, new File(localFolder));
         String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-1", downloadedFile)));
         assertThat(downloadedFileContent, is(equalTo(fileContent)));
-        Files.walk(Paths.get(localFolder))
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .peek(System.out::println)
-            .forEach(File::delete);
       }
     }
   }
 
   @Test
-  public void testMultipleCLientsSameHostArrayDownloadFiles() throws Exception {
+  public void testMultipleClientsSameHostArrayDownloadFiles() throws Exception {
     String clientHostname = "localhost";
     int clientsCount = 3;
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
@@ -99,7 +90,7 @@ public class ClientTest {
     String remoteFolder = "testFolder";
     String downloadedFile = "myNewFile.txt";
     String fileContent = "Test data";
-    String localFolder = "myNewFolderMultipleClients";
+    String localFolder = "target/myNewFolderMultipleClients";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
@@ -114,19 +105,13 @@ public class ClientTest {
           System.out.println("Done");
         });
         f.get();
-        clientArray.downloadTo(remoteFolder, localFolder);
+        clientArray.download(remoteFolder, new File(localFolder));
 
         for (int i = 1; i < clientsCount + 1; i++) {
           String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-" + i, downloadedFile)));
           filecontents.remove(downloadedFileContent);
         }
         assertThat(filecontents.size(), is(equalTo(0)));
-
-        Files.walk(Paths.get(localFolder))
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .peek(System.out::println)
-            .forEach(File::delete);
       }
     }
   }
