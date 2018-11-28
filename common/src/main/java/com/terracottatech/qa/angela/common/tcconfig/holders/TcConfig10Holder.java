@@ -1,15 +1,20 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
+import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.net.PortChooser;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.net.PortChooser;
-import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -20,13 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 
 /**
  * Terracotta config for Terracotta 5.0
@@ -225,6 +223,32 @@ public class TcConfig10Holder extends TcConfigHolder {
 
       serverElt.appendChild(node);
     });
+  }
+
+  public Map<String, String> getDataDirectories() {
+    try {
+      Map<String, String> dataDirectories = new HashMap<>();
+
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+      documentBuilderFactory.setNamespaceAware(true);
+      DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      NodeList nodes = (NodeList) xPath.evaluate("//*[local-name()='directory' and namespace-uri()='http://www.terracottatech.com/config/data-roots']",
+          tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
+
+      for (int i = 0; i < nodes.getLength(); i++) {
+        Node item = nodes.item(i);
+        String textContent = item.getTextContent().trim();
+        String name = item.getAttributes().getNamedItem("name").getNodeValue();
+        dataDirectories.put(name, textContent);
+      }
+
+      return dataDirectories;
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
   }
 
   String getSecurityRootDirectory() {

@@ -21,6 +21,8 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -337,6 +339,33 @@ public class Tsa implements AutoCloseable {
   public RemoteFolder browse(TerracottaServer terracottaServer, String root) {
     String path = IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.getTsaInstallPath(instanceId, terracottaServer));
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
+  }
+
+  public void downloadDataDirectories(File localRootPath) {
+    List<Exception> exceptions = new ArrayList<>();
+
+    Topology topology = tsaConfigurationContext.getTopology();
+    List<TcConfig> tcConfigs = topology.getTcConfigs();
+    for (TcConfig tcConfig : tcConfigs) {
+      Map<String, String> dataDirectories = tcConfig.getDataDirectories();
+      List<TerracottaServer> servers = tcConfig.getServers();
+      for (TerracottaServer server : servers) {
+        for (Map.Entry<String, String> entry : dataDirectories.entrySet()) {
+          String directory = entry.getValue();
+          try {
+            browse(server, directory).downloadTo(new File(localRootPath + "/" + server.getServerSymbolicName().getSymbolicName(), directory));
+          } catch (IOException ioe) {
+            exceptions.add(ioe);
+          }
+        }
+      }
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException re = new RuntimeException("Error downloading TSA data directories");
+      exceptions.forEach(re::addSuppressed);
+      throw re;
+    }
   }
 
   @Override

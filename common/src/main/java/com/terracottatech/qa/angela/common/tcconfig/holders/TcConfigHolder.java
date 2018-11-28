@@ -178,8 +178,6 @@ public abstract class TcConfigHolder {
           server.appendChild(newElement);
         }
         cnt++;
-
-        this.tcConfigContent = domToString(tcConfigXml);
       }
     });
   }
@@ -315,6 +313,8 @@ public abstract class TcConfigHolder {
   public abstract void addOffheap(String resourceName, String size, String unit);
 
   public abstract void addDataDirectory(String dataName, String location, boolean useForPlatform);
+
+  public abstract Map<String, String> getDataDirectories();
 
   @FunctionalInterface
   protected interface XmlModifier {

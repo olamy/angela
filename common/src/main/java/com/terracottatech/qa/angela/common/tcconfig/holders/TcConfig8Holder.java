@@ -74,6 +74,11 @@ public class TcConfig8Holder extends TcConfigHolder {
   }
 
   @Override
+  public Map<String, String> getDataDirectories() {
+    throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
   public void updateAuditDirectoryLocation(final File kitDir, final int stripeId) {
     throw new UnsupportedOperationException("Unimplemented");
   }
