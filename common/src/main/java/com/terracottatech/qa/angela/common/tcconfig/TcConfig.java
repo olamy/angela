@@ -119,6 +119,10 @@ public class TcConfig {
     tcConfigHolder.updateDataDirectory(rootId, newlocation);
   }
 
+  public Map<String, String> getDataDirectories() {
+    return tcConfigHolder.getDataDirectories();
+  }
+
   public void updateServerHost(int serverIndex, String newServerName) {
     tcConfigHolder.updateServerHost(serverIndex, newServerName);
   }

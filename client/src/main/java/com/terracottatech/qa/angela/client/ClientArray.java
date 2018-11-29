@@ -116,7 +116,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public Future<Void> executeOn(ClientId clientId, ClientJob clientJob) {
-    return clients.get(clientId).submit(clientJob);
+    return clients.get(clientId).submit(clientId, clientJob);
   }
 
   public RemoteFolder browse(Client client, String root) {
@@ -124,7 +124,7 @@ public class ClientArray implements AutoCloseable {
     return new RemoteFolder(ignite, client.getHostname(), path.getAbsolutePath(), root);
   }
 
-  public void downloadTo(String remoteLocation, String location) {
+  public void download(String remoteLocation, File localRootPath) {
     List<Exception> exceptions = new ArrayList<>();
     Map<String, AtomicInteger> hostnamesCounter = new HashMap<>();
 
@@ -137,7 +137,7 @@ public class ClientArray implements AutoCloseable {
         }
         String locationChild = hostname + "-" + hostnamesCounter.get(hostname).incrementAndGet();
 
-        browse(client, remoteLocation).downloadTo(new File(location, locationChild));
+        browse(client, remoteLocation).downloadTo(new File(localRootPath, locationChild));
       } catch (IOException e) {
         exceptions.add(e);
       }
@@ -148,7 +148,6 @@ public class ClientArray implements AutoCloseable {
       exceptions.forEach(re::addSuppressed);
       throw re;
     }
-
   }
 
   @Override

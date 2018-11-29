@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.cluster.AtomicReference;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
 import org.junit.Test;
@@ -30,11 +31,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetAddress;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -47,18 +46,18 @@ import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class ClientTest {
 
   @Test
-  public void testCLientArrayDownloadFiles() throws Exception {
+  public void testClientArrayDownloadFiles() throws Exception {
     final String clientHostname = "localhost";
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().host(clientHostname))));
@@ -66,7 +65,7 @@ public class ClientTest {
     String remoteFolder = "testFolder";
     String downloadedFile = "myNewFile.txt";
     String fileContent = "Test data";
-    String localFolder = "myNewFolderCLient";
+    String localFolder = "target/myNewFolderClient";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
@@ -77,20 +76,15 @@ public class ClientTest {
           System.out.println("Done");
         });
         f.get();
-        clientArray.downloadTo(remoteFolder, localFolder);
+        clientArray.download(remoteFolder, new File(localFolder));
         String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-1", downloadedFile)));
         assertThat(downloadedFileContent, is(equalTo(fileContent)));
-        Files.walk(Paths.get(localFolder))
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .peek(System.out::println)
-            .forEach(File::delete);
       }
     }
   }
 
   @Test
-  public void testMultipleCLientsSameHostArrayDownloadFiles() throws Exception {
+  public void testMultipleClientsSameHostArrayDownloadFiles() throws Exception {
     String clientHostname = "localhost";
     int clientsCount = 3;
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
@@ -99,7 +93,7 @@ public class ClientTest {
     String remoteFolder = "testFolder";
     String downloadedFile = "myNewFile.txt";
     String fileContent = "Test data";
-    String localFolder = "myNewFolderMultipleClients";
+    String localFolder = "target/myNewFolderMultipleClients";
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       try (ClientArray clientArray = instance.clientArray()) {
@@ -114,19 +108,13 @@ public class ClientTest {
           System.out.println("Done");
         });
         f.get();
-        clientArray.downloadTo(remoteFolder, localFolder);
+        clientArray.download(remoteFolder, new File(localFolder));
 
         for (int i = 1; i < clientsCount + 1; i++) {
           String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-" + i, downloadedFile)));
           filecontents.remove(downloadedFileContent);
         }
         assertThat(filecontents.size(), is(equalTo(0)));
-
-        Files.walk(Paths.get(localFolder))
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .peek(System.out::println)
-            .forEach(File::delete);
       }
     }
   }
@@ -410,7 +398,6 @@ public class ClientTest {
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientArrayReferenceShared", configContext)) {
       try (ClientArray clientArray = factory.clientArray()) {
-        clientArray.getClients().size();
         ClientArrayFuture f = clientArray.executeOnAll((cluster) -> {
           AtomicReference<String> strRef = cluster.atomicReference("string", null);
           strRef.set("A");
@@ -426,6 +413,28 @@ public class ClientTest {
 
         AtomicReference<Integer> intRef = cluster.atomicReference("int", 0);
         assertThat(intRef.get(), is(1));
+      }
+    }
+  }
+
+  @Test
+  public void testClientArrayHostNames() throws Exception {
+    ClientArrayConfig hostSerie = newClientArrayConfig()
+            .hostSerie(2, "localhost");
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+            .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(hostSerie)));
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientArrayReferenceShared", configContext)) {
+      try (ClientArray clientArray = factory.clientArray()) {
+        ClientJob clientJob = (Cluster cluster) -> {
+          ClientId clientId = cluster.getClientId();
+          assertThat(clientId.getHostname(), is("localhost"));
+          assertThat(clientId.getSymbolicName().getSymbolicName(),
+                  anyOf(is("localhost-0"), is("localhost-1")));
+        };
+        ClientArrayFuture f = clientArray.executeOnAll(clientJob);
+        f.get();
+        Cluster cluster = factory.cluster();
+        assertNull(cluster.getClientId());
       }
     }
   }
