@@ -64,7 +64,7 @@ public class InstallTest {
       monitor.downloadTo(resultPath);
     }
 
-    assertThat(new File(resultPath, "/localhost/metrics/vmstat.log").exists(), is(true));
+    assertThat(new File(resultPath, "/localhost/vmstat.log").exists(), is(true));
   }
 
   @Test
@@ -94,7 +94,7 @@ public class InstallTest {
       monitor.downloadTo(resultPath);
     }
 
-    assertThat(new File(resultPath, "/localhost/metrics/vmstat.log").exists(), is(true));
+    assertThat(new File(resultPath, "/localhost/vmstat.log").exists(), is(true));
   }
 
   @Test
