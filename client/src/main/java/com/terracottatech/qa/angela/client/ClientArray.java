@@ -1,15 +1,14 @@
 package com.terracottatech.qa.angela.client;
 
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.agent.client.RemoteClientManager;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 
@@ -65,7 +63,7 @@ public class ClientArray implements AutoCloseable {
 // TODO : refactor Client to extract the uploading step and the execution step
 //     uploadClientJars(ignite, terracottaClient.getClientHostname(), instanceId, );
 
-      Client client = new Client(ignite, instanceIdSupplier.get(), clientId.getHostname(), clientArrayConfigurationContext
+      Client client = new Client(ignite, instanceIdSupplier.get(), clientId, clientArrayConfigurationContext
           .getTerracottaCommandLineEnvironment(), localKitManager);
       clients.put(clientId, client);
     } catch (Exception e) {
@@ -126,18 +124,9 @@ public class ClientArray implements AutoCloseable {
 
   public void download(String remoteLocation, File localRootPath) {
     List<Exception> exceptions = new ArrayList<>();
-    Map<String, AtomicInteger> hostnamesCounter = new HashMap<>();
-
     for (Client client : clients.values()) {
       try {
-
-        String hostname = client.getHostname();
-        if (!hostnamesCounter.containsKey(hostname)) {
-          hostnamesCounter.put(hostname, new AtomicInteger());
-        }
-        String locationChild = hostname + "-" + hostnamesCounter.get(hostname).incrementAndGet();
-
-        browse(client, remoteLocation).downloadTo(new File(localRootPath, locationChild));
+        browse(client, remoteLocation).downloadTo(new File(localRootPath, client.getSymbolicName()));
       } catch (IOException e) {
         exceptions.add(e);
       }
