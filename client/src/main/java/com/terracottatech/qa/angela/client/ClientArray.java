@@ -116,7 +116,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public Future<Void> executeOn(ClientId clientId, ClientJob clientJob) {
-    return clients.get(clientId).submit(clientJob);
+    return clients.get(clientId).submit(clientId, clientJob);
   }
 
   public RemoteFolder browse(Client client, String root) {

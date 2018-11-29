@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela;
 
+import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.cluster.AtomicReference;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
 import org.junit.Test;
@@ -45,10 +46,12 @@ import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 public class ClientTest {
@@ -395,7 +398,6 @@ public class ClientTest {
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientArrayReferenceShared", configContext)) {
       try (ClientArray clientArray = factory.clientArray()) {
-        clientArray.getClients().size();
         ClientArrayFuture f = clientArray.executeOnAll((cluster) -> {
           AtomicReference<String> strRef = cluster.atomicReference("string", null);
           strRef.set("A");
@@ -411,6 +413,28 @@ public class ClientTest {
 
         AtomicReference<Integer> intRef = cluster.atomicReference("int", 0);
         assertThat(intRef.get(), is(1));
+      }
+    }
+  }
+
+  @Test
+  public void testClientArrayHostNames() throws Exception {
+    ClientArrayConfig hostSerie = newClientArrayConfig()
+            .hostSerie(2, "localhost");
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+            .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(hostSerie)));
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientArrayReferenceShared", configContext)) {
+      try (ClientArray clientArray = factory.clientArray()) {
+        ClientJob clientJob = (Cluster cluster) -> {
+          ClientId clientId = cluster.getClientId();
+          assertThat(clientId.getHostname(), is("localhost"));
+          assertThat(clientId.getSymbolicName().getSymbolicName(),
+                  anyOf(is("localhost-0"), is("localhost-1")));
+        };
+        ClientArrayFuture f = clientArray.executeOnAll(clientJob);
+        f.get();
+        Cluster cluster = factory.cluster();
+        assertNull(cluster.getClientId());
       }
     }
   }
