@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import static com.tc.util.Assert.assertNotNull;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -124,6 +125,56 @@ public class ClientTest {
   }
 
   @Test
+  public void testMultipleClientJobsSameHostDownloadFiles() throws Exception {
+    String clientHostname = "localhost";
+    int clientsCount = 3;
+    int clientsPerMachine = 2;
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+            .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(clientsCount, clientHostname))));
+
+    String remoteFolder = "testFolder";
+    String downloadedFile = "myNewFile.txt";
+    String fileContent = "Test data";
+    String localFolder = "target/myNewFolderMultipleJobs";
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      try (ClientArray clientArray = instance.clientArray()) {
+        Set<String> filecontents = new HashSet<>();
+
+        ClientJob clientJob = (cluster) -> {
+          String clientFileContent = fileContent + UUID.randomUUID();
+          filecontents.add(clientFileContent);
+          System.out.println("Writing to file : " + clientFileContent);
+          String symbolicName = cluster.getClientId()
+                  .getSymbolicName()
+                  .getSymbolicName();
+          Long jobNumber = cluster.atomicCounter(symbolicName, 0)
+                  .incrementAndGet();
+          File jobFolder = new File(remoteFolder, jobNumber.toString());
+          jobFolder.mkdirs();
+          Path path = Paths.get(jobFolder.getPath(), downloadedFile);
+          System.out.println("REMOTE PATH: " + path);
+          Files.write(path, clientFileContent.getBytes());
+          System.out.println("Done");
+        };
+        ClientArrayFuture f = clientArray.executeOnAll(clientJob, clientsPerMachine);
+        f.get();
+        clientArray.download(remoteFolder, new File(localFolder));
+
+        for (Client client: clientArray.getClients()) {
+          String symbolicName = client.getSymbolicName();
+          for (Integer jobNumber = 1; jobNumber <= 2; jobNumber++) {
+            Path downloadPath = Paths.get(localFolder, symbolicName, jobNumber.toString(), downloadedFile);
+            String downloadedFileContent = new String(Files.readAllBytes(downloadPath));
+            filecontents.remove(downloadedFileContent);
+          }
+        }
+        assertThat(filecontents.size(), is(equalTo(0)));
+      }
+    }
+  }
+
+  @Test
   public void testMultipleClientsOnSameHost() throws Exception {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
@@ -137,6 +188,36 @@ public class ClientTest {
       try (ClientArray clientArray = instance.clientArray()) {
         ClientArrayFuture f = clientArray.executeOnAll((cluster) -> System.out.println("hello world"));
         f.get();
+      }
+    }
+  }
+
+  @Test
+  public void testMultipleClientJobsOnSameMachine() throws Exception {
+    int serieLength = 3;
+    int clientsPerMachine = 2;
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
+            .clientArray(clientArray -> clientArray.license(license)
+                    .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig()
+                            .hostSerie(serieLength, "localhost")
+                    )));
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMultipleClientsOnSameHost", configContext)) {
+      try (ClientArray clientArray = factory.clientArray()) {
+        ClientJob clientJob = (cluster) -> {
+          AtomicCounter counter = cluster.atomicCounter("countJobs", 0);
+          long n = counter.incrementAndGet();
+          System.out.println("hello world from job number " + n);
+        };
+        ClientArrayFuture f = clientArray.executeOnAll(clientJob, clientsPerMachine);
+        f.get();
+
+        long expectedJobs = clientsPerMachine * serieLength;
+        long actualJobs = factory.cluster()
+                .atomicCounter("countJobs", 0)
+                .get();
+        assertThat(actualJobs, is(expectedJobs));
       }
     }
   }
@@ -254,8 +335,14 @@ public class ClientTest {
 
         monitor.downloadTo(resultPath);
         monitor.stopOnAll();
+        monitor.processMetrics((hostname, transportableFile) -> {
+          assertThat(hostname, is("localhost"));
+          assertThat(transportableFile.getName(), is("vmstat.log"));
+          byte[] content = transportableFile.getContent();
+          assertNotNull(content);
+          assertThat(content.length, greaterThan(0));
+        });
       }
-
     }
 
     final File statFile = new File(resultPath, clientHostname + "/vmstat.log");

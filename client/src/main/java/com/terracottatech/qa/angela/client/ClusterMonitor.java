@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.client.filesystem.TransportableFile;
 import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 /**
  * @author Aurelien Broszniowski
@@ -75,6 +77,29 @@ public class ClusterMonitor implements AutoCloseable {
         String metricsPath = workingPath.getPath().concat("/metrics");
         new RemoteFolder(ignite, hostname, null, metricsPath).downloadTo(new File(location, hostname));
       } catch (IOException e) {
+        exceptions.add(e);
+      }
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException re = new RuntimeException("Error downloading cluster monitor remote files");
+      exceptions.forEach(re::addSuppressed);
+      throw re;
+    }
+  }
+
+  public void processMetrics(BiConsumer<String, TransportableFile> processor) {
+    List<Exception> exceptions = new ArrayList<>();
+    for (String hostname : hostnames) {
+      try {
+        String metricsPath = workingPath.getPath().concat("/metrics");
+        RemoteFolder remoteFolder = new RemoteFolder(ignite, hostname, null, metricsPath);
+        remoteFolder.list()
+                .forEach(remoteFile -> {
+                  TransportableFile transportable = remoteFile.toTransportableFile();
+                  processor.accept(hostname, transportable);
+                });
+      } catch (Exception e) {
         exceptions.add(e);
       }
     }

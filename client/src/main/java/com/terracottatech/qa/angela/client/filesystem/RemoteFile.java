@@ -37,11 +37,19 @@ public class RemoteFile {
   }
 
   public void downloadTo(File path) throws IOException {
-    String filename = getAbsoluteName();
-    byte[] bytes = IgniteClientHelper.executeRemotely(ignite, nodeName, () -> Agent.CONTROLLER.downloadFile(filename));
+    byte[] bytes = downloadContents();
     try (FileOutputStream fos = new FileOutputStream(path)) {
       fos.write(bytes);
     }
   }
 
+  private byte[] downloadContents() {
+    String filename = getAbsoluteName();
+    return IgniteClientHelper.executeRemotely(ignite, nodeName,
+            () -> Agent.CONTROLLER.downloadFile(filename));
+  }
+
+  public TransportableFile toTransportableFile() {
+    return new TransportableFile(getName(), downloadContents());
+  }
 }
