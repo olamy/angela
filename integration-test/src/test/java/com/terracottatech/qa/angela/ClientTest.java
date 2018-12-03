@@ -240,7 +240,7 @@ public class ClientTest {
 
       ClientJob clientJob = (cluster) -> {
         System.out.println("hello");
-        Thread.sleep(16000);
+        Thread.sleep(18000);
         System.out.println("again");
       };
 
