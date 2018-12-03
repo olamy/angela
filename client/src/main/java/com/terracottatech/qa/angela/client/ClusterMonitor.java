@@ -72,7 +72,8 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        new RemoteFolder(ignite, hostname, null, workingPath.getPath()).downloadTo(new File(location, hostname));
+        String metricsPath = workingPath.getPath().concat("/metrics");
+        new RemoteFolder(ignite, hostname, null, metricsPath).downloadTo(new File(location, hostname));
       } catch (IOException e) {
         exceptions.add(e);
       }

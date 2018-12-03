@@ -31,6 +31,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetAddress;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +79,8 @@ public class ClientTest {
         });
         f.get();
         clientArray.download(remoteFolder, new File(localFolder));
-        String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-1", downloadedFile)));
+        Path downloadPath = Paths.get(localFolder, clientHostname, downloadedFile);
+        String downloadedFileContent = new String(Files.readAllBytes(downloadPath));
         assertThat(downloadedFileContent, is(equalTo(fileContent)));
       }
     }
@@ -111,8 +113,9 @@ public class ClientTest {
         f.get();
         clientArray.download(remoteFolder, new File(localFolder));
 
-        for (int i = 1; i < clientsCount + 1; i++) {
-          String downloadedFileContent = new String(Files.readAllBytes(Paths.get(localFolder, clientHostname + "-" + i, downloadedFile)));
+        for (Client client: clientArray.getClients()) {
+          Path downloadPath = Paths.get(localFolder, client.getSymbolicName(), downloadedFile);
+          String downloadedFileContent = new String(Files.readAllBytes(downloadPath));
           filecontents.remove(downloadedFileContent);
         }
         assertThat(filecontents.size(), is(equalTo(0)));

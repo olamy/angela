@@ -54,15 +54,15 @@ public class Client implements Closeable {
   private final static Logger logger = LoggerFactory.getLogger(Client.class);
 
   private final InstanceId instanceId;
-  private final String hostname;
+  private final ClientId clientId;
   private final Ignite ignite;
   private final int subClientPid;
   private boolean closed = false;
 
 
-  Client(Ignite ignite, InstanceId instanceId, String hostname, TerracottaCommandLineEnvironment tcEnv, LocalKitManager localKitManager) {
+  Client(Ignite ignite, InstanceId instanceId, ClientId clientId, TerracottaCommandLineEnvironment tcEnv, LocalKitManager localKitManager) {
     this.instanceId = instanceId;
-    this.hostname = hostname;
+    this.clientId = clientId;
     this.ignite = ignite;
     this.subClientPid = spawnSubClient(
         Objects.requireNonNull(tcEnv),
@@ -71,17 +71,17 @@ public class Client implements Closeable {
   }
 
   private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv, LocalKitManager localKitManager) {
-    logger.info("Spawning client '{}' on {}", instanceId, hostname);
+    logger.info("Spawning client '{}' on {}", instanceId, clientId);
 
     try {
-      IgniteClientHelper.uploadClientJars(ignite, hostname, instanceId, listClasspathFiles(localKitManager));
+      IgniteClientHelper.uploadClientJars(ignite, getHostname(), instanceId, listClasspathFiles(localKitManager));
 
-      int pid = IgniteClientHelper.executeRemotely(ignite, hostname, (IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
-      logger.info("client '{}' on {} started with PID {}", instanceId, hostname, pid);
+      int pid = IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
+      logger.info("client '{}' on {} started with PID {}", instanceId, clientId, pid);
 
       return pid;
     } catch (Exception e) {
-      throw new RuntimeException("Cannot create client on " + hostname, e);
+      throw new RuntimeException("Cannot create client on " + clientId, e);
     }
   }
 
@@ -148,7 +148,11 @@ public class Client implements Closeable {
   }
 
   public String getHostname() {
-    return hostname;
+    return clientId.getHostname();
+  }
+
+  public String getSymbolicName() {
+    return clientId.getSymbolicName().getSymbolicName();
   }
 
   @Override
@@ -159,8 +163,8 @@ public class Client implements Closeable {
     closed = true;
 
     if (!ClusterFactory.SKIP_UNINSTALL) {
-      logger.info("Wiping up client '{}' on {}", instanceId, hostname);
-      IgniteClientHelper.executeRemotely(ignite, hostname, (IgniteRunnable)() -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
+      logger.info("Wiping up client '{}' on {}", instanceId, clientId);
+      IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
     }
   }
 
