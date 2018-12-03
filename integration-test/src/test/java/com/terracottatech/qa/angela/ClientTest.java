@@ -258,7 +258,8 @@ public class ClientTest {
 
     }
 
-    final File statFile = new File(resultPath, clientHostname + "/metrics/vmstat.log");
+    final File statFile = new File(resultPath, clientHostname + "/vmstat.log");
+    System.out.println(">>>>" + statFile.getAbsolutePath());
     assertThat(statFile.exists(), is(true));
     assertThat(statFile.length(), is(greaterThan(0L)));
   }
