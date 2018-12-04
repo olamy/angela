@@ -106,9 +106,15 @@ public class ClientArray implements AutoCloseable {
   }
 
   public ClientArrayFuture executeOnAll(ClientJob clientJob) {
+    return executeOnAll(clientJob, 1);
+  }
+
+  public ClientArrayFuture executeOnAll(ClientJob clientJob, int jobsPerClient) {
     List<Future<Void>> futures = new ArrayList<>();
     for (ClientId clientId : clientArrayConfigurationContext.getClientArrayTopology().getClientIds()) {
-      futures.add(executeOn(clientId, clientJob));
+      for (int i = 1; i <= jobsPerClient; i++) {
+        futures.add(executeOn(clientId, clientJob));
+      }
     }
     return new ClientArrayFuture(futures);
   }
@@ -154,5 +160,4 @@ public class ClientArray implements AutoCloseable {
   public Collection<Client> getClients() {
     return Collections.unmodifiableCollection(this.clients.values());
   }
-
 }
