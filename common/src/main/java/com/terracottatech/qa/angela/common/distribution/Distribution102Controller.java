@@ -12,6 +12,7 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
@@ -81,7 +82,7 @@ public class Distribution102Controller extends DistributionController {
           stateRef.compareAndSet(STOPPED, STARTING);
         }
     ).andTriggerOn(
-        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName.getSymbolicName() + "] " + mr.group())
+        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName.getSymbolicName(), mr.group())
     );
 
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
@@ -156,7 +157,7 @@ public class Distribution102Controller extends DistributionController {
     logger.debug("Licensing commands: {}", commands);
     logger.debug("Licensing command line environment: {}", tcEnv);
 
-    ProcessExecutor executor = new ProcessExecutor().redirectOutput(Slf4jStream.of(LoggerFactory.getLogger("cluster-tool")).asInfo())
+    ProcessExecutor executor = new ProcessExecutor().redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
         .command(commands).directory(location).environment(env);
 
     ProcessResult processResult;
@@ -273,7 +274,7 @@ public class Distribution102Controller extends DistributionController {
     ).andTriggerOn(
         compile("^.*\\QStarting TmsApplication\\E.*with PID (\\d+).*$"), mr -> javaPid.set(parseInt(mr.group(1)))
     ).andTriggerOn(
-        tmsFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[TMS] " + mr.group())
+        tmsFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group())
     );
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTmsCommand(installLocation))

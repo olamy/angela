@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.agent.client;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -72,7 +73,7 @@ public class RemoteClientManager {
           .redirectOutput(new LogOutputStream() {
             @Override
             protected void processLine(String line) {
-              System.out.println(" |" + instanceId + "| " + line);
+              ExternalLoggers.clientLogger.info("[{}] {}", instanceId, line);
               if (line.equals(Agent.AGENT_IS_READY_MARKER_LOG)) {
                 started.set(true);
               }

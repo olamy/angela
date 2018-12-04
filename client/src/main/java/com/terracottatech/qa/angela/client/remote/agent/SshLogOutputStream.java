@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.client.remote.agent;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.LogOutputStream;
 import net.schmizz.sshj.connection.channel.direct.Session;
 
@@ -22,8 +23,8 @@ class SshLogOutputStream extends LogOutputStream {
   }
 
   @Override
-  protected void processLine(final String line) {
-    System.out.println("[ssh " + serverName + "] " + line);
+  protected void processLine(String line) {
+    ExternalLoggers.sshLogger.info("[{}] {}", serverName, line);
     if (line.contains(Agent.AGENT_IS_READY_MARKER_LOG)) {
       started.set(true);
     }
