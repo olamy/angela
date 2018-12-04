@@ -95,7 +95,8 @@ public class BrowseTest {
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTsa", configContext)) {
       Tsa tsa = factory.tsa()
-          .startAll();
+          .startAll()
+          .licenseAll();
 
       TerracottaServer active = tsa.getActive();
       tsa.stopAll();
@@ -110,6 +111,18 @@ public class BrowseTest {
       assertThat(Arrays.asList(new File("target/data-directories").list()), containsInAnyOrder("Server1", "Server2"));
       assertThat(Arrays.asList(new File("target/data-directories/Server1").list()), containsInAnyOrder("data-folder", "platform-folder"));
       assertThat(Arrays.asList(new File("target/data-directories/Server2").list()), containsInAnyOrder("data-folder", "platform-folder"));
+    }
+
+    try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTsa_restart", configContext)) {
+      Tsa tsa = factory.tsa();
+      tsa.uploadDataDirectories(new File("target/data-directories"));
+      tsa.startAll();
+      try {
+        tsa.licenseAll();
+        fail("expected the licensing step to fail");
+      } catch (Exception e) {
+        // expected; restoring the data directories also restored the license
+      }
     }
   }
 
