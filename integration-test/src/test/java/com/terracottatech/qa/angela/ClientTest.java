@@ -52,6 +52,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
@@ -239,7 +240,7 @@ public class ClientTest {
 
       ClientJob clientJob = (cluster) -> {
         System.out.println("hello");
-        Thread.sleep(3000);
+        Thread.sleep(18000);
         System.out.println("again");
       };
 
@@ -257,7 +258,10 @@ public class ClientTest {
 
     }
 
-    assertThat(new File(resultPath, clientHostname + "/vmstat.log").exists(), is(true));
+    final File statFile = new File(resultPath, clientHostname + "/vmstat.log");
+    System.out.println(">>>>" + statFile.getAbsolutePath());
+    assertThat(statFile.exists(), is(true));
+    assertThat(statFile.length(), is(greaterThan(0L)));
   }
 
 

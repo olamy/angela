@@ -1,16 +1,19 @@
 package com.terracottatech.qa.angela.common.metrics;
 
-import com.terracottatech.qa.angela.common.util.OS;
-import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.PidUtil;
 
+import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.ProcessUtil;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Aurelien Broszniowski
@@ -20,6 +23,7 @@ public class HardwareMetricsCollector {
 
   private final static Logger logger = LoggerFactory.getLogger(HardwareMetricsCollector.class);
   private final static String METRICS_DIRECTORY = "metrics";;
+  private FileOutputStream output = null;
 
   public enum TYPE {vmstat, none;}
 
@@ -53,12 +57,15 @@ public class HardwareMetricsCollector {
       File logFile = new File(statsDirectory, "vmstat.log");
       logger.info("stat log file: {}", logFile.getAbsolutePath());
 
-      try (FileOutputStream output = new FileOutputStream(logFile)) {
-        process = new ProcessExecutor()
+      try {
+        output = new FileOutputStream(logFile);
+        ProcessExecutor pe = new ProcessExecutor()
             .command(startCommand(stats))
             .directory(installLocation)
             .redirectError(System.err)
-            .redirectOutput(output).start();
+            .redirectOutput(output);
+        process = pe.start();
+
       } catch (IOException e) {
         throw new RuntimeException("Can not start hardware monitoring process", e);
       }
@@ -66,13 +73,31 @@ public class HardwareMetricsCollector {
   }
 
   public void stopMonitoring() {
+    List<Exception> exceptions = new ArrayList<>();
+
     if (this.process != null) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(PidUtil.getPid(this.process.getProcess()));
-        this.process = null;
       } catch (Exception e) {
-        throw new RuntimeException(e);
+        exceptions.add(e);
       }
+      this.process = null;
+
+    }
+
+    if (this.output != null) {
+      try {
+        this.output.close();
+      } catch (IOException e) {
+        exceptions.add(e);
+      }
+      this.output = null;
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException runtimeException = new RuntimeException();
+      exceptions.forEach(runtimeException::addSuppressed);
+      throw runtimeException;
     }
   }
 
