@@ -31,13 +31,5 @@ Be careful not to cd direclty into the module, you would not use the right kit v
  with everything already configured for passwordless authentication.
  * Angela spawns a small controlling app on every remote hosts that is very network-latency sensitive and uses lots of
  random ports. In a nutshell, this means that testing across WANs or firewalls just doesn't work. 
- * Angela is very chatty, but one can use https://stefanbirkner.github.io/system-rules/ to install JUnit `System.out`
- and `System.err` rules to quieten her, like this:
-```
-  @Rule
-  public final SystemOutRule systemOutRule = new SystemOutRule().muteForSuccessfulTests();
-  @Rule
-  public final SystemErrRule systemErrRule = new SystemErrRule().muteForSuccessfulTests();
-``` 
  * Angela expects a writeable `/data` folder (or at least a pre-created, writeable `/data/angela` folder) on every
  machine she runs on, i.e.: the one running the test as well as all the remote hosts.

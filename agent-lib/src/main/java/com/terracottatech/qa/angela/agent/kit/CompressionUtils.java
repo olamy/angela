@@ -113,7 +113,7 @@ public class CompressionUtils {
     // tarIn is a TarArchiveInputStream
     while (tarEntry != null) {// create a file with the same name as the tarEntry
       File destPath = new File(kitDest, tarEntry.getName());
-      System.out.println("working: " + destPath.getCanonicalPath());
+      logger.debug("working: {}", destPath.getCanonicalPath());
       if (tarEntry.isDirectory()) {
         destPath.mkdirs();
       } else {
@@ -129,7 +129,7 @@ public class CompressionUtils {
       tarEntry = tarIn.getNextTarEntry();
     }
     tarIn.close();
-    System.out.println("untar completed successfully!!");
+    logger.debug("untar completed successfully!!");
   }
 
   public String getParentDirFromTarGz(final File localInstaller) throws IOException {
@@ -160,7 +160,7 @@ public class CompressionUtils {
     new ProcessExecutor().command("unzip", "-o", kitInstaller.getPath(), "-d", kitDest.getPath())
         .redirectOutput(out)
         .execute();
-    System.out.println(out.toString());
+    logger.debug(out.toString());
   }
 
   public void cleanupPermissions(File dest) throws IOException {
@@ -259,7 +259,7 @@ public class CompressionUtils {
           continue;
         }
         FileInputStream in = new FileInputStream(file.getAbsolutePath());
-        System.out.println(" Adding: " + file.getAbsolutePath());
+        logger.debug(" Adding: {}", file.getAbsolutePath());
         out.putNextEntry(new ZipEntry(file.getAbsolutePath()));
         int len;
         while ((len = in.read(tmpBuf)) > 0) {

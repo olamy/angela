@@ -10,6 +10,7 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
@@ -17,6 +18,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,8 +68,7 @@ public class Distribution43Controller extends DistributionController {
     ).andTriggerOn(
         compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
     ).andTriggerOn(
-        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> System.out.println("[" + serverSymbolicName
-            .getSymbolicName() + "] " + mr.group())
+        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName.getSymbolicName(), mr.group())
     );
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
@@ -87,8 +88,8 @@ public class Distribution43Controller extends DistributionController {
         .command(stopTsaCommand(serverSymbolicName, tcConfig, installLocation))
         .directory(installLocation)
         .environment(buildEnv(tcEnv))
-        .redirectError(System.err)
-        .redirectOutput(System.out);  // TODO
+        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
+        .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo());
 
     try {
       logger.debug("Calling stop command for server {}", serverSymbolicName);
