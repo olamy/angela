@@ -341,6 +341,33 @@ public class Tsa implements AutoCloseable {
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
   }
 
+  public void uploadDataDirectories(File localRootPath) {
+    List<Exception> exceptions = new ArrayList<>();
+
+    Topology topology = tsaConfigurationContext.getTopology();
+    List<TcConfig> tcConfigs = topology.getTcConfigs();
+    for (TcConfig tcConfig : tcConfigs) {
+      Collection<String> dataDirectories = tcConfig.getDataDirectories().values();
+      List<TerracottaServer> servers = tcConfig.getServers();
+      for (String directory : dataDirectories) {
+        for (TerracottaServer server : servers) {
+          try {
+            File localFile = new File(localRootPath, server.getServerSymbolicName().getSymbolicName() + "/" + directory);
+            browse(server, directory).upload(localFile);
+          } catch (IOException ioe) {
+            exceptions.add(ioe);
+          }
+        }
+      }
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException re = new RuntimeException("Error downloading TSA data directories");
+      exceptions.forEach(re::addSuppressed);
+      throw re;
+    }
+  }
+
   public void downloadDataDirectories(File localRootPath) {
     List<Exception> exceptions = new ArrayList<>();
 
