@@ -7,6 +7,8 @@ import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
+import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -191,14 +193,16 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public ClusterMonitor monitor() {
+    Set<String> hostnames = configurationContext.allHostnames();
+    Map<HardwareMetric, MonitoringCommand> commands = configurationContext.monitoring().commands();
+
     if (monitorInstanceId == null) {
-      Set<String> hostnames = configurationContext.allHostnames();
       monitorInstanceId = init(MONITOR, hostnames);
-      ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, monitorInstanceId, hostnames);
+      ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, monitorInstanceId, hostnames, commands);
       controllers.add(clusterMonitor);
       return clusterMonitor;
     } else {
-      return new ClusterMonitor(ignite, monitorInstanceId, configurationContext.allHostnames());
+      return new ClusterMonitor(ignite, monitorInstanceId, hostnames, commands);
     }
   }
 
