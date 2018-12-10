@@ -17,7 +17,7 @@
 
   <properties>
     <terracotta.version>10.3.0.1.87</terracotta.version>
-    <ignite.version>2.6.0</ignite.version>
+    <ignite.version>2.7.0</ignite.version>
   </properties>
 
   <modules>
