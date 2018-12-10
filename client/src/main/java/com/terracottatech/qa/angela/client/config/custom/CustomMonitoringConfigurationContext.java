@@ -16,8 +16,8 @@ public class CustomMonitoringConfigurationContext implements MonitoringConfigura
     return Collections.unmodifiableMap(commands);
   }
 
-  public CustomMonitoringConfigurationContext command(HardwareMetric hardwareMetric, MonitoringCommand monitoringCommand) {
-    commands.put(hardwareMetric, monitoringCommand);
+  public CustomMonitoringConfigurationContext command(MonitoringCommand monitoringCommand) {
+    commands.put(monitoringCommand.getHardwareMetric(), monitoringCommand);
     return this;
   }
 }

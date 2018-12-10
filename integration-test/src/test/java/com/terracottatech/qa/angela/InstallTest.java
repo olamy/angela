@@ -52,11 +52,7 @@ public class InstallTest {
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))))
-        .monitoring(monitoring -> {
-          final HardwareMetric metric = HardwareMetric.DISK;
-          MonitoringCommand monitoringCommand = new MonitoringCommand(metric);
-          monitoring.command(metric, monitoringCommand);
-        });
+        .monitoring(monitoring -> monitoring.command(new MonitoringCommand(HardwareMetric.DISK)));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();

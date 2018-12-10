@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.MonitoringConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
@@ -193,8 +194,13 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public ClusterMonitor monitor() {
+    MonitoringConfigurationContext monitoringConfigurationContext = configurationContext.monitoring();
+    if (monitoringConfigurationContext == null) {
+      throw new IllegalStateException("MonitoringConfigurationContext has not been registered");
+    }
+
+    Map<HardwareMetric, MonitoringCommand> commands = monitoringConfigurationContext.commands();
     Set<String> hostnames = configurationContext.allHostnames();
-    Map<HardwareMetric, MonitoringCommand> commands = configurationContext.monitoring().commands();
 
     if (monitorInstanceId == null) {
       monitorInstanceId = init(MONITOR, hostnames);

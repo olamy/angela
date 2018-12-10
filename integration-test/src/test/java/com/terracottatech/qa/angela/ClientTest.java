@@ -317,10 +317,7 @@ public class ClientTest {
     HardwareMetric metric = HardwareMetric.CPU;
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
-        .monitoring(monitoring -> {
-          MonitoringCommand monitoringCommand = new MonitoringCommand(metric);
-          monitoring.command(metric, monitoringCommand);
-        });
+        .monitoring(monitoring -> monitoring.command(new MonitoringCommand(metric)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientCpuMetricsLogs", configContext)) {
       ClusterMonitor monitor = factory.monitor();
@@ -360,12 +357,7 @@ public class ClientTest {
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
-        .monitoring(monitoring -> {
-          for (HardwareMetric metric : HardwareMetric.values()) {
-            MonitoringCommand monitoringCommand = new MonitoringCommand(metric);
-            monitoring.command(metric, monitoringCommand);
-          }
-        });
+        .monitoring(monitoring -> Arrays.stream(HardwareMetric.values()).forEach(metric -> monitoring.command(new MonitoringCommand(metric))));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientAllHardwareMetricsLogs", configContext)) {
       ClusterMonitor monitor = factory.monitor();
@@ -404,10 +396,7 @@ public class ClientTest {
      HardwareMetric metric = HardwareMetric.MEMORY;
      ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
          .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
-         .monitoring(monitoring -> {
-           MonitoringCommand monitoringCommand = new DummyMemoryMonitoringCommand(metric);
-           monitoring.command(metric, monitoringCommand);
-         });
+         .monitoring(monitoring -> monitoring.command(new MonitoringCommand(metric, "dummy", "command")));
 
      try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
        ClusterMonitor monitor = factory.monitor();
@@ -427,6 +416,20 @@ public class ClientTest {
        assertThat(monitor.isMonitoringRunning(metric), is(false));
 
        monitor.stopOnAll();
+     }
+   }
+
+  @Test(expected = IllegalStateException.class)
+   public void testClusterMonitorWhenNoMonitoringSpecified() throws Exception {
+     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+         newClientArrayConfig().host("localhost"));
+
+     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
+
+     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
+       factory.monitor();
      }
    }
 
@@ -608,25 +611,6 @@ public class ClientTest {
         Cluster cluster = factory.cluster();
         assertNull(cluster.getClientId());
       }
-    }
-  }
-
-  private static class DummyMemoryMonitoringCommand extends MonitoringCommand {
-    public DummyMemoryMonitoringCommand(HardwareMetric hardwareMetric) {
-      super(hardwareMetric);
-    }
-
-    @Override
-    public String getCommandName() {
-      return getCommand()[0];
-    }
-
-    @Override
-    public String[] getMemoryMonitoringCommand() {
-      return new String[]{
-          "dummy",
-          "command"
-      };
     }
   }
 
