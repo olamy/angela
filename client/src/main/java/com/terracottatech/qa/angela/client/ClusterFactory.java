@@ -137,7 +137,6 @@ public class ClusterFactory implements AutoCloseable {
       cfg.setMetricsLogFrequency(0);
 
       try {
-        java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
         this.ignite = Ignition.start(cfg);
       } catch (IgniteException e) {
         throw new RuntimeException("Cannot start angela; error connecting to agents : " + targetServerNames, e);
