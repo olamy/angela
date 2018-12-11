@@ -9,7 +9,6 @@ import com.terracottatech.qa.angela.client.config.custom.CustomMultiConfiguratio
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
-import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -23,6 +22,7 @@ import org.junit.Test;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.UUID;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
@@ -52,7 +52,7 @@ public class InstallTest {
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))))
-        .monitoring(monitoring -> monitoring.command(new MonitoringCommand(HardwareMetric.DISK)));
+        .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.DISK)));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();

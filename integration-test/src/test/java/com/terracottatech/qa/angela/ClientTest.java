@@ -1,12 +1,5 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.common.clientconfig.ClientId;
-import com.terracottatech.qa.angela.common.cluster.AtomicReference;
-import com.terracottatech.qa.angela.common.cluster.Cluster;
-import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
-import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.Client;
 import com.terracottatech.qa.angela.client.ClientArray;
 import com.terracottatech.qa.angela.client.ClientArrayFuture;
@@ -18,15 +11,21 @@ import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationCont
 import com.terracottatech.qa.angela.client.config.custom.CustomMultiConfigurationContext;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig;
+import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.cluster.AtomicCounter;
+import com.terracottatech.qa.angela.common.cluster.AtomicReference;
 import com.terracottatech.qa.angela.common.cluster.Barrier;
+import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
+import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -314,10 +314,9 @@ public class ClientTest {
     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
         newClientArrayConfig().host(clientHostname));
 
-    HardwareMetric metric = HardwareMetric.CPU;
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
-        .monitoring(monitoring -> monitoring.command(new MonitoringCommand(metric)));
+        .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.CPU)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientCpuMetricsLogs", configContext)) {
       ClusterMonitor monitor = factory.monitor();
@@ -357,7 +356,7 @@ public class ClientTest {
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
-        .monitoring(monitoring -> Arrays.stream(HardwareMetric.values()).forEach(metric -> monitoring.command(new MonitoringCommand(metric))));
+        .monitoring(monitoring -> monitoring.commands(EnumSet.allOf(HardwareMetric.class)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientAllHardwareMetricsLogs", configContext)) {
       ClusterMonitor monitor = factory.monitor();
@@ -396,7 +395,7 @@ public class ClientTest {
      HardwareMetric metric = HardwareMetric.MEMORY;
      ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
          .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
-         .monitoring(monitoring -> monitoring.command(new MonitoringCommand(metric, "dummy", "command")));
+         .monitoring(monitoring -> monitoring.command(metric, new MonitoringCommand("dummy", "command")));
 
      try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
        ClusterMonitor monitor = factory.monitor();
