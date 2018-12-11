@@ -3,10 +3,13 @@ package com.terracottatech.qa.angela.client;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.MonitoringConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.remote.agent.RemoteAgentLauncher;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
+import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -191,14 +194,21 @@ public class ClusterFactory implements AutoCloseable {
   }
 
   public ClusterMonitor monitor() {
+    MonitoringConfigurationContext monitoringConfigurationContext = configurationContext.monitoring();
+    if (monitoringConfigurationContext == null) {
+      throw new IllegalStateException("MonitoringConfigurationContext has not been registered");
+    }
+
+    Map<HardwareMetric, MonitoringCommand> commands = monitoringConfigurationContext.commands();
+    Set<String> hostnames = configurationContext.allHostnames();
+
     if (monitorInstanceId == null) {
-      Set<String> hostnames = configurationContext.allHostnames();
       monitorInstanceId = init(MONITOR, hostnames);
-      ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, monitorInstanceId, hostnames);
+      ClusterMonitor clusterMonitor = new ClusterMonitor(ignite, monitorInstanceId, hostnames, commands);
       controllers.add(clusterMonitor);
       return clusterMonitor;
     } else {
-      return new ClusterMonitor(ignite, monitorInstanceId, configurationContext.allHostnames());
+      return new ClusterMonitor(ignite, monitorInstanceId, hostnames, commands);
     }
   }
 

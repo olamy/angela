@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.client.config.custom;
 
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.MonitoringConfigurationContext;
 import com.terracottatech.qa.angela.client.config.RemotingConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
@@ -22,6 +23,7 @@ public class CustomConfigurationContext implements ConfigurationContext {
   private CustomRemotingConfigurationContext customRemotingConfigurationContext = new CustomRemotingConfigurationContext().remoteAgentLauncherSupplier(SshRemoteAgentLauncher::new);
   private CustomTsaConfigurationContext customTsaConfigurationContext;
   private CustomTmsConfigurationContext customTmsConfigurationContext;
+  private CustomMonitoringConfigurationContext customMonitoringConfigurationContext;
   private CustomClientArrayConfigurationContext customClientArrayConfigurationContext;
 
   public static CustomConfigurationContext customConfigurationContext() {
@@ -111,4 +113,17 @@ public class CustomConfigurationContext implements ConfigurationContext {
     return hostnames;
   }
 
+  @Override
+  public MonitoringConfigurationContext monitoring() {
+    return customMonitoringConfigurationContext;
+  }
+
+  public CustomConfigurationContext monitoring(Consumer<CustomMonitoringConfigurationContext> consumer) {
+    if (customMonitoringConfigurationContext != null) {
+      throw new IllegalStateException("Monitoring config already defined");
+    }
+    customMonitoringConfigurationContext = new CustomMonitoringConfigurationContext();
+    consumer.accept(customMonitoringConfigurationContext);
+    return this;
+  }
 }

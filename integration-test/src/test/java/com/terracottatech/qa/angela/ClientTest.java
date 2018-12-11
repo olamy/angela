@@ -3,6 +3,8 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.cluster.AtomicReference;
 import com.terracottatech.qa.angela.common.cluster.Cluster;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
+import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import org.junit.Test;
 
 import com.terracottatech.qa.angela.client.Client;
@@ -27,6 +29,7 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.InetAddress;
@@ -303,9 +306,49 @@ public class ClientTest {
   }
 
   @Test
-  public void testClientHardwareMetricsLog() throws Exception {
-    final File resultPath = new File("target", UUID.randomUUID().toString());
+  public void testClientCpuMetricsLogs() throws Exception {
+    final Path resultPath = Paths.get("target", UUID.randomUUID().toString());
+    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
+    final String clientHostname = "localhost";
+    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        newClientArrayConfig().host(clientHostname));
+
+    HardwareMetric metric = HardwareMetric.CPU;
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
+        .monitoring(monitoring -> monitoring.command(new MonitoringCommand(metric)));
+
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientCpuMetricsLogs", configContext)) {
+      ClusterMonitor monitor = factory.monitor();
+      ClientJob clientJob = (cluster) -> {
+        System.out.println("hello");
+        Thread.sleep(18000);
+        System.out.println("again");
+      };
+
+      ClientArray clientArray = factory.clientArray();
+      monitor.startOnAll();
+
+      ClientArrayFuture future = clientArray.executeOnAll(clientJob);
+      future.get();
+
+      monitor.downloadTo(resultPath.toFile());
+      monitor.stopOnAll();
+
+      monitor.processMetrics((hostname, transportableFile) -> {
+        assertThat(hostname, is(clientHostname));
+        assertThat(transportableFile.getName(), is("cpu-stats.log"));
+        byte[] content = transportableFile.getContent();
+        assertNotNull(content);
+        assertThat(content.length, greaterThan(0));
+      });
+    }
+  }
+
+  @Test
+  public void testClientAllHardwareMetricsLogs() throws Exception {
+    final Path resultPath = Paths.get("target", UUID.randomUUID().toString());
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     final String clientHostname = "localhost";
@@ -313,44 +356,82 @@ public class ClientTest {
         newClientArrayConfig().host(clientHostname));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
+        .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
+        .monitoring(monitoring -> Arrays.stream(HardwareMetric.values()).forEach(metric -> monitoring.command(new MonitoringCommand(metric))));
 
-    try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {
-
+    try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientAllHardwareMetricsLogs", configContext)) {
       ClusterMonitor monitor = factory.monitor();
-
       ClientJob clientJob = (cluster) -> {
         System.out.println("hello");
         Thread.sleep(18000);
         System.out.println("again");
       };
 
-      { // executeAll
-        ClientArray clientArray = factory.clientArray();
-        monitor.startOnAll();
+      ClientArray clientArray = factory.clientArray();
+      monitor.startOnAll();
 
-        ClientArrayFuture future = clientArray.executeOnAll(clientJob);
-        future.get();
-        Client rc = clientArray.getClients().stream().findFirst().get();
+      ClientArrayFuture future = clientArray.executeOnAll(clientJob);
+      future.get();
 
-        monitor.downloadTo(resultPath);
-        monitor.stopOnAll();
-        monitor.processMetrics((hostname, transportableFile) -> {
-          assertThat(hostname, is("localhost"));
-          assertThat(transportableFile.getName(), is("vmstat.log"));
-          byte[] content = transportableFile.getContent();
-          assertNotNull(content);
-          assertThat(content.length, greaterThan(0));
-        });
-      }
+      monitor.downloadTo(resultPath.toFile());
+      monitor.stopOnAll();
     }
 
-    final File statFile = new File(resultPath, clientHostname + "/vmstat.log");
-    System.out.println(">>>>" + statFile.getAbsolutePath());
-    assertThat(statFile.exists(), is(true));
-    assertThat(statFile.length(), is(greaterThan(0L)));
+    final Path statFile = resultPath.resolve(clientHostname);
+    assertMetricsFile(statFile.resolve("cpu-stats.log"));
+    assertMetricsFile(statFile.resolve("disk-stats.log"));
+    assertMetricsFile(statFile.resolve("memory-stats.log"));
+    assertMetricsFile(statFile.resolve("network-stats.log"));
   }
 
+  @Test
+   public void testClientDummyMemoryMetrics() throws Exception {
+     final Path resultPath = Paths.get("target", UUID.randomUUID().toString());
+     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+
+     final String clientHostname = "localhost";
+     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+         newClientArrayConfig().host(clientHostname));
+
+     HardwareMetric metric = HardwareMetric.MEMORY;
+     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct))
+         .monitoring(monitoring -> monitoring.command(new MonitoringCommand(metric, "dummy", "command")));
+
+     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
+       ClusterMonitor monitor = factory.monitor();
+       ClientJob clientJob = (cluster) -> {
+         System.out.println("hello");
+         Thread.sleep(18000);
+         System.out.println("again");
+       };
+
+       ClientArray clientArray = factory.clientArray();
+       monitor.startOnAll();
+
+       ClientArrayFuture future = clientArray.executeOnAll(clientJob);
+       future.get();
+
+       monitor.downloadTo(resultPath.toFile());
+       assertThat(monitor.isMonitoringRunning(metric), is(false));
+
+       monitor.stopOnAll();
+     }
+   }
+
+  @Test(expected = IllegalStateException.class)
+   public void testClusterMonitorWhenNoMonitoringSpecified() throws Exception {
+     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+         newClientArrayConfig().host("localhost"));
+
+     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+         .clientArray(clientArray -> clientArray.license(license).clientArrayTopology(ct));
+
+     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
+       factory.monitor();
+     }
+   }
 
   @Test
   public void testMultipleRemoteClients() throws Exception {
@@ -531,5 +612,10 @@ public class ClientTest {
         assertNull(cluster.getClientId());
       }
     }
+  }
+
+  private void assertMetricsFile(Path path) throws IOException {
+    assertThat(Files.exists(path), is(true));
+    assertThat(Files.readAllLines(path).size(), is(greaterThan(0)));
   }
 }

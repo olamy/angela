@@ -14,4 +14,6 @@ public interface ConfigurationContext {
 
   Set<String> allHostnames();
 
+  MonitoringConfigurationContext monitoring();
+
 }

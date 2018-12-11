@@ -8,6 +8,8 @@ import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationCont
 import com.terracottatech.qa.angela.client.config.custom.CustomMultiConfigurationContext;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
+import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
@@ -49,8 +51,8 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-        );
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))))
+        .monitoring(monitoring -> monitoring.command(new MonitoringCommand(HardwareMetric.DISK)));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();
@@ -64,37 +66,7 @@ public class InstallTest {
       monitor.downloadTo(resultPath);
     }
 
-    assertThat(new File(resultPath, "/localhost/vmstat.log").exists(), is(true));
-  }
-
-  @Test
-  public void testMultipleHardwareMetricsLogs() throws Exception {
-    final File resultPath = new File("target", UUID.randomUUID().toString());
-
-    ConfigurationContext config = CustomMultiConfigurationContext.customMultiConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-        )
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
-            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-        );
-
-    try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
-      Tsa tsa = factory.tsa();
-      Tsa tsa2 = factory.tsa();
-
-      TerracottaServer server = tsa.getTsaConfigurationContext().getTopology().findServer(0,0);
-      tsa.create(server);
-      ClusterMonitor monitor = factory.monitor().startOnAll();
-
-      Thread.sleep(3000);
-
-      monitor.downloadTo(resultPath);
-    }
-
-    assertThat(new File(resultPath, "/localhost/vmstat.log").exists(), is(true));
+    assertThat(new File(resultPath, "/localhost/disk-stats.log").exists(), is(true));
   }
 
   @Test

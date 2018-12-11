@@ -12,6 +12,8 @@ import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
+import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -314,11 +316,15 @@ public class AgentController {
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
   }
 
-  public void startHardwareMonitoring(String workingPath) {
+  public void startHardwareMonitoring(String workingPath, Map<HardwareMetric, MonitoringCommand> commands) {
     if (monitoringInstance == null) {
       monitoringInstance = new MonitoringInstance(new File(workingPath));
-      monitoringInstance.startHardwareMonitoring();
+      monitoringInstance.startHardwareMonitoring(commands);
     }
+  }
+
+  public boolean isMonitoringRunning(HardwareMetric hardwareMetric) {
+    return monitoringInstance.isMonitoringRunning(hardwareMetric);
   }
 
   public void stopHardwareMonitoring() {
