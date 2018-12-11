@@ -9,10 +9,8 @@ public class ExternalLoggers {
 
   public static final Logger clusterToolLogger = LoggerFactory.getLogger(PREFIX + ".cluster-tool");
   public static final Logger clientLogger = LoggerFactory.getLogger(PREFIX + ".client");
-  public static final Logger monitoring = LoggerFactory.getLogger(PREFIX + ".monitoring");
   public static final Logger sshLogger = LoggerFactory.getLogger(PREFIX + ".ssh");
   public static final Logger tsaLogger = LoggerFactory.getLogger(PREFIX + ".tsa");
   public static final Logger tmsLogger = LoggerFactory.getLogger(PREFIX + ".tms");
-
 
 }
