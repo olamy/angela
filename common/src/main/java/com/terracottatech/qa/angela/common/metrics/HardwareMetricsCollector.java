@@ -1,14 +1,11 @@
 package com.terracottatech.qa.angela.common.metrics;
 
+import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.StartedProcess;
-import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 import org.zeroturnaround.process.PidUtil;
-
-import com.terracottatech.qa.angela.common.util.ExternalLoggers;
-import com.terracottatech.qa.angela.common.util.ProcessUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,7 +36,7 @@ public class HardwareMetricsCollector {
 
       commands.forEach((hardwareMetric, command) -> {
         File statsFile = new File(statsDirectory, hardwareMetric.name().toLowerCase() + "-stats.log");
-        LOGGER.info("HardwareMetric log file: {}", statsFile.getAbsolutePath());
+        LOGGER.debug("HardwareMetric log file: {}", statsFile.getAbsolutePath());
         try {
           outputStream = new FileOutputStream(statsFile);
         } catch (FileNotFoundException e) {
@@ -50,34 +47,21 @@ public class HardwareMetricsCollector {
             .environment(System.getenv())
             .command(command.getCommand())
             .directory(installLocation)
-            .redirectError(Slf4jStream.of(ExternalLoggers.monitoring).asInfo())
+            .redirectError(outputStream)
             .redirectOutput(outputStream);
 
         try {
-          LOGGER.info("Starting process with env: {}", pe.getEnvironment());
-          processes.put(hardwareMetric, startProcess(pe));
+          LOGGER.debug("Starting process with env: {}", pe.getEnvironment());
+          processes.put(hardwareMetric, pe.start());
         } catch (IOException e) {
           try (FileWriter fileWriter = new FileWriter(statsFile)) {
             fileWriter.write("Error executing command '" + command.getCommandName() + "': " + e.getMessage());
           } catch (IOException ioe) {
             throw new UncheckedIOException(ioe);
           }
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
         }
       });
     }
-  }
-
-  private StartedProcess startProcess(ProcessExecutor pe) throws IOException, InterruptedException {
-    final StartedProcess startedProcess = pe.start();
-    // Process can fail after getting started up for different reasons (e.g. wrong arguments). Sleep for a couple of seconds
-    Thread.sleep(2000);
-    final boolean isAlive = startedProcess.getProcess().isAlive();
-    if (!isAlive) {
-      throw new IOException("Command " + pe.getCommand() + " failed. Check error logs.");
-    }
-    return startedProcess;
   }
 
   public boolean isMonitoringRunning(HardwareMetric hardwareMetric) {
