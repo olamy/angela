@@ -127,6 +127,10 @@ public class TcConfig {
     tcConfigHolder.updateServerHost(serverIndex, newServerName);
   }
 
+  public void updateServerName(int serverIndex, String newServerName) {
+    tcConfigHolder.updateServerName(serverIndex, newServerName);
+  }
+
   public void addServer(int stripeIndex, String hostname) {
     tcConfigHolder.addServer(stripeIndex, hostname);
   }
