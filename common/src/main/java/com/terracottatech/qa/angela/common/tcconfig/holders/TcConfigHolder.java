@@ -210,6 +210,25 @@ public abstract class TcConfigHolder {
     });
   }
 
+  public void updateServerPort(int serverIndex, String portName, int port) {
+    modifyXml((tcConfigXml, xPath) -> {
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+      if (serverIndex > serversList.getLength()) {
+        throw new ArrayIndexOutOfBoundsException("Server index " + serverIndex + " out of bounds: " + serversList.getLength());
+      }
+      Node server = serversList.item(serverIndex);
+
+      Node existingPortNode = (Node)xPath.evaluate("*[name()='" + portName + "']", server, XPathConstants.NODE);
+      if (existingPortNode != null) {
+        server.removeChild(existingPortNode);
+      }
+
+      Element portNode = tcConfigXml.createElement(portName);
+      portNode.appendChild(tcConfigXml.createTextNode(Integer.toString(port)));
+      server.appendChild(portNode);
+    });
+  }
+
   public void addServer(final int stripeIndex, final String hostname) {
     modifyXml((tcConfigXml, xPath) -> {
       int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;

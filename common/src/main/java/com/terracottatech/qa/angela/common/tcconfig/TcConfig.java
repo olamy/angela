@@ -131,6 +131,10 @@ public class TcConfig {
     tcConfigHolder.updateServerName(serverIndex, newServerName);
   }
 
+  public void updateServerPort(int serverIndex, String portName, int port) {
+    tcConfigHolder.updateServerPort(serverIndex, portName, port);
+  }
+
   public void addServer(int stripeIndex, String hostname) {
     tcConfigHolder.addServer(stripeIndex, hostname);
   }
