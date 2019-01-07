@@ -1,9 +1,10 @@
 package com.terracottatech.qa.angela.client;
 
-import com.terracottatech.qa.angela.agent.client.RemoteClientManager;
+import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
+import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
 import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
@@ -123,9 +124,9 @@ public class ClientArray implements AutoCloseable {
     return clients.get(clientId).submit(clientId, clientJob);
   }
 
-  public RemoteFolder browse(Client client, String root) {
-    File path = new RemoteClientManager( client.getInstanceId()).getClientInstallationPath();
-    return new RemoteFolder(ignite, client.getHostname(), path.getAbsolutePath(), root);
+  public RemoteFolder browse(Client client, String remoteLocation) {
+    String clientWorkDir = IgniteClientHelper.executeRemotely(ignite, client.getHostname(), () -> Agent.CONTROLLER.instanceWorkDir(client.getInstanceId()));
+    return new RemoteFolder(ignite, client.getHostname(), clientWorkDir, remoteLocation);
   }
 
   public void download(String remoteLocation, File localRootPath) {
