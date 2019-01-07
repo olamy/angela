@@ -347,6 +347,11 @@ public class AgentController {
     }
   }
 
+  public String instanceWorkDir(InstanceId instanceId) {
+    File path = new File(Agent.WORK_DIR, instanceId.toString());
+    return path.getAbsolutePath();
+  }
+
   public int spawnClient(InstanceId instanceId, TerracottaCommandLineEnvironment tcEnv) {
     RemoteClientManager remoteClientManager = new RemoteClientManager(instanceId);
     return remoteClientManager.spawnClient(instanceId, tcEnv, joinedNodes);
