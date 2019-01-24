@@ -253,6 +253,25 @@ public class InstallTest {
     }
   }
 
+  @Test (expected = RuntimeException.class)
+  public void testServerStartUpWithArg() throws Exception {
+    ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
+                                                            .tsa(tsa -> tsa
+                                                                .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                                                                                       tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
+                                                                .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+                                                            );
+
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
+      Tsa tsa = factory.tsa();
+
+      TerracottaServer server = config.tsa().getTopology().findServer(0,0);
+      // Server start-up must fail due to unknown argument passed
+      tsa.start(server, "--some-unknown-argument");
+    }
+  }
+
 
   @Test
   public void testStopPassive() throws Exception {

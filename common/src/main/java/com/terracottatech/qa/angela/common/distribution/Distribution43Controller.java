@@ -57,7 +57,7 @@ public class Distribution43Controller extends DistributionController {
 
   @Override
   public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig,
-                                                                            TerracottaCommandLineEnvironment tcEnv) {
+                                                                            TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -72,7 +72,7 @@ public class Distribution43Controller extends DistributionController {
     );
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(serverSymbolicName, tcConfig, installLocation))
+        .command(createTsaCommand(serverSymbolicName, tcConfig, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(buildEnv(tcEnv))
         .redirectError(System.err)
@@ -171,7 +171,7 @@ public class Distribution43Controller extends DistributionController {
    *
    * @return List of Strings representing the start command and its parameters
    */
-  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File installLocation) {
+  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File installLocation, List<String> startUpArgs) {
     List<String> options = new ArrayList<>();
     // start command
     options.add(getStartCmd(installLocation));
@@ -201,6 +201,7 @@ public class Distribution43Controller extends DistributionController {
       }
     }
 
+    options.addAll(startUpArgs);
     StringBuilder sb = new StringBuilder();
     for (String option : options) {
       sb.append(option).append(" ");

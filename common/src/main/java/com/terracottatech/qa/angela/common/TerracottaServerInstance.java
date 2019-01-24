@@ -95,8 +95,8 @@ public class TerracottaServerInstance implements Closeable {
     return distribution;
   }
 
-  public void create(TerracottaCommandLineEnvironment env) {
-    this.terracottaServerInstanceProcess = this.distributionController.createTsa(serverSymbolicName, installLocation, tcConfig, env);
+  public void create(TerracottaCommandLineEnvironment env, List<String> startUpArgs) {
+    this.terracottaServerInstanceProcess = this.distributionController.createTsa(serverSymbolicName, installLocation, tcConfig, env, startUpArgs);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
