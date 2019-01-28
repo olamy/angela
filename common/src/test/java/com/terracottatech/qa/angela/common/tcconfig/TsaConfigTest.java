@@ -22,6 +22,21 @@ import static org.hamcrest.core.IsEqual.equalTo;
 public class TsaConfigTest {
 
   @Test
+  public void testPlatformData() {
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+        stripe("host1", "host2")
+            .data("name1", "root1")
+            .data("platformData", "platformData", true)
+        .persistence("name1")
+    );
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+
+    assertThat(tcConfigs.get(0).getDataDirectories().get("name1"), is("root1"));
+    assertThat(tcConfigs.get(0).getDataDirectories().get("platformData"), is("platformData"));
+
+  }
+
+  @Test
   public void testAddServer() {
     TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")

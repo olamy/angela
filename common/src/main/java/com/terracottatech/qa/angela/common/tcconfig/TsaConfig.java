@@ -60,10 +60,15 @@ public class TsaConfig {
             tsaOffheapConfig.getUnit());
       }
 
-      final TsaStripeConfig.TsaDataDirectory tsaDataDirectory = stripeConfig.getTsaDataDirectory();
-      if (tsaDataDirectory != null) {
+      final List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList = stripeConfig.getTsaDataDirectoryList();
+      for (TsaStripeConfig.TsaDataDirectory tsaDataDirectory : tsaDataDirectoryList) {
         tcConfig.addDataDirectory(tsaDataDirectory.getDataName(), tsaDataDirectory.getLocation(), tsaDataDirectory.isUseForPlatform());
       }
+
+      if (stripeConfig.getPersistenceDataName() != null) {
+        tcConfig.addPersistencePlugin(stripeConfig.getPersistenceDataName());
+      }
+
       tcConfigs.add(tcConfig);
     }
 

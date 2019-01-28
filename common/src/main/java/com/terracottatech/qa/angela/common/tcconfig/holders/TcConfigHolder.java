@@ -349,6 +349,8 @@ public abstract class TcConfigHolder {
 
   public abstract Map<String, String> getDataDirectories();
 
+  public abstract void addPersistencePlugin(String persistenceDataName);
+
   @FunctionalInterface
   protected interface XmlModifier {
     void modify(Document tcConfigXml, XPath xPath) throws Exception;

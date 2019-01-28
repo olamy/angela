@@ -1,6 +1,5 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,7 +12,8 @@ public class TsaStripeConfig {
 
   private List<String> hostnames;
   private TsaOffheapConfig tsaOffheapConfig = null;
-  private TsaDataDirectory tsaDataDirectory = null;
+  private List<TsaDataDirectory> tsaDataDirectory = new ArrayList<>();
+  private String persistenceDataName = null;
 
   public TsaStripeConfig(final List<String> hostnames) {
     this.hostnames = hostnames;
@@ -47,7 +47,12 @@ public class TsaStripeConfig {
   }
 
   public TsaStripeConfig data(String dataName, String pathname, boolean useForPlatform) {
-    this.tsaDataDirectory = new TsaDataDirectory(dataName, pathname, useForPlatform);
+    this.tsaDataDirectory.add(new TsaDataDirectory(dataName, pathname, useForPlatform));
+    return this;
+  }
+
+  public TsaStripeConfig persistence(String dataName) {
+    this.persistenceDataName = dataName;
     return this;
   }
 
@@ -59,8 +64,12 @@ public class TsaStripeConfig {
     return tsaOffheapConfig;
   }
 
-  public TsaDataDirectory getTsaDataDirectory() {
+  public List<TsaDataDirectory> getTsaDataDirectoryList() {
     return tsaDataDirectory;
+  }
+
+  public String getPersistenceDataName() {
+    return persistenceDataName;
   }
 
   public class TsaOffheapConfig {

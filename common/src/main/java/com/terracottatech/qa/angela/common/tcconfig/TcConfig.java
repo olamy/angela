@@ -158,4 +158,8 @@ public class TcConfig {
   public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
     tcConfigHolder.addDataDirectory(dataName, location, useForPlatform);
   }
+
+  public void addPersistencePlugin(String persistenceDataName) {
+    tcConfigHolder.addPersistencePlugin(persistenceDataName);
+  }
 }
