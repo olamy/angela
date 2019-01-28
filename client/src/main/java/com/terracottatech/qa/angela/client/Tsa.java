@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -172,15 +173,15 @@ public class Tsa implements AutoCloseable {
         .getKitInstallationName()));
   }
 
-  public Tsa createAll() {
+  public Tsa createAll(String... startUpArgs) {
     tsaConfigurationContext.getTopology().getTcConfigs().stream()
         .flatMap(tcConfig -> tcConfig.getServers().stream())
-        .map(server -> CompletableFuture.runAsync(() -> create(server)))
+        .map(server -> CompletableFuture.runAsync(() -> create(server, startUpArgs)))
         .reduce(CompletableFuture::allOf).ifPresent(CompletableFuture::join);
     return this;
   }
 
-  public Tsa create(TerracottaServer terracottaServer) {
+  public Tsa create(TerracottaServer terracottaServer, String... startUpArgs) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     switch (terracottaServerState) {
       case STARTING:
@@ -189,16 +190,17 @@ public class Tsa implements AutoCloseable {
         return this;
       case STOPPED:
         logger.info("Creating TC server on {}", terracottaServer.getHostname());
-        IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.createTsa(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment()));
+        IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(),
+                                           () -> Agent.CONTROLLER.createTsa(instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment(), Arrays.asList(startUpArgs)));
         return this;
     }
     throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
   }
 
-  public Tsa startAll() {
+  public Tsa startAll(String... startUpArgs) {
     tsaConfigurationContext.getTopology().getTcConfigs().stream()
         .flatMap(tcConfig -> tcConfig.getServers().stream())
-        .map(server -> CompletableFuture.runAsync(() -> start(server)))
+        .map(server -> CompletableFuture.runAsync(() -> start(server, startUpArgs)))
         .reduce(CompletableFuture::allOf).ifPresent(CompletableFuture::join);
     return this;
   }
@@ -208,8 +210,8 @@ public class Tsa implements AutoCloseable {
   }
 
 
-  public Tsa start(TerracottaServer terracottaServer) {
-    create(terracottaServer);
+  public Tsa start(TerracottaServer terracottaServer, String... startUpArgs) {
+    create(terracottaServer, startUpArgs);
     IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.waitForTsaInState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE)));
     return this;
   }
