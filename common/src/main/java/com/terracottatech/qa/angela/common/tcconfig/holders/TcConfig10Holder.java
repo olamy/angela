@@ -9,6 +9,7 @@ import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.net.PortChooser;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -207,7 +208,7 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
-  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
+  public void addDataDirectory(List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList) {
     modifyXml((tcConfigXml, xPath) -> {
       Node serverElt = (Node)xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
@@ -217,11 +218,14 @@ public class TcConfig10Holder extends TcConfigHolder {
       node2.setAttribute("xmlns:data", "http://www.terracottatech.com/config/data-roots");
       node.appendChild(node2);
 
-      Element node3 = tcConfigXml.createElement("data:directory");
-      node3.setAttribute("name", dataName);
-      node3.setAttribute("use-for-platform", "" + useForPlatform);
-      node3.appendChild(tcConfigXml.createTextNode(location));
-      node2.appendChild(node3);
+      for (TsaStripeConfig.TsaDataDirectory tsaDataDirectory : tsaDataDirectoryList) {
+        Element node3 = tcConfigXml.createElement("data:directory");
+        node3.setAttribute("name", tsaDataDirectory.getDataName());
+        node3.setAttribute("use-for-platform", "" + tsaDataDirectory.isUseForPlatform());
+        node3.appendChild(tcConfigXml.createTextNode(tsaDataDirectory.getLocation()));
+        node2.appendChild(node3);
+
+      }
 
       serverElt.appendChild(node);
     });

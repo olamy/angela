@@ -13,6 +13,7 @@ import org.w3c.dom.Text;
 import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -345,7 +346,7 @@ public abstract class TcConfigHolder {
 
   public abstract void addOffheap(String resourceName, String size, String unit);
 
-  public abstract void addDataDirectory(String dataName, String location, boolean useForPlatform);
+  public abstract void addDataDirectory(List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList);
 
   public abstract Map<String, String> getDataDirectories();
 

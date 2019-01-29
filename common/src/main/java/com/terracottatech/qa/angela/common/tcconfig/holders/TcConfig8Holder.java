@@ -5,6 +5,7 @@ import org.w3c.dom.NodeList;
 
 import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
 
 import java.io.File;
 import java.io.InputStream;
@@ -69,8 +70,8 @@ public class TcConfig8Holder extends TcConfigHolder {
   }
 
   @Override
-  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
-    throw new UnsupportedOperationException();
+  public void addDataDirectory(List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList) {
+    throw new UnsupportedOperationException("Unimplemented");
   }
 
   @Override

@@ -159,8 +159,8 @@ public class TcConfig {
     tcConfigHolder.addOffheap(resourceName, size, unit);
   }
 
-  public void addDataDirectory(String dataName, String location, boolean useForPlatform) {
-    tcConfigHolder.addDataDirectory(dataName, location, useForPlatform);
+  public void addDataDirectoryList(List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList) {
+    tcConfigHolder.addDataDirectory(tsaDataDirectoryList);
   }
 
   public void addPersistencePlugin(String persistenceDataName) {

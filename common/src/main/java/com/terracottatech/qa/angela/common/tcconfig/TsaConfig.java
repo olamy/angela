@@ -60,10 +60,7 @@ public class TsaConfig {
             tsaOffheapConfig.getUnit());
       }
 
-      final List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList = stripeConfig.getTsaDataDirectoryList();
-      for (TsaStripeConfig.TsaDataDirectory tsaDataDirectory : tsaDataDirectoryList) {
-        tcConfig.addDataDirectory(tsaDataDirectory.getDataName(), tsaDataDirectory.getLocation(), tsaDataDirectory.isUseForPlatform());
-      }
+      tcConfig.addDataDirectoryList(stripeConfig.getTsaDataDirectoryList());
 
       if (stripeConfig.getPersistenceDataName() != null) {
         tcConfig.addPersistencePlugin(stripeConfig.getPersistenceDataName());
