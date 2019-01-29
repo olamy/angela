@@ -49,7 +49,7 @@ public class TsaConfigTest {
 
     assertThat(tcConfigs.get(0).getDataDirectories().get("name1"), is("root1"));
     assertThat(tcConfigs.get(0).getDataDirectories().size(), is(1));
-    assertThat(tcConfigs.get(0).getPluginServices().size(), is(0));
+    assertThat(tcConfigs.get(0).getPluginServices().size(), is(1));
   }
 
   @Test
