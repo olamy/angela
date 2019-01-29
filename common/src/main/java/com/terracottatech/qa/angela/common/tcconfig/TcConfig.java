@@ -123,6 +123,10 @@ public class TcConfig {
     return tcConfigHolder.getDataDirectories();
   }
 
+  public List<String> getPluginServices() {
+    return tcConfigHolder.getPluginServices();
+  }
+
   public void updateServerHost(int serverIndex, String newServerName) {
     tcConfigHolder.updateServerHost(serverIndex, newServerName);
   }

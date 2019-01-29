@@ -27,14 +27,59 @@ public class TsaConfigTest {
         stripe("host1", "host2")
             .data("name1", "root1")
             .data("platformData", "platformData", true)
-        .persistence("name1")
+            .persistence("name1")
     );
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
 
     assertThat(tcConfigs.get(0).getDataDirectories().get("name1"), is("root1"));
     assertThat(tcConfigs.get(0).getDataDirectories().get("platformData"), is("platformData"));
-
+    assertThat(tcConfigs.get(0).getPluginServices().get(0), is("name1"));
+    assertThat(tcConfigs.get(0).getDataDirectories().size(), is(2));
+    assertThat(tcConfigs.get(0).getPluginServices().size(), is(1));
   }
+
+  @Test
+  public void testNoPlatformData() {
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+        stripe("host1", "host2")
+            .data("name1", "root1")
+            .persistence("name1")
+    );
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+
+    assertThat(tcConfigs.get(0).getDataDirectories().get("name1"), is("root1"));
+    assertThat(tcConfigs.get(0).getDataDirectories().size(), is(1));
+    assertThat(tcConfigs.get(0).getPluginServices().size(), is(0));
+  }
+
+  @Test
+  public void testNoPersistence() {
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+        stripe("host1", "host2")
+            .data("platformData", "platformData", true)
+    );
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+
+    assertThat(tcConfigs.get(0).getDataDirectories().get("platformData"), is("platformData"));
+    assertThat(tcConfigs.get(0).getDataDirectories().size(), is(1));
+    assertThat(tcConfigs.get(0).getPluginServices().size(), is(0));
+  }
+
+  @Test
+  public void testDataRootNoPersistence() {
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+        stripe("host1", "host2")
+            .data("data", "data1")
+            .data("platformData", "platformData1", true)
+    );
+    final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
+
+    assertThat(tcConfigs.get(0).getDataDirectories().get("data"), is("data1"));
+    assertThat(tcConfigs.get(0).getDataDirectories().get("platformData"), is("platformData1"));
+    assertThat(tcConfigs.get(0).getDataDirectories().size(), is(2));
+    assertThat(tcConfigs.get(0).getPluginServices().size(), is(0));
+  }
+
 
   @Test
   public void testAddServer() {

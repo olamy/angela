@@ -274,6 +274,32 @@ public class TcConfig10Holder extends TcConfigHolder {
     });
   }
 
+  @Override
+  public List<String> getPluginServices() {
+    try {
+      List<String> pluginServices = new ArrayList<>();
+
+      XPath xPath = XPathFactory.newInstance().newXPath();
+      DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+      documentBuilderFactory.setNamespaceAware(true);
+      DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+
+      NodeList nodes = (NodeList)xPath.evaluate("//*[local-name()='platform-persistence' and namespace-uri()='http://www.terracottatech.com/config/platform-persistence']",
+          tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
+
+      for (int i = 0; i < nodes.getLength(); i++) {
+        Node item = nodes.item(i);
+        String datadirId = item.getAttributes().getNamedItem("data-directory-id").getNodeValue();
+        pluginServices.add(datadirId);
+      }
+
+      return pluginServices;
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot parse tc-config xml", e);
+    }
+  }
+
   String getSecurityRootDirectory() {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();

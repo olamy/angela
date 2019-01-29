@@ -84,6 +84,11 @@ public class TcConfig8Holder extends TcConfigHolder {
   }
 
   @Override
+  public List<String> getPluginServices() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void updateAuditDirectoryLocation(final File kitDir, final int stripeId) {
     throw new UnsupportedOperationException("Unimplemented");
   }

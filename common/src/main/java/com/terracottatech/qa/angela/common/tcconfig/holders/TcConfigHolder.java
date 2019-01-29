@@ -351,6 +351,8 @@ public abstract class TcConfigHolder {
 
   public abstract void addPersistencePlugin(String persistenceDataName);
 
+  public abstract List<String> getPluginServices();
+
   @FunctionalInterface
   protected interface XmlModifier {
     void modify(Document tcConfigXml, XPath xPath) throws Exception;
