@@ -9,8 +9,14 @@ import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.Version;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
@@ -41,19 +47,69 @@ public abstract class KitManager {
    * @param offline
    * @return location of the installer archive file
    */
-  protected boolean isValidLocalInstallerFilePath(final boolean offline, File localInstallerFilename) {
-    if (!localInstallerFilename.isFile()) {
-      logger.debug("Kit {} is not an existing file", localInstallerFilename.getAbsolutePath());
+  protected boolean isValidLocalInstallerFilePath(final boolean offline, File localInstallerFile) {
+    if (!localInstallerFile.isFile()) {
+      logger.debug("Kit {} is not an existing file", localInstallerFile.getAbsolutePath());
       return false;
     }
 
     // if we have a snapshot that is older than 24h, we reload it
     if (!offline && distribution.getVersion().isSnapshot()
-        && Math.abs(System.currentTimeMillis() - localInstallerFilename.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
+        && Math.abs(System.currentTimeMillis() - localInstallerFile.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
       logger.debug("Our version is a snapshot, is older than 24h and we are not offline so we are deleting it to produce a reload.");
-      FileUtils.deleteQuietly(localInstallerFilename);
+      FileUtils.deleteQuietly(localInstallerFile.getParentFile());
       return false;
     }
+
+    File md5File = new File(localInstallerFile.getAbsolutePath() + ".md5");
+    StringBuilder sb = new StringBuilder();
+    try (FileInputStream fis = new FileInputStream(md5File)) {
+      byte[] buffer = new byte[64];
+      while (true) {
+        int read = fis.read(buffer);
+        if (read == -1) {
+          break;
+        } else {
+          sb.append(new String(buffer, 0, read, StandardCharsets.US_ASCII));
+        }
+      }
+    } catch (FileNotFoundException fnfe) {
+      // no MD5 file? let's consider the archive corrupt
+      logger.warn("{} does not have corresponding {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
+      FileUtils.deleteQuietly(localInstallerFile.getParentFile());
+      return false;
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error reading " + md5File, ioe);
+    }
+    String md5FileHash = sb.toString().trim();
+
+    try {
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      try (FileInputStream fis = new FileInputStream(localInstallerFile)) {
+        byte[] buffer = new byte[8192];
+        while (true) {
+          int read = fis.read(buffer);
+          if (read == -1) {
+            break;
+          } else {
+            md.update(buffer, 0, read);
+          }
+        }
+      }
+      String localInstallerFileHash = DatatypeConverter.printHexBinary(md.digest());
+
+      if (!localInstallerFileHash.equalsIgnoreCase(md5FileHash)) {
+        // MD5 does not match? let's consider the archive corrupt
+        logger.warn("{} secure has does not match the contents of {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
+        FileUtils.deleteQuietly(localInstallerFile.getParentFile());
+        return false;
+      }
+    } catch (NoSuchAlgorithmException nsae) {
+      throw new RuntimeException("Missing MD5 secure hash implementation", nsae);
+    } catch (IOException ioe) {
+      throw new RuntimeException("Error reading " + localInstallerFile, ioe);
+    }
+
     return true;
   }
 
