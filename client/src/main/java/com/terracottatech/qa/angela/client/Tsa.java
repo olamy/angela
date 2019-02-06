@@ -285,6 +285,13 @@ public class Tsa implements AutoCloseable {
     return IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.getTsaState(instanceId, terracottaServer));
   }
 
+  public Collection<TerracottaServer> getStarted() {
+    Collection<TerracottaServer> allRunningServers = new ArrayList<>();
+    allRunningServers.addAll(getActives());
+    allRunningServers.addAll(getPassives());
+    return allRunningServers;
+  }
+
   public Collection<TerracottaServer> getPassives() {
     Collection<TerracottaServer> result = new ArrayList<>();
     for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers()) {
