@@ -113,7 +113,7 @@ public class LocalKitManager extends KitManager {
     return kitInstallationPath.getName();
   }
 
-  private void downloadLocalInstaller(File localInstallerFilename) {
+  private void downloadLocalInstaller(File localInstallerFile) {
     URL kitUrl = resolveUrl();
     try {
       URLConnection urlConnection = kitUrl.openConnection();
@@ -122,10 +122,10 @@ public class LocalKitManager extends KitManager {
       int contentlength = urlConnection.getContentLength();
       logger.info("Downloading {} - {} bytes", kitUrl, contentlength);
 
-      createParentDirs(localInstallerFilename);
+      createParentDirs(localInstallerFile);
 
       long lastProgress = -1;
-      try (OutputStream fos = new FileOutputStream(localInstallerFilename);
+      try (OutputStream fos = new FileOutputStream(localInstallerFile);
            InputStream is = kitUrl.openStream()) {
         byte[] buffer = new byte[8192];
         long len = 0;
@@ -142,9 +142,20 @@ public class LocalKitManager extends KitManager {
         }
       }
 
+      URL md5Url = new URL(kitUrl.toString() + ".md5");
+      try (OutputStream fos = new FileOutputStream(localInstallerFile + ".md5");
+           InputStream is = md5Url.openStream()) {
+        byte[] buffer = new byte[64];
+        int count;
+        while ((count = is.read(buffer)) != -1) {
+          fos.write(buffer, 0, count);
+        }
+      }
+
       logger.debug("Success -> file downloaded succesfully");
     } catch (IOException e) {
-      FileUtils.deleteQuietly(localInstallerFilename); // messed up download -> delete it
+      // messed up download -> delete it
+      FileUtils.deleteQuietly(localInstallerFile.getParentFile());
       throw new RuntimeException("Can not download kit located at " + kitUrl, e);
     }
   }
