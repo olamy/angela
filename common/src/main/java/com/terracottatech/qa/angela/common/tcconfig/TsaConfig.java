@@ -19,14 +19,18 @@ public class TsaConfig {
     this.tcConfigs = tcConfigs;
   }
 
-  public static TsaConfig tsaConfig(Version version, TsaStripeConfig stripeConfig, TsaStripeConfig... stripeConfigs) {
+  public static TsaConfig tsaConfig(Version version, List<TsaStripeConfig> stripeConfigs) {
     if (version.getMajor() < 10) {
       throw new UnsupportedOperationException("Dynamic TcConfig generation for BigMemory is not supported");
     }
+    return new TsaConfig(buildTcConfigs(version, stripeConfigs));
+  }
+
+  public static TsaConfig tsaConfig(Version version, TsaStripeConfig stripeConfig, TsaStripeConfig... stripeConfigs) {
     List<TsaStripeConfig> cfgs = new ArrayList<>();
     cfgs.add(stripeConfig);
     cfgs.addAll(Arrays.asList(stripeConfigs));
-    return new TsaConfig(buildTcConfigs(version, cfgs));
+    return tsaConfig(version, cfgs);
   }
 
   public static TsaConfig tsaConfig(TcConfig tcConfig, TcConfig... tcConfigs) {
@@ -52,6 +56,7 @@ public class TsaConfig {
       TcConfig tcConfig = new TcConfig(version, TsaConfig.class.getResource("tsa-config-tc-config-template-10.xml"));
       for (String hostname : stripeConfig.getHostnames()) {
         tcConfig.addServer((i + 1), hostname);
+        tcConfig.setTcConfigName("tsa-config-" + hostname + "-stripe" + i + ".xml");
       }
 
       final TsaStripeConfig.TsaOffheapConfig tsaOffheapConfig = stripeConfig.getTsaOffheapConfig();
@@ -75,7 +80,7 @@ public class TsaConfig {
   @Override
   public String toString() {
     return "TsaConfig{" +
-        "tcConfigs=" + tcConfigs +
-        '}';
+           "tcConfigs=" + tcConfigs +
+           '}';
   }
 }

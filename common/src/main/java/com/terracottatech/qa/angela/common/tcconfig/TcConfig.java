@@ -23,7 +23,7 @@ import java.util.Map;
 public class TcConfig {
 
   private final TcConfigHolder tcConfigHolder;
-  private final String tcConfigName;
+  private String tcConfigName;
 
   public static TcConfig tcConfig(Version version, URL tcConfigPath) {
     return new TcConfig(version, tcConfigPath);
@@ -81,6 +81,10 @@ public class TcConfig {
 
   public String getTcConfigName() {
     return tcConfigName;
+  }
+
+  public void setTcConfigName(String tcConfigName) {
+    this.tcConfigName = tcConfigName;
   }
 
   public void createOrUpdateTcProperty(String name, String value) {
