@@ -11,5 +11,11 @@ public interface TsaConfigurationContext {
 
   String getClusterName();
 
-  TerracottaCommandLineEnvironment getTerracottaCommandLineEnvironment();
+  TerracottaCommandLineEnvironment getTerracottaCommandLineEnvironment(String whatFor);
+
+  interface TerracottaCommandLineEnvironmentKeys {
+    String CLUSTER_TOOL = "ClusterTool";
+    String SERVER_START_PREFIX = "Server-";
+    String SERVER_STOP_PREFIX = "Stop-";
+  }
 }

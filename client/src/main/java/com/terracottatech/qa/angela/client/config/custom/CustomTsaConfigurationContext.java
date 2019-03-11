@@ -5,11 +5,15 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class CustomTsaConfigurationContext implements TsaConfigurationContext {
   private Topology topology;
   private License license;
   private String clusterName;
-  private TerracottaCommandLineEnvironment terracottaCommandLineEnvironment = new TerracottaCommandLineEnvironment(CustomConfigurationContext.DEFAULT_JDK_VERSION, CustomConfigurationContext.DEFAULT_ALLOWED_JDK_VENDORS, null);
+  private final Map<String, TerracottaCommandLineEnvironment> terracottaCommandLineEnvironments = new HashMap<>();
+  private TerracottaCommandLineEnvironment defaultTerracottaCommandLineEnvironment = new TerracottaCommandLineEnvironment(CustomConfigurationContext.DEFAULT_JDK_VERSION, CustomConfigurationContext.DEFAULT_ALLOWED_JDK_VENDORS, null);
 
   protected CustomTsaConfigurationContext() {
   }
@@ -45,12 +49,18 @@ public class CustomTsaConfigurationContext implements TsaConfigurationContext {
   }
 
   @Override
-  public TerracottaCommandLineEnvironment getTerracottaCommandLineEnvironment() {
-    return terracottaCommandLineEnvironment;
+  public TerracottaCommandLineEnvironment getTerracottaCommandLineEnvironment(String key) {
+    TerracottaCommandLineEnvironment tce = terracottaCommandLineEnvironments.get(key);
+    return tce != null ? tce : defaultTerracottaCommandLineEnvironment;
   }
 
   public CustomTsaConfigurationContext terracottaCommandLineEnvironment(TerracottaCommandLineEnvironment terracottaCommandLineEnvironment) {
-    this.terracottaCommandLineEnvironment = terracottaCommandLineEnvironment;
+    this.defaultTerracottaCommandLineEnvironment = terracottaCommandLineEnvironment;
+    return this;
+  }
+
+  public CustomTsaConfigurationContext terracottaCommandLineEnvironment(String key, TerracottaCommandLineEnvironment terracottaCommandLineEnvironment) {
+    this.terracottaCommandLineEnvironments.put(key, terracottaCommandLineEnvironment);
     return this;
   }
 }
