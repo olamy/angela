@@ -4,8 +4,10 @@ import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.ClusterMonitor;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomMultiConfigurationContext;
+import com.terracottatech.qa.angela.client.filesystem.RemoteFile;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
@@ -22,8 +24,11 @@ import org.junit.Test;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -36,6 +41,7 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
 
 /**
@@ -121,6 +127,31 @@ public class InstallTest {
       Tsa tsa = factory.tsa();
       tsa.startAll();
       tsa.licenseAll();
+    }
+  }
+
+  @Test
+  public void testLocalInstallWithFlightRecorder() throws Exception {
+    ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")))
+            )
+            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .terracottaCommandLineEnvironment(TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX + "Server1", new TerracottaCommandLineEnvironment("1.8", Collections.singleton("Oracle Corporation"), Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=Server1_flight_recording.jfr")))
+            .terracottaCommandLineEnvironment(TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX + "Server2", new TerracottaCommandLineEnvironment("1.8", Collections.singleton("Oracle Corporation"), Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=Server2_flight_recording.jfr")))
+        );
+
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstallWithFlightRecorder", config)) {
+      Tsa tsa = factory.tsa()
+          .startAll()
+          .licenseAll()
+          .stopAll();
+
+      TerracottaServer server = tsa.getTsaConfigurationContext().getTopology().findServer(0, 0);
+      List<String> names = tsa.browse(server, ".").list().stream().filter(rf -> rf.getName().endsWith("flight_recording.jfr")).map(RemoteFile::getName).collect(Collectors.toList());
+      assertThat(names.size(), is(2));
+      assertThat(names, containsInAnyOrder("Server1_flight_recording.jfr", "Server2_flight_recording.jfr"));
     }
   }
 
