@@ -142,6 +142,11 @@ public class LocalKitManager extends KitManager {
         }
       }
 
+      // snapshots have no MD5
+      if (distribution.getVersion().isSnapshot()) {
+        return;
+      }
+
       URL md5Url = new URL(kitUrl.toString() + ".md5");
       try (OutputStream fos = new FileOutputStream(localInstallerFile + ".md5");
            InputStream is = md5Url.openStream()) {

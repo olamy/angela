@@ -61,6 +61,11 @@ public abstract class KitManager {
       return false;
     }
 
+    // snapshots have no MD5
+    if (distribution.getVersion().isSnapshot()) {
+      return true;
+    }
+
     File md5File = new File(localInstallerFile.getAbsolutePath() + ".md5");
     StringBuilder sb = new StringBuilder();
     try (FileInputStream fis = new FileInputStream(md5File)) {
