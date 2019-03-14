@@ -1,13 +1,14 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -85,7 +86,8 @@ public class LocalKitManager extends KitManager {
     }
 
     try {
-      String clientJarsRootFolderName = distribution.createDistributionController().clientJarsRootFolderName();
+      String clientJarsRootFolderName = distribution.createDistributionController()
+          .clientJarsRootFolderName(distribution);
       List<File> clientJars = Files.walk(new File(kitInstallationPath, clientJarsRootFolderName).toPath())
           .filter(Files::isRegularFile)
           .map(Path::toFile)
