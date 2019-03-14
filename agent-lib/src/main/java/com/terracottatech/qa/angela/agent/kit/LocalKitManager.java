@@ -143,7 +143,7 @@ public class LocalKitManager extends KitManager {
       }
 
       // snapshots have no MD5
-      if (distribution.getVersion().isSnapshot()) {
+      if (distribution.getVersion().isSnapshot() || distribution.getPackageType() == SAG_INSTALLER) {
         return;
       }
 
@@ -250,10 +250,7 @@ public class LocalKitManager extends KitManager {
         if (version.getMajor() >= 10) {
           if (licenseType == LicenseType.TC_DB) {
             StringBuilder sb = new StringBuilder("http://aquarius_va.ame.ad.sag/PDShare/");
-            sb.append("SoftwareAGInstaller")
-                .append(version.getMajor())
-                .append(version.getMinor())
-                .append("_LATEST.jar");
+            sb.append(getSAGInstallerName(version));
             return new URL(sb.toString());
           }
         }

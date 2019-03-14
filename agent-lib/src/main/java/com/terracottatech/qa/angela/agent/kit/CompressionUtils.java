@@ -306,7 +306,7 @@ public class CompressionUtils {
           .redirectOutput(out)
           .execute().getExitValue();
       logger.info(out.toString());
-      logger.info("kit installation path = {}", localInstallDir.getAbsolutePath());
+      logger.info("local kit installation path = {}", localInstallDir.getAbsolutePath());
     } catch (Exception e) {
       try {
         Files.walk(localInstallDir.toPath())

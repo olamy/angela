@@ -1,15 +1,14 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import com.terracottatech.qa.angela.agent.Agent;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.Version;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -18,6 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
+
+import javax.xml.bind.DatatypeConverter;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
@@ -38,7 +39,8 @@ public abstract class KitManager {
   public KitManager(Distribution distribution) {
     this.distribution = distribution;
     this.rootInstallationPath = distribution == null ? null : Agent.ROOT_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
-                                + File.separator + distribution.getVersion().getVersion(false);
+                                                              + File.separator + distribution.getVersion()
+                                                                  .getVersion(false);
   }
 
   /**
@@ -190,16 +192,23 @@ public abstract class KitManager {
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
       if (version.getMajor() >= 10) {
         if (distribution.getLicenseType() == LicenseType.TC_DB) {
-          sb.append("SoftwareAGInstaller")
-              .append(version.getMajor())
-              .append(version.getMinor())
-              .append("_LATEST.jar");
+          sb.append(getSAGInstallerName(version));
           logger.debug("Kit name: {}", sb.toString());
           return sb.toString();
         }
       }
     }
     throw new RuntimeException("Can not resolve the local kit distribution package");
+  }
+
+  protected String getSAGInstallerName(Version version) {
+    return "SoftwareAGInstaller103_188.jar";
+
+//    StringBuilder sb = new StringBuilder().append("SoftwareAGInstaller")
+//        .append(version.getMajor())
+//        .append(version.getMinor())
+//        .append("_LATEST.jar");
+//    return sb.toString();
   }
 
   public Distribution getDistribution() {
