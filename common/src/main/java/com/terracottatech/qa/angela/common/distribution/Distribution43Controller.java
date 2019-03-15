@@ -1,5 +1,11 @@
 package com.terracottatech.qa.angela.common.distribution;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
+
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
@@ -14,11 +20,6 @@ import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,7 +69,8 @@ public class Distribution43Controller extends DistributionController {
     ).andTriggerOn(
         compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
     ).andTriggerOn(
-        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName.getSymbolicName(), mr.group())
+        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
+            .getSymbolicName(), mr.group())
     );
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
@@ -127,6 +129,7 @@ public class Distribution43Controller extends DistributionController {
 
   /**
    * Construct the Stop Command with the Version, Tc Config file and server name
+   *
    * @return String[] representing the start command and its parameters
    */
   private List<String> stopTsaCommand(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File installLocation) {
@@ -151,7 +154,7 @@ public class Distribution43Controller extends DistributionController {
   private String getStopCmd(File installLocation) {
     if (distribution.getPackageType() == KIT) {
       return installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" +
-          File.separator + "stop-tc-server" + OS.INSTANCE.getShellExtension();
+             File.separator + "stop-tc-server" + OS.INSTANCE.getShellExtension();
     }
     throw new IllegalStateException("Can not define Terracotta server Stop Command for distribution: " + distribution);
   }
@@ -188,8 +191,8 @@ public class Distribution43Controller extends DistributionController {
       //TODO this can  be removed when platform persistent has server name in the path
       try {
         String modifiedTcConfigPath = tcConfig.getPath()
-            .substring(0, tcConfig.getPath()
-                .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
+                                          .substring(0, tcConfig.getPath()
+                                                            .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
         String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
             replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName)).
             replaceAll(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
@@ -214,11 +217,11 @@ public class Distribution43Controller extends DistributionController {
   private String getStartCmd(File installLocation) {
     if (distribution.getPackageType() == KIT) {
       return installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
-          OS.INSTANCE.getShellExtension();
+             OS.INSTANCE.getShellExtension();
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
       return installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
-          + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
-          OS.INSTANCE.getShellExtension();
+             + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
+             OS.INSTANCE.getShellExtension();
     }
     throw new IllegalStateException("Can not define Terracotta server Start Command for distribution: " + distribution);
   }
@@ -238,13 +241,19 @@ public class Distribution43Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts().getTsaPort()))
+        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts()
+            .getTsaPort()))
         .collect(Collectors.joining(",", "", "")));
   }
 
   @Override
-  public String clientJarsRootFolderName() {
-    return "apis";
+  public String clientJarsRootFolderName(Distribution distribution) {
+    if (distribution.getPackageType() == KIT) {
+      return "apis";
+    } else if (distribution.getPackageType() == SAG_INSTALLER) {
+      return "common" + File.separator + "lib";
+    }
+    throw new UnsupportedOperationException();
   }
 
 }
