@@ -300,7 +300,7 @@ public class LocalKitManager extends KitManager {
     if (distribution.getPackageType() == KIT) {
       compressionUtils.extract(localInstallerFilename, dest);
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      compressionUtils.extractSag(distribution.getVersion(), license, localInstallerFilename, dest);
+      compressionUtils.extractSag(getSandboxName(distribution.getVersion()), distribution.getVersion(), license, localInstallerFilename, dest);
     } else {
       throw new RuntimeException("Can not resolve the local kit distribution package");
     }

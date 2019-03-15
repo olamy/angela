@@ -201,14 +201,57 @@ public abstract class KitManager {
     throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
-  protected String getSAGInstallerName(Version version) {
-    return "SoftwareAGInstaller103_188.jar";
+  String getSAGInstallerName(Version version) {
+    String versionValue = null;
+    if (version.getMajor() >= 10) {
+      if (version.getMinor() == 1) {
+        versionValue = "101";
+      } else if (version.getMinor() == 2) {
+        versionValue = "102";
+      } else if (version.getMinor() == 3) {
+        if (version.getRevision() == 0) {
+          versionValue = "103";
+        } else if (version.getRevision() == 1) {
+          versionValue = "104";
+        } else if (version.getMinor() == 5) {
+          versionValue = "105";
+        }
+      }
+    } else if (version.getMajor() == 4) {
+      if (version.getMinor() == 3) {
+        if (version.getRevision() == 0) {
+          versionValue = "98";
+        } else if (version.getRevision() == 1) {
+          versionValue = "99";
+        } else if (version.getRevision() == 2) {
+          versionValue = "910";
+        } else if (version.getRevision() == 3) {
+          versionValue = "912";
+        } else if (version.getRevision() == 4) {
+          versionValue = "101";
+        } else if (version.getRevision() == 5) {
+          versionValue = "102";
+        } else if (version.getRevision() == 6) {
+          versionValue = "103";
+        } else if (version.getRevision() == 7) {
+          versionValue = "104";
+        }
+      }
+    }
 
-//    StringBuilder sb = new StringBuilder().append("SoftwareAGInstaller")
-//        .append(version.getMajor())
-//        .append(version.getMinor())
-//        .append("_LATEST.jar");
-//    return sb.toString();
+    if (versionValue == null) {
+      throw new IllegalArgumentException("getSAGInstallerName couldn't resolve the name for version " + version.toString());
+    }
+
+    return "SoftwareAGInstaller" + versionValue + "_LATEST.jar";
+  }
+
+  String getSandboxName(final Version version) {
+    String sandbox = System.getProperty("sandbox");
+    if (sandbox != null) {
+      return sandbox;
+    }
+    throw new IllegalArgumentException("Missing Sandbox name : please pass -Dsandbox=");
   }
 
   public Distribution getDistribution() {

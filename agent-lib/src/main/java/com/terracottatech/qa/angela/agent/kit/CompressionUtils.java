@@ -271,7 +271,7 @@ public class CompressionUtils {
     }
   }
 
-  public void extractSag(final Version version, License license, final File sagInstaller, final File dest) {
+  public void extractSag(String sandboxName, final Version version, License license, final File sagInstaller, final File dest) {
     final File localInstallDir = new File(dest.getPath() + File.separatorChar + "TDB");
     // create console script
     File scriptFile = new File(dest.getPath() + File.separatorChar + "install-script.txt");
@@ -297,7 +297,7 @@ public class CompressionUtils {
                      "e2ei/11/TPL_.LATEST/License/license");
       writer.println("InstallDir=" + localInstallDir.getPath());
       writer.println("TDB.licenseAll=__VERSION1__," + licenseFile.getPath());
-      writer.println("ServerURL=http://aquarius_va.ame.ad.sag/cgi-bin/dataserve" + getSandboxName(version) + ".cgi");
+      writer.println("ServerURL=http://aquarius_va.ame.ad.sag/cgi-bin/dataserve" + sandboxName + ".cgi");
       writer.println("sagInstallerLogFile=" + dest + "/installLog.txt");
       writer.close();
 
@@ -329,13 +329,5 @@ public class CompressionUtils {
       }
       throw new RuntimeException("Error when installing with the sag installer. Check the file " + dest.getPath() + File.separatorChar + "installLog.txt");
     }
-  }
-
-  private String getSandboxName(final Version version) {
-    String sandbox = System.getProperty("sandbox");
-    if (sandbox != null) {
-      return sandbox;
-    }
-    throw new IllegalArgumentException("Missing Sandbox name : please pass -Dsandbox=");
   }
 }
