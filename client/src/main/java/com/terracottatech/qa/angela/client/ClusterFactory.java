@@ -22,6 +22,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -133,6 +134,7 @@ public class ClusterFactory implements AutoCloseable {
       IgniteConfiguration cfg = new IgniteConfiguration();
       cfg.setDiscoverySpi(spi);
       cfg.setClientMode(true);
+      cfg.setIgniteHome(new File(Agent.ROOT_DIR, "ignite").getPath());
       cfg.setPeerClassLoadingEnabled(true);
       boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
