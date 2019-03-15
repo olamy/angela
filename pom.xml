@@ -65,7 +65,7 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.25</version>
+        <version>1.7.26</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -75,17 +75,17 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.21.0</version>
+        <version>2.25.0</version>
       </dependency>
       <dependency>
         <groupId>io.rest-assured</groupId>
         <artifactId>json-path</artifactId>
-        <version>3.1.0</version>
+        <version>3.3.0</version>
       </dependency>
       <dependency>
         <groupId>com.hierynomus</groupId>
         <artifactId>sshj</artifactId>
-        <version>0.26.0</version>
+        <version>0.27.0</version>
       </dependency>
       <dependency>
         <groupId>com.terracottatech.internal</groupId>
@@ -106,12 +106,12 @@
       <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.6</version>
       </dependency>
       <dependency>
         <groupId>org.zeroturnaround</groupId>
         <artifactId>zt-process-killer</artifactId>
-        <version>1.8</version>
+        <version>1.9</version>
       </dependency>
       <dependency>
         <groupId>org.zeroturnaround</groupId>
@@ -121,12 +121,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.17</version>
+        <version>1.18</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
         <artifactId>ant</artifactId>
-        <version>1.10.3</version>
+        <version>1.10.5</version>
       </dependency>
       <dependency>
         <groupId>org.zeroturnaround</groupId>
@@ -166,7 +166,7 @@
           <configuration>
             <argLine>-Xmx1024m</argLine>
             <systemProperties>
-              <kitsDir>${project.build.directory}/tsamanager</kitsDir>
+              <kitsDir>${project.build.directory}/angela</kitsDir>
             </systemProperties>
           </configuration>
         </plugin>

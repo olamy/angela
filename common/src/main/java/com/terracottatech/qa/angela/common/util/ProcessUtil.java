@@ -1,6 +1,6 @@
 package com.terracottatech.qa.angela.common.util;
 
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.zeroturnaround.process.Processes;
 import org.zeroturnaround.process.UnixProcess;
 
