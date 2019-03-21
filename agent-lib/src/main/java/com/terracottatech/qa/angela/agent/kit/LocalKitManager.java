@@ -1,13 +1,14 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -85,7 +86,8 @@ public class LocalKitManager extends KitManager {
     }
 
     try {
-      String clientJarsRootFolderName = distribution.createDistributionController().clientJarsRootFolderName();
+      String clientJarsRootFolderName = distribution.createDistributionController()
+          .clientJarsRootFolderName(distribution);
       List<File> clientJars = Files.walk(new File(kitInstallationPath, clientJarsRootFolderName).toPath())
           .filter(Files::isRegularFile)
           .map(Path::toFile)
@@ -143,7 +145,7 @@ public class LocalKitManager extends KitManager {
       }
 
       // snapshots have no MD5
-      if (distribution.getVersion().isSnapshot()) {
+      if (distribution.getVersion().isSnapshot() || distribution.getPackageType() == SAG_INSTALLER) {
         return;
       }
 
@@ -250,10 +252,7 @@ public class LocalKitManager extends KitManager {
         if (version.getMajor() >= 10) {
           if (licenseType == LicenseType.TC_DB) {
             StringBuilder sb = new StringBuilder("http://aquarius_va.ame.ad.sag/PDShare/");
-            sb.append("SoftwareAGInstaller")
-                .append(version.getMajor())
-                .append(version.getMinor())
-                .append("_LATEST.jar");
+            sb.append(getSAGInstallerName(version));
             return new URL(sb.toString());
           }
         }
@@ -301,7 +300,7 @@ public class LocalKitManager extends KitManager {
     if (distribution.getPackageType() == KIT) {
       compressionUtils.extract(localInstallerFilename, dest);
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      compressionUtils.extractSag(distribution.getVersion(), license, localInstallerFilename, dest);
+      compressionUtils.extractSag(getSandboxName(distribution.getVersion()), distribution.getVersion(), license, localInstallerFilename, dest);
     } else {
       throw new RuntimeException("Can not resolve the local kit distribution package");
     }
