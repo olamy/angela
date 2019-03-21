@@ -213,9 +213,9 @@ public abstract class KitManager {
           versionValue = "103";
         } else if (version.getRevision() == 1) {
           versionValue = "104";
-        } else if (version.getMinor() == 5) {
-          versionValue = "105";
         }
+      } else if (version.getMinor() == 5) {
+        versionValue = "105";
       }
     } else if (version.getMajor() == 4) {
       if (version.getMinor() == 3) {
