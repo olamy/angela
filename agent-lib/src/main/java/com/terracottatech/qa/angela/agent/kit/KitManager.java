@@ -14,6 +14,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
@@ -63,8 +66,8 @@ public abstract class KitManager {
       return false;
     }
 
-    // snapshots have no MD5
-    if (distribution.getVersion().isSnapshot()) {
+    // snapshots and SAG installer have no MD5
+    if (distribution.getVersion().isSnapshot() || distribution.getPackageType() != KIT) {
       return true;
     }
 
@@ -83,7 +86,14 @@ public abstract class KitManager {
     } catch (FileNotFoundException fnfe) {
       // no MD5 file? let's consider the archive corrupt
       logger.warn("{} does not have corresponding {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
-      FileUtils.deleteQuietly(localInstallerFile.getParentFile());
+      try {
+        Files.walk(localInstallerFile.getParentFile().toPath())
+            .map(Path::toFile)
+            .sorted((o1, o2) -> -o1.compareTo(o2))
+            .forEach(File::delete);
+      } catch (IOException e) {
+        throw new RuntimeException("Cannot recursively delete local installer location (" + localInstallerFile.getParentFile().toPath() + ")");
+      }
       return false;
     } catch (IOException ioe) {
       throw new RuntimeException("Error reading " + md5File, ioe);
@@ -107,7 +117,7 @@ public abstract class KitManager {
 
       if (!localInstallerFileHash.equalsIgnoreCase(md5FileHash)) {
         // MD5 does not match? let's consider the archive corrupt
-        logger.warn("{} secure has does not match the contents of {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
+        logger.warn("{} secure hash does not match the contents of {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
         FileUtils.deleteQuietly(localInstallerFile.getParentFile());
         return false;
       }

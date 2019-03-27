@@ -144,8 +144,8 @@ public class LocalKitManager extends KitManager {
         }
       }
 
-      // snapshots have no MD5
-      if (distribution.getVersion().isSnapshot() || distribution.getPackageType() == SAG_INSTALLER) {
+      // snapshots and SAG installer have no MD5
+      if (distribution.getVersion().isSnapshot() || distribution.getPackageType() != KIT) {
         return;
       }
 
