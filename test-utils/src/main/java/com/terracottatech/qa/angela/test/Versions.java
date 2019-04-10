@@ -7,7 +7,7 @@ import java.util.Properties;
 public class Versions {
 
   public static final String TERRACOTTA_VERSION;
-  public static final String TERRACOTTA_VERSION_4X = "4.3.5.0.34";
+  public static final String TERRACOTTA_VERSION_4X = "4.3.7.0.55";
 
   static {
     try {

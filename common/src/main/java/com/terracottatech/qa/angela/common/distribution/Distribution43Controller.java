@@ -63,7 +63,13 @@ public class Distribution43Controller extends DistributionController {
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
     TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream.triggerOn(
-        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> tempStateRef.set(STARTED_AS_ACTIVE)
+        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> {
+          if (stateRef.get() == STOPPED) {
+            tempStateRef.set(STARTED_AS_ACTIVE);
+          } else {
+            stateRef.set(STARTED_AS_ACTIVE);
+          }
+        }
     ).andTriggerOn(
         compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"), mr -> tempStateRef.set(STARTED_AS_PASSIVE)
     ).andTriggerOn(

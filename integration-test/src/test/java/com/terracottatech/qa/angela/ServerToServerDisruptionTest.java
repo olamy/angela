@@ -23,6 +23,7 @@ import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.test.Versions;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Properties;
@@ -33,6 +34,13 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
@@ -157,4 +165,38 @@ public class ServerToServerDisruptionTest {
   }
 
 
+  @Test
+  public void testFailoverActivePassiveStripe() throws Exception {
+    ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
+                tcConfig(version(Versions.TERRACOTTA_VERSION_4X), getClass().getResource("/terracotta/4/tc-config-ap.xml"))))
+            .license(new License(getClass().getResource("/terracotta/4/terracotta-license.key")))
+        );
+
+    try (ClusterFactory factory = new ClusterFactory("ServerToServerDisruptionTest::testFailoverActivePassiveStripe", config)) {
+      Tsa tsa = factory.tsa();
+      tsa.startAll();
+      tsa.licenseAll();
+
+      assertThat(new ArrayList<>(tsa.getStarted()).size(), is(2));
+
+      assertThat(tsa.getActive(), is(not(nullValue())));
+      assertThat(tsa.getPassive(), is(not(nullValue())));
+
+      final TerracottaServer active = tsa.getActive();
+      tsa.stop(active);
+
+      assertThat(new ArrayList<>(tsa.getStarted()).size(), is(1));
+
+      await().atMost(25, SECONDS).until(tsa::getPassive, is(nullValue()));
+      assertThat(tsa.getActive(), is(not(nullValue())));
+
+      tsa.start(active);
+
+      await().atMost(25, SECONDS).until(tsa::getPassive, is(not(nullValue())));
+
+      assertThat(tsa.getStarted().size(), equalTo(2));
+    }
+  }
 }
