@@ -143,6 +143,11 @@
         <artifactId>netcrusher-core</artifactId>
         <version>0.10</version>
       </dependency>
+      <dependency>
+        <groupId>org.glassfish.jaxb</groupId>
+        <artifactId>jaxb-runtime</artifactId>
+        <version>2.3.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
