@@ -40,6 +40,7 @@ public class LocalKitManager extends KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
   private final Map<String, File> clientJars = new HashMap<>();
+  private static final String KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST = "http://kits.terracotta.eur.ad.sag:3000/release/download_latest?branch=%s&showrc=1&tag=%s";
 
   public LocalKitManager(Distribution distribution) {
     super(distribution);
@@ -235,18 +236,18 @@ public class LocalKitManager extends KitManager {
             return new URL(sb.toString());
           }
         } else if (version.getMajor() == 10) {
-          if (licenseType == LicenseType.TC_EHC) {
-            StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
-            sb.append(version.getVersion(false)).append("/");
-            sb.append("terracotta-ehcache-").append(version.getVersion(true)).append(".tar.gz");
-            return new URL(sb.toString());
+          String tag;
+          switch(licenseType) {
+            case TC_EHC:
+              tag = "ehcache";
+              break;
+            case TC_DB:
+              tag = "terracotta-db";
+              break;
+            default:
+              throw new RuntimeException("Unsupported license type: " + licenseType);
           }
-          if (licenseType == LicenseType.TC_DB) {
-            StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
-            sb.append(version.getVersion(false)).append("/");
-            sb.append("terracotta-db-").append(version.getVersion(true)).append(".tar.gz");
-            return new URL(sb.toString());
-          }
+          return new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, version.getVersion(false), tag));
         }
       } else if (packageType == SAG_INSTALLER) {
         if (version.getMajor() >= 10) {
