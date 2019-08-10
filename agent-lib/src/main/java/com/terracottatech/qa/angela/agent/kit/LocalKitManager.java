@@ -40,7 +40,7 @@ public class LocalKitManager extends KitManager {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
   private final Map<String, File> clientJars = new HashMap<>();
-  private static final String KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST = "http://kits.terracotta.eur.ad.sag:3000/release/download_latest?branch=%s&showrc=1&tag=%s";
+  private static final String KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST = "http://kits.terracotta.eur.ad.sag:3000/release/download_latest?branch=%s&showrc=1&tag=%s&md5=%s";
 
   public LocalKitManager(Distribution distribution) {
     super(distribution);
@@ -117,7 +117,9 @@ public class LocalKitManager extends KitManager {
   }
 
   private void downloadLocalInstaller(File localInstallerFile) {
-    URL kitUrl = resolveUrl();
+    URL[] urls = resolveUrl();
+    URL kitUrl = urls[0];
+    URL md5Url = urls[1];
     try {
       URLConnection urlConnection = kitUrl.openConnection();
       urlConnection.connect();
@@ -150,7 +152,7 @@ public class LocalKitManager extends KitManager {
         return;
       }
 
-      URL md5Url = new URL(kitUrl.toString() + ".md5");
+//      URL md5Url = new URL(kitUrl.toString() + ".md5");
       try (OutputStream fos = new FileOutputStream(localInstallerFile + ".md5");
            InputStream is = md5Url.openStream()) {
         byte[] buffer = new byte[64];
@@ -172,9 +174,11 @@ public class LocalKitManager extends KitManager {
   /**
    * define kratos url for version
    *
-   * @return url of package
+   * @return Array, [url of package, url of md5]
    */
-  private URL resolveUrl() {
+  private URL[] resolveUrl() {
+    URL kitUrl = null;
+    URL md5Url = null;
     try {
       Version version = distribution.getVersion();
       PackageType packageType = distribution.getPackageType();
@@ -217,13 +221,13 @@ public class LocalKitManager extends KitManager {
             sb.append("max-");
           }
           sb.append(version.getVersion(true)).append(".tar.gz");
-          return new URL(sb.toString());
+          kitUrl = new URL(sb.toString());
         } else if (version.getMajor() == 5) {
           if (licenseType == LicenseType.TC_EHC) {
             StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
             sb.append(version.getVersion(false)).append("/");
             sb.append("uberkit-").append(version.getVersion(true)).append("-kit.zip");
-            return new URL(sb.toString());
+            kitUrl = new URL(sb.toString());
           } else if (licenseType == LicenseType.OS) {
             String realVersion = version.getRealVersion(true, false);
             StringBuilder sb = new StringBuilder(" https://oss.sonatype.org/service/local/artifact/maven/redirect?")
@@ -233,13 +237,13 @@ public class LocalKitManager extends KitManager {
                 .append("e=zip&")
                 .append(realVersion.contains("SNAPSHOT") ? "r=snapshots&" : "r=releases&")
                 .append("v=" + realVersion);
-            return new URL(sb.toString());
+            kitUrl = new URL(sb.toString());
           }
         } else if (version.getMajor() == 10) {
           String tag;
           switch(licenseType) {
             case TC_EHC:
-              tag = "ehcache";
+              tag = "terracotta-ehcache";
               break;
             case TC_DB:
               tag = "terracotta-db";
@@ -247,21 +251,29 @@ public class LocalKitManager extends KitManager {
             default:
               throw new RuntimeException("Unsupported license type: " + licenseType);
           }
-          return new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, version.getVersion(false), tag));
+          kitUrl = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, version.getVersion(false), tag, "false"));
+          md5Url = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, version.getVersion(false), tag, "true"));
         }
       } else if (packageType == SAG_INSTALLER) {
         if (version.getMajor() >= 10) {
           if (licenseType == LicenseType.TC_DB) {
             StringBuilder sb = new StringBuilder("http://aquarius_va.ame.ad.sag/PDShare/");
             sb.append(getSAGInstallerName(version));
-            return new URL(sb.toString());
+            kitUrl = new URL(sb.toString());
           }
         }
+      }
+      if (md5Url == null) {
+        md5Url = new URL(kitUrl.toString() + ".md5"); //naive downloader via apache unless otherwise assigned
       }
     } catch (MalformedURLException e) {
       throw new RuntimeException("Can not resolve the kratos url for the distribution package", e);
     }
-    throw new RuntimeException("Can not resolve the kratos url for the distribution package");
+
+    if (kitUrl == null) {
+      throw new RuntimeException("Can not resolve the kratos url for the distribution package");
+    }
+    return new URL[] {kitUrl, md5Url};
   }
 
   private static void createParentDirs(File file) throws IOException {
