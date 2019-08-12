@@ -5,16 +5,28 @@ package com.terracottatech.qa.angela.common.topology;
  */
 public enum LicenseType {
 
-  OS(true), TC_EHC(false), TC_DB(false),    // for 5.x
-  GO(false), MAX(false);    // for 4.x
+  // 5.x:
+  OS(true, null),
+  TC_EHC(false, "terracotta-ehcache"),
+  TC_DB(false, "terracotta-db"),
+
+  // 4.x:
+  GO(false, "bigmemory-go"),
+  MAX(false, "bigmemory-max");
 
   private final boolean opensource;
+  private final String kratosTag;
 
-  LicenseType(boolean opensource) {
+  LicenseType(boolean opensource, String kratosTag) {
     this.opensource = opensource;
+    this.kratosTag = kratosTag;
   }
 
   public boolean isOpenSource() {
     return opensource;
+  }
+
+  public String getKratosTag() {
+    return kratosTag;
   }
 }
