@@ -50,7 +50,7 @@ public class BrowseTest {
   public void testClient() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testClient", configContext)) {
       ClientArray clientArray = factory.clientArray();
@@ -88,7 +88,7 @@ public class BrowseTest {
   @Test
   public void testTsa() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
@@ -131,7 +131,7 @@ public class BrowseTest {
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tms(tms -> tms
-            .distribution(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB))
+            .distribution(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA))
             .license(license)
             .hostname("localhost")
         );
@@ -148,7 +148,7 @@ public class BrowseTest {
   public void testNonExistentFolder() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testNonExistentFolder", configContext)) {
@@ -167,7 +167,7 @@ public class BrowseTest {
   public void testUpload() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testUpload", configContext)) {

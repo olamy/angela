@@ -195,16 +195,8 @@ public class LocalKitManager extends KitManager {
         kitUrl = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, fullVersionString, licenseType.getKratosTag(), "false", pathMatch));
         md5Url = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, fullVersionString, licenseType.getKratosTag(), "true", pathMatch));
 
-        if (version.getMajor() == 4) {
-          // no overrides
-        } else if (version.getMajor() == 5) {
-          if (licenseType == LicenseType.TC_EHC) {
-            StringBuilder sb = new StringBuilder("http://kits.terracotta.eur.ad.sag/releases/");
-            sb.append(version.getVersion(false)).append("/");
-            sb.append("uberkit-").append(version.getVersion(true)).append("-kit.zip");
-            kitUrl = new URL(sb.toString());
-            md5Url = new URL(kitUrl.toString() + ".md5"); //naive downloader via apache
-          } else if (licenseType == LicenseType.OS) {
+        if (version.getMajor() == 5) {
+          if (licenseType == LicenseType.OS) {
             String realVersion = version.getRealVersion(true, false);
             StringBuilder sb = new StringBuilder(" https://oss.sonatype.org/service/local/artifact/maven/redirect?")
                 .append("g=org.ehcache&")
@@ -216,12 +208,10 @@ public class LocalKitManager extends KitManager {
             kitUrl = new URL(sb.toString());
             // no md5 in OSS
           }
-        } else if (version.getMajor() == 10) {
-          // no overrides
         }
       } else if (packageType == SAG_INSTALLER) {
         if (version.getMajor() >= 10) {
-          if (licenseType == LicenseType.TC_DB) {
+          if (licenseType == LicenseType.TERRACOTTA) {
             StringBuilder sb = new StringBuilder("http://aquarius_va.ame.ad.sag/PDShare/");
             sb.append(getSAGInstallerName(version));
             kitUrl = new URL(sb.toString());

@@ -38,7 +38,7 @@ public class GettingStarted {
     ConfigurationContext configContext = customConfigurationContext() // <1>
         .tsa(tsa -> tsa // <2>
             .topology(new Topology( // <3>
-                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB), // <4>
+                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
                 tcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-a.xml")))) // <5>
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))) // <6>
         );
@@ -57,7 +57,7 @@ public class GettingStarted {
     // tag::configureClusterWithSecurity[]
     ConfigurationContext configContext = customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB), // <1>
+            .topology(new Topology(distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA), // <1>
                 secureTcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-a-with-security.xml"), // <2>
                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(getClass().getResource("/security"))))) // <3>
             ).license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
@@ -74,7 +74,7 @@ public class GettingStarted {
   @Test
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
-        distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB),
+        distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA),
         tcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-ap.xml")));
     License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     ConfigurationContext configContext = customConfigurationContext()
@@ -112,7 +112,7 @@ public class GettingStarted {
         .clientArray(clientArray -> clientArray // <1>
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))) // <2>
             .clientArrayTopology(new ClientArrayTopology( // <3>
-                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB), // <4>
+                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
                 newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) // <5>
             )
         );

@@ -7,8 +7,7 @@ public enum LicenseType {
 
   // 5.x:
   OS(true, null),
-  TC_EHC(false, "terracotta-ehcache"),
-  TC_DB(false, "terracotta-db"),
+  TERRACOTTA(false, "terracotta-db"),
 
   // 4.x:
   GO(false, "bigmemory-go"),

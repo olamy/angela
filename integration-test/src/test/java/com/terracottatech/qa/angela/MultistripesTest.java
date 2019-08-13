@@ -55,7 +55,7 @@ public class MultistripesTest {
     tcConfig2.updateServerHost(1, local.getHostAddress());
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), tcConfig1, tcConfig2))
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), tcConfig1, tcConfig2))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
 
@@ -75,7 +75,7 @@ public class MultistripesTest {
     TcConfig tcConfig2 = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml"));
 
     try {
-      new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), tcConfig1, tcConfig2);
+      new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), tcConfig1, tcConfig2);
       fail("expected IllegalArgumentException");
     } catch (IllegalArgumentException iae) {
       // expected
@@ -85,7 +85,7 @@ public class MultistripesTest {
   @Test
   public void test2Stripes() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
@@ -102,7 +102,7 @@ public class MultistripesTest {
   public void testUpgrade() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
@@ -119,7 +119,7 @@ public class MultistripesTest {
 
       tsa.stop(server);
       tsa.browse(server, "dataroot/Server1-1").downloadTo(new File("target/dataroot"));
-      tsa.upgrade(server, distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB));
+      tsa.upgrade(server, distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA));
       tsa.browse(server, "dataroot/Server1-1").upload(new File("target/dataroot"));
       tsa.start(server);
 
@@ -130,7 +130,7 @@ public class MultistripesTest {
   @Test
   public void test2StripesDisrupt() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))

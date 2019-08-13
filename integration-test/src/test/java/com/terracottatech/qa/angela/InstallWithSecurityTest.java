@@ -42,7 +42,7 @@ public class InstallWithSecurityTest {
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION),
-            PackageType.KIT, LicenseType.TC_DB),
+            PackageType.KIT, LicenseType.TERRACOTTA),
             secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                 getClass().getResource("/terracotta/10/tc-config-a-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)))))
@@ -67,7 +67,7 @@ public class InstallWithSecurityTest {
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION),
-            PackageType.KIT, LicenseType.TC_DB),
+            PackageType.KIT, LicenseType.TERRACOTTA),
             secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                 getClass().getResource("/terracotta/10/tc-config-ap-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)),

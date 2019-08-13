@@ -54,7 +54,7 @@ public class TmsTest {
 
   @BeforeClass
   public static void setUp() {
-    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
     License license = new License(TmsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
@@ -65,7 +65,7 @@ public class TmsTest {
             .license(license)
             .hostname(TMS_HOSTNAME)
         ).clientArray(clientArray -> clientArray.license(license)
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
 

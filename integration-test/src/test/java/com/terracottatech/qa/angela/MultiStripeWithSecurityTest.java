@@ -41,7 +41,7 @@ public class MultiStripeWithSecurityTest {
         .getPath();
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                     getClass().getResource("/terracotta/10/tc-config-multistripes1-with-security.xml"),
                     withSecurityFor(new ServerSymbolicName("Server1-1"), securityRootDirectory(securityRootDirectory)),

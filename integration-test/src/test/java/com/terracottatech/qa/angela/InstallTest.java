@@ -55,7 +55,7 @@ public class InstallTest {
     final File resultPath = new File("target", UUID.randomUUID().toString());
 
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))))
         .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.DISK)));
@@ -80,7 +80,7 @@ public class InstallTest {
     TcConfig tcConfig = tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"));
     tcConfig.updateServerHost(0, InetAddress.getLocalHost().getHostName());
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
@@ -116,7 +116,7 @@ public class InstallTest {
   public void testLocalInstallJava9() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")))
             )
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
@@ -134,7 +134,7 @@ public class InstallTest {
   public void testLocalInstallWithFlightRecorder() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")))
             )
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
@@ -159,7 +159,7 @@ public class InstallTest {
   public void testLocalInstall() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
@@ -177,7 +177,7 @@ public class InstallTest {
     System.setProperty("sandbox", "TDB_PI_103oct2018");
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
@@ -191,9 +191,9 @@ public class InstallTest {
 
   @Test
   public void testTwoTsaCustomConfigsFailWithoutMultiConfig() throws Exception {
-    Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+    Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
-    Topology topology2 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+    Topology topology2 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
 
     try {
@@ -214,10 +214,10 @@ public class InstallTest {
 
   @Test
   public void testTwoTsaInstalls() throws Exception {
-    Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+    Topology topology1 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")));
     assertThat(topology1.getServers().size(), is(1));
-    Topology topology2 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+    Topology topology2 = new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")));
     assertThat(topology2.getServers().size(), is(2));
 
@@ -246,7 +246,7 @@ public class InstallTest {
   public void testStopStalledServer() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap-consistent.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
@@ -268,7 +268,7 @@ public class InstallTest {
   public void testStartCreatedServer() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );
@@ -288,7 +288,7 @@ public class InstallTest {
   public void testServerStartUpWithArg() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
                                                             .tsa(tsa -> tsa
-                                                                .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+                                                                .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                                                                                        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
                                                                 .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
                                                             );
@@ -308,7 +308,7 @@ public class InstallTest {
   public void testStopPassive() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
             .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
         );

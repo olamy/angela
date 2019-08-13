@@ -71,7 +71,7 @@ public class TmsSecurityTest {
 
     clientTruststoreUri = clientSecurityRootDirectory.getTruststorePaths().iterator().next().toUri();
 
-    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
 
     License license = new License(TmsSecurityTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
 
@@ -87,7 +87,7 @@ public class TmsSecurityTest {
         .tsa(tsa -> tsa.topology(new Topology(
                 distribution(
                     version(Versions.TERRACOTTA_VERSION),
-                    PackageType.KIT, LicenseType.TC_DB
+                    PackageType.KIT, LicenseType.TERRACOTTA
                 ),
                 secureTcConfig(
                     version(Versions.TERRACOTTA_VERSION),
@@ -100,7 +100,7 @@ public class TmsSecurityTest {
                 .hostname(TMS_HOSTNAME)
                 .securityConfig(securityConfig)
         ).clientArray(clientArray -> clientArray.license(license)
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
 
