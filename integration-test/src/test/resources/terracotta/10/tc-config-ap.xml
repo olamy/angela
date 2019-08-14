@@ -38,4 +38,8 @@
       <tsa-group-port>9431</tsa-group-port>
     </server>
   </servers>
+
+  <failover-priority>
+    <availability/>
+  </failover-priority>
 </tc-config>
