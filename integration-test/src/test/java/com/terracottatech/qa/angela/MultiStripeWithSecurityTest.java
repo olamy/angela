@@ -52,7 +52,7 @@ public class MultiStripeWithSecurityTest {
                     withSecurityFor(new ServerSymbolicName("Server2-1"), securityRootDirectory(securityRootDirectory)),
                     withSecurityFor(new ServerSymbolicName("Server2-2"), securityRootDirectory(securityRootDirectory))
                 )
-            )).license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            )).license(new License(getClass().getResource("/terracotta/10/Terracotta101.xml")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity", configContext)) {

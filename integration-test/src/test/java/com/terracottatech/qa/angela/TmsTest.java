@@ -55,7 +55,7 @@ public class TmsTest {
   @BeforeClass
   public static void setUp() {
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
-    License license = new License(TmsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    License license = new License(TmsTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution,

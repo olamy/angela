@@ -28,6 +28,7 @@ import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharac
  */
 
 public class InstallWithSecurityTest {
+  private static final License LICENSE = new License(InstallWithSecurityTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
   @Rule
   public final TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -46,7 +47,7 @@ public class InstallWithSecurityTest {
             secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                 getClass().getResource("/terracotta/10/tc-config-a-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
@@ -72,7 +73,7 @@ public class InstallWithSecurityTest {
                 getClass().getResource("/terracotta/10/tc-config-ap-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)),
                 withSecurityFor(new ServerSymbolicName("Server2"), securityRootDirectory(securityRootDirectory)))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {

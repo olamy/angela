@@ -32,8 +32,8 @@ import static com.terracottatech.qa.angela.common.topology.Version.version;
  *
  */
 public class ClientToServerDisruptionTest {
-
   private static final CellDefinition<Integer> CELL_1 = CellDefinition.defineInt("cell1");
+  private static final License LICENSE = new License(ClientToServerDisruptionTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
   /**
    * Create partition between client and server and verify store operation throws exeception after reconnect attempts get
@@ -45,7 +45,7 @@ public class ClientToServerDisruptionTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))));
+            .license(LICENSE));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {
       try (Tsa tsa = factory.tsa().startAll().licenseAll()) {
@@ -85,7 +85,7 @@ public class ClientToServerDisruptionTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {

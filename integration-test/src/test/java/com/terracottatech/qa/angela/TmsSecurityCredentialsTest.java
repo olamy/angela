@@ -79,7 +79,7 @@ public class TmsSecurityCredentialsTest {
 
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
 
-    License license = new License(TmsSecurityCredentialsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    License license = new License(TmsSecurityCredentialsTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
     TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
         .with(config->{

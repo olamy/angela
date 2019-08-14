@@ -82,7 +82,7 @@ This directory contains `license file`, `tc-config`, `logs` and `data` directory
     drwxr-xr-x  13 ravi  wheel   442 Jun 25 12:20 .
     drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 ..
     -rw-r--r--   1 ravi  wheel  2438 May 31 22:58 README.txt
-    -rw-r--r--   1 ravi  wheel  1247 Jun 25 12:20 TerracottaDB101_license.xml
+    -rw-r--r--   1 ravi  wheel  1247 Jun 25 12:20 Terracotta101.xml
     drwxr-xr-x   6 ravi  wheel   204 May 31 22:58 client
     drwxr-xr-x   6 ravi  wheel   204 May 31 23:04 legal
     drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 logs-0-1

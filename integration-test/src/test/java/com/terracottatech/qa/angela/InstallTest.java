@@ -49,6 +49,7 @@ import static org.junit.Assert.fail;
  */
 
 public class InstallTest {
+  private static final License LICENSE = new License(InstallTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
   @Test
   public void testHardwareMetricsLogs() throws Exception {
@@ -57,7 +58,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))))
+            .license(LICENSE))
         .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.DISK)));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
@@ -82,7 +83,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
@@ -119,7 +120,7 @@ public class InstallTest {
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml")))
             )
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
             .terracottaCommandLineEnvironment(new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--add-modules", "java.xml.bind", "--illegal-access=warn")))
         );
 
@@ -137,7 +138,7 @@ public class InstallTest {
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml")))
             )
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
             .terracottaCommandLineEnvironment(TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX + "Server1", new TerracottaCommandLineEnvironment("1.8", Collections.singleton("Oracle Corporation"), Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=Server1_flight_recording.jfr")))
             .terracottaCommandLineEnvironment(TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX + "Server2", new TerracottaCommandLineEnvironment("1.8", Collections.singleton("Oracle Corporation"), Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=Server2_flight_recording.jfr")))
         );
@@ -161,7 +162,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall", config)) {
@@ -179,7 +180,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalSagInstall", config)) {
@@ -200,11 +201,11 @@ public class InstallTest {
       CustomConfigurationContext.customConfigurationContext()
           .tsa(tsa -> tsa
               .topology(topology1)
-              .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+              .license(LICENSE)
           )
           .tsa(tsa -> tsa
               .topology(topology2)
-              .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+              .license(LICENSE)
           );
       fail("expected IllegalStateException");
     } catch (IllegalStateException ise) {
@@ -224,11 +225,11 @@ public class InstallTest {
     ConfigurationContext config = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .tsa(tsa -> tsa
             .topology(topology1)
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         )
         .tsa(tsa -> tsa
             .topology(topology2)
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testTwoTsaInstalls", config)) {
@@ -248,7 +249,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap-consistent.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer", config)) {
@@ -270,7 +271,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
 
@@ -290,7 +291,7 @@ public class InstallTest {
                                                             .tsa(tsa -> tsa
                                                                 .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                                                                                        tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-                                                                .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+                                                                .license(LICENSE)
                                                             );
 
 
@@ -310,7 +311,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
 

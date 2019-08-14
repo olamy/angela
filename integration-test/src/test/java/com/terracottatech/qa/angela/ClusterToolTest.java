@@ -39,7 +39,7 @@ public class ClusterToolTest {
         .tsa(tsa -> tsa.topology(new Topology(
                 Distribution.distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(new License(getClass().getResource("/terracotta/10/Terracotta101.xml")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testExecute", configContext)) {
