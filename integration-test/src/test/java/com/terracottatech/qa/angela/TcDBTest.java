@@ -47,12 +47,13 @@ public class TcDBTest {
   @Test
   public void testConnection() throws Exception {
     final int clientCount = 2;
+    final License license = new License(getClass().getResource("/terracotta/10/Terracotta101.xml"));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-        ).clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().hostSerie(clientCount, "localhost")))
+            .license(license)
+        ).clientArray(clientArray -> clientArray.license(license)
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().hostSerie(clientCount, "localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {

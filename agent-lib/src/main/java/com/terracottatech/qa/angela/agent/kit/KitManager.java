@@ -1,14 +1,15 @@
 package com.terracottatech.qa.angela.agent.kit;
 
+import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.distribution.Distribution;
+import com.terracottatech.qa.angela.common.topology.LicenseType;
+import com.terracottatech.qa.angela.common.topology.PackageType;
+import com.terracottatech.qa.angela.common.topology.Version;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.topology.LicenseType;
-import com.terracottatech.qa.angela.common.topology.Version;
-
+import javax.xml.bind.DatatypeConverter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,12 +17,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
-
-import javax.xml.bind.DatatypeConverter;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
@@ -41,9 +39,22 @@ public abstract class KitManager {
 
   public KitManager(Distribution distribution) {
     this.distribution = distribution;
-    this.rootInstallationPath = distribution == null ? null : Agent.ROOT_DIR + File.separator + (distribution.getPackageType() == SAG_INSTALLER ? "sag" : "kits")
-                                                              + File.separator + distribution.getVersion()
-                                                                  .getVersion(false);
+    this.rootInstallationPath = distribution == null ? null : buildRootInstallationPath(distribution);
+  }
+
+  private String buildRootInstallationPath(Distribution distribution) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(Agent.ROOT_DIR).append(File.separator);
+
+    PackageType packageType = distribution.getPackageType();
+    if (packageType != KIT && packageType != SAG_INSTALLER) {
+      // Can happen if someone adds a new packageType but doesn't provide a suitable handling here
+      throw new RuntimeException("Can not resolve the local kit distribution package: " + packageType);
+    }
+    sb.append(packageType == SAG_INSTALLER ? "sag" : "kits").append(File.separator);
+
+    sb.append(distribution.getVersion().getVersion(false));
+    return sb.toString();
   }
 
   /**
@@ -136,7 +147,7 @@ public abstract class KitManager {
    * This is the directory containing the exploded terracotta install, that will be copied to give a
    * single instance working installation
    * <p>
-   * e.g. : /data/tsamanager/kits/10.1.0/terracotta-db-10.1.0-SNAPSHOT
+   * e.g. : /data/tsamanager/kits/10.1.0/terracotta-10.5.0-SNAPSHOT
    *
    * @param offline
    * @param installationPath
@@ -167,8 +178,8 @@ public abstract class KitManager {
     StringBuilder sb = new StringBuilder(this.rootInstallationPath);
     sb.append(File.separator);
     Version version = distribution.getVersion();
-    if (distribution.getPackageType() == KIT) {
 
+    if (distribution.getPackageType() == KIT) {
       if (version.getMajor() == 4) {
         sb.append("bigmemory-");
         if (distribution.getLicenseType() == LicenseType.GO) {
@@ -176,39 +187,21 @@ public abstract class KitManager {
         } else if (distribution.getLicenseType() == LicenseType.MAX) {
           sb.append("max-");
         }
-        sb.append(version.getVersion(true)).append(".tar.gz");
-        logger.debug("Kit name: {}", sb.toString());
-        return sb.toString();
-      } else if (version.getMajor() == 5) {
-        if (distribution.getLicenseType() == LicenseType.TC_EHC) {
-          sb.append("uberkit-").append(version.getVersion(true)).append("-kit.zip");
-        } else if (distribution.getLicenseType() == LicenseType.OS) {
-          sb.append("ehcache-clustered-").append(version.getRealVersion(true, false)).append("-kit.zip");
+        return sb.append(version.getVersion(true)).append(".tar.gz").toString();
+      } else {
+        if (version.getMinor() == 5 && version.getBuild_minor() >= 179) {
+          // 'db' was dropped from kits after 10.5.0.0.179
+          sb.append("terracotta-");
+        } else {
+          // Continue to old the old name to support older kits
+          sb.append("terracotta-db-");
         }
-        logger.debug("Kit name: {}", sb.toString());
-        return sb.toString();
-      } else if (version.getMajor() == 10) {
-        if (distribution.getLicenseType() == LicenseType.TC_EHC) {
-          sb.append("terracotta-ehcache-").append(version.getVersion(true)).append(".tar.gz");
-          logger.debug("Kit name: {}", sb.toString());
-          return sb.toString();
-        }
-        if (distribution.getLicenseType() == LicenseType.TC_DB) {
-          sb.append("terracotta-db-").append(version.getVersion(true)).append(".tar.gz");
-          logger.debug("Kit name: {}", sb.toString());
-          return sb.toString();
-        }
+        return sb.append(version.getVersion(true)).append(".tar.gz").toString();
       }
-    } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      if (version.getMajor() >= 10) {
-        if (distribution.getLicenseType() == LicenseType.TC_DB) {
-          sb.append(getSAGInstallerName(version));
-          logger.debug("Kit name: {}", sb.toString());
-          return sb.toString();
-        }
-      }
+    } else {
+      // Corresponds to LicenseType TERRACOTTA and major version >=10
+      return sb.append(getSAGInstallerName(version)).toString();
     }
-    throw new RuntimeException("Can not resolve the local kit distribution package");
   }
 
   String getSAGInstallerName(Version version) {
@@ -227,7 +220,7 @@ public abstract class KitManager {
       } else if (version.getMinor() == 5) {
         versionValue = "105";
       }
-    } else if (version.getMajor() == 4) {
+    } else {
       if (version.getMinor() == 3) {
         if (version.getRevision() == 0) {
           versionValue = "98";
@@ -256,7 +249,7 @@ public abstract class KitManager {
     return "SoftwareAGInstaller" + versionValue + "_LATEST.jar";
   }
 
-  String getSandboxName(final Version version) {
+  String getSandboxName() {
     String sandbox = System.getProperty("sandbox");
     if (sandbox != null) {
       return sandbox;

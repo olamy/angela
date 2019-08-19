@@ -4,26 +4,17 @@ package com.terracottatech.qa.angela.common.topology;
  * @author Aurelien Broszniowski
  */
 public enum LicenseType {
-
-  // 5.x:
-  OS(true, null),
-  TC_EHC(false, "terracotta-ehcache"),
-  TC_DB(false, "terracotta-db"),
+  // 10.x:
+  TERRACOTTA("terracotta-db"),
 
   // 4.x:
-  GO(false, "bigmemory-go"),
-  MAX(false, "bigmemory-max");
+  GO("bigmemory-go"),
+  MAX("bigmemory-max");
 
-  private final boolean opensource;
   private final String kratosTag;
 
-  LicenseType(boolean opensource, String kratosTag) {
-    this.opensource = opensource;
+  LicenseType(String kratosTag) {
     this.kratosTag = kratosTag;
-  }
-
-  public boolean isOpenSource() {
-    return opensource;
   }
 
   public String getKratosTag() {

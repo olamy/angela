@@ -1,14 +1,10 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.config.ConfigurationContext;
-import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.net.ClientToServerDisruptor;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -20,19 +16,18 @@ import com.terracottatech.store.StoreReconnectFailedException;
 import com.terracottatech.store.Type;
 import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 
-/**
- *
- */
 public class ClientToServerDisruptionTest {
-
   private static final CellDefinition<Integer> CELL_1 = CellDefinition.defineInt("cell1");
 
   /**
@@ -43,9 +38,9 @@ public class ClientToServerDisruptionTest {
   public void testReconnectTimeout() throws Exception {
     //set netDisruptionEnabled to true for enabling disruption.
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))));
+            .license(LICENSE));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {
       try (Tsa tsa = factory.tsa().startAll().licenseAll()) {
@@ -83,9 +78,9 @@ public class ClientToServerDisruptionTest {
   public void testResumeOperationsAfterReconnect() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {

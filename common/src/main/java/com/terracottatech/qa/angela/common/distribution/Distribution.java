@@ -6,6 +6,11 @@ import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.util.Objects;
 
+import static com.terracottatech.qa.angela.common.topology.LicenseType.GO;
+import static com.terracottatech.qa.angela.common.topology.LicenseType.MAX;
+import static com.terracottatech.qa.angela.common.topology.LicenseType.TERRACOTTA;
+import static java.util.Objects.requireNonNull;
+
 /**
  * @author Aurelien Broszniowski
  */
@@ -17,9 +22,38 @@ public class Distribution {
   private final LicenseType licenseType;
 
   public Distribution(Version version, PackageType packageType, LicenseType licenseType) {
-    this.version = Objects.requireNonNull(version);
-    this.packageType = Objects.requireNonNull(packageType);
-    this.licenseType = Objects.requireNonNull(licenseType);
+    this.version = requireNonNull(version);
+    this.packageType = requireNonNull(packageType);
+    this.licenseType = validateLicenseType(version, licenseType);
+  }
+
+  private LicenseType validateLicenseType(Version version, LicenseType licenseType) {
+    requireNonNull(licenseType);
+    if (version.getMajor() == 4) {
+      if (licenseType != GO && licenseType != MAX) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected license of either type '%s' or '%s for version: %s, but found: %s",
+                GO,
+                MAX,
+                version,
+                licenseType
+            )
+        );
+      }
+    } else {
+      if (licenseType != TERRACOTTA) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Expected license of type '%s' for version: %s, but found: %s",
+                TERRACOTTA,
+                version,
+                licenseType
+            )
+        );
+      }
+    }
+    return licenseType;
   }
 
   public static Distribution distribution(Version version, PackageType packageType, LicenseType licenseType) {
@@ -39,17 +73,14 @@ public class Distribution {
   }
 
   public DistributionController createDistributionController() {
-    //TODO should it be validated early when constructing topology?
-    if (this.getVersion().getMajor() == 10) {
-      if (this.getVersion().getMinor() > 0) {
-        return new Distribution102Controller(this);
-      }
-    } else if (this.getVersion().getMajor() == 4) {
-      if (this.getVersion().getMinor() >= 3) {
+    if (version.getMajor() == 10) {
+      return new Distribution102Controller(this);
+    } else {
+      if (version.getMinor() >= 3) {
         return new Distribution43Controller(this);
       }
     }
-    throw new IllegalArgumentException("Version not supported : " + this.getVersion());
+    throw new IllegalStateException("Cannot create a DistributionController with Version: " + version);
   }
 
   @Override

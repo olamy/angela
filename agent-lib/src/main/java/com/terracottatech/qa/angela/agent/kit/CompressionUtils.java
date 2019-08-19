@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
@@ -132,15 +133,16 @@ public class CompressionUtils {
     logger.debug("untar completed successfully!!");
   }
 
-  public String getParentDirFromTarGz(final File localInstaller) throws IOException {
+  public String getParentDirFromTarGz(final File localInstaller) {
     try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(new GZIPInputStream(new FileInputStream(localInstaller)))) {
       TarArchiveEntry tarArchiveEntry;
       tarArchiveEntry = tarArchiveInputStream.getNextTarEntry();
       String[] split = tarArchiveEntry.getName().split(Pattern.quote(File.separator));
       return split[0];
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
-
 
   private void extractZip(final File kitInstaller, final File kitDest) throws IOException, ArchiveException, TimeoutException, InterruptedException {
     if (OS.INSTANCE.isWindows()) {

@@ -30,4 +30,7 @@
     </server>
   </servers>
 
+  <failover-priority>
+    <availability/>
+  </failover-priority>
 </tc-config>

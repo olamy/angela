@@ -57,9 +57,9 @@ public class ServerToServerDisruptionTest {
   public void testPartitionBetweenActivePassives() throws Exception {
     //set netDisruptionEnabled to true to enable disruption
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), true,
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-app-consistent.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(new License(getClass().getResource("/terracotta/10/Terracotta101.xml")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {

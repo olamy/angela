@@ -3,7 +3,6 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
@@ -16,6 +15,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
@@ -28,7 +28,6 @@ import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharac
  */
 
 public class InstallWithSecurityTest {
-
   @Rule
   public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -42,11 +41,11 @@ public class InstallWithSecurityTest {
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION),
-            PackageType.KIT, LicenseType.TC_DB),
+            PackageType.KIT, LicenseType.TERRACOTTA),
             secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                 getClass().getResource("/terracotta/10/tc-config-a-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
@@ -67,12 +66,12 @@ public class InstallWithSecurityTest {
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION),
-            PackageType.KIT, LicenseType.TC_DB),
+            PackageType.KIT, LicenseType.TERRACOTTA),
             secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                 getClass().getResource("/terracotta/10/tc-config-ap-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)),
                 withSecurityFor(new ServerSymbolicName("Server2"), securityRootDirectory(securityRootDirectory)))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {

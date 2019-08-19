@@ -13,8 +13,6 @@ It can install the cluster locally or remotely
 
 It can execute functions that contain client code locally or remotely
 
-It supports TC DB and TC Ehcache
-
 == Initial setup
 
 For running tests on a node angela expects a directory at `/data/angela` to store all its metadata.
@@ -40,7 +38,7 @@ include::../java/GettingStarted.java[tags=configureCluster]
 <1> Create a custom configuration context that is going to hold all the configurable bits
 <2> Define the TSA config
 <3> Specify the Terracotta cluster topology
-<4> Specify the Terracotta distribution : version, package type (KIT) and License (TC DB)
+<4> Specify the Terracotta distribution : version, package type (KIT) and License
 <5> Specify the Terracotta cluster config
 <6> Specify the license in case the distribution is enterprise
 <7> Create a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle

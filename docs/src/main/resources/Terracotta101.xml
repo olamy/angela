@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="US-ASCII"?>
 <SoftwareAG_License>
 <Component Id="SalesInfo">
-<SerialNumber>0000030599</SerialNumber>
-<LicenseKey>BCBEB80E4C39A312977F5CE05E72C7A0</LicenseKey>
-<CustomerID>LK-LIN-101</CustomerID>
+<SerialNumber>0000033673</SerialNumber>
+<LicenseKey>9C19A1B96FBFC56CB17E034F1085589C</LicenseKey>
+<CustomerID>LK-LIN</CustomerID>
 <CustomerName>Software AG Internal</CustomerName>
 <ContractDetails>1</ContractDetails>
 <ContractPosNumber>1</ContractPosNumber>
 <LicenseTypeDetails>Internal</LicenseTypeDetails>
-<AutoCallHome>No</AutoCallHome>
+<AutoCallHome/>
 </Component>
 <Component Id="ProductInfo">
-<ExpirationDate>2050/01/01</ExpirationDate>
+<ExpirationDate>Unlimited</ExpirationDate>
 <OS>Linux</OS>
 <ProductCode>TDBFX</ProductCode>
-<ProductName>Terracotta DB</ProductName>
+<ProductName>Terracotta</ProductName>
 <ProductVersion>10.1</ProductVersion>
-<Usage/>
+<Usage>1</Usage>
 <RenewalDate/>
 <HigherLevPosNr/>
 <HigherLevProdCode/>
@@ -24,12 +24,12 @@
 </Component>
 <Component Id="LicenseInfo">
 <PriceUnit>GBS</PriceUnit>
-<PriceQuantity>1000</PriceQuantity>
-<TypeOfInstallation/>
+<PriceQuantity>5000</PriceQuantity>
+<TypeOfInstallation>1</TypeOfInstallation>
 <LicenseType/>
 <ExtendedRights/>
 <LicenseVersion>1.2</LicenseVersion>
-<Metering>MNO</Metering>
+<Metering/>
 </Component>
 <Component Id="Terracotta">
 <ProductCode>TDB</ProductCode>
@@ -40,5 +40,6 @@
 <Security>yes</Security>
 <TCStore>yes</TCStore>
 <SearchCompute>yes</SearchCompute>
+<Websessions>no</Websessions>
 </Component>
 </SoftwareAG_License>

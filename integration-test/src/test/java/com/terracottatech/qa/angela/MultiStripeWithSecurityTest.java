@@ -41,7 +41,7 @@ public class MultiStripeWithSecurityTest {
         .getPath();
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                 secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                     getClass().getResource("/terracotta/10/tc-config-multistripes1-with-security.xml"),
                     withSecurityFor(new ServerSymbolicName("Server1-1"), securityRootDirectory(securityRootDirectory)),
@@ -52,7 +52,7 @@ public class MultiStripeWithSecurityTest {
                     withSecurityFor(new ServerSymbolicName("Server2-1"), securityRootDirectory(securityRootDirectory)),
                     withSecurityFor(new ServerSymbolicName("Server2-2"), securityRootDirectory(securityRootDirectory))
                 )
-            )).license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            )).license(new License(getClass().getResource("/terracotta/10/Terracotta101.xml")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity", configContext)) {

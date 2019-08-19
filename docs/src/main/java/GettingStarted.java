@@ -1,23 +1,22 @@
 import com.terracottatech.qa.angela.client.ClientArray;
 import com.terracottatech.qa.angela.client.ClientArrayFuture;
-import com.terracottatech.qa.angela.client.config.ConfigurationContext;
-import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.Collection;
 
-import static com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext.*;
+import static com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
@@ -25,12 +24,14 @@ import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secure
 import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static com.terracottatech.qa.angela.test.Versions.TERRACOTTA_VERSION;
 
 /**
  * @author Aurelien Broszniowski
  */
 
 public class GettingStarted {
+  private static final License license = new License(GettingStarted.class.getResource("/terracotta/10/Terracotta101.xml"));
 
   @Test
   public void configureCluster() throws Exception {
@@ -38,9 +39,9 @@ public class GettingStarted {
     ConfigurationContext configContext = customConfigurationContext() // <1>
         .tsa(tsa -> tsa // <2>
             .topology(new Topology( // <3>
-                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB), // <4>
-                tcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-a.xml")))) // <5>
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))) // <6>
+                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
+                tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-a.xml")))) // <5>
+            .license(license) // <6>
         );
 
     ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster", configContext); // <7>
@@ -57,10 +58,10 @@ public class GettingStarted {
     // tag::configureClusterWithSecurity[]
     ConfigurationContext configContext = customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB), // <1>
-                secureTcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-a-with-security.xml"), // <2>
+            .topology(new Topology(distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <1>
+                secureTcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-a-with-security.xml"), // <2>
                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(getClass().getResource("/security"))))) // <3>
-            ).license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            ).license(license)
         );
     ClusterFactory factory = new ClusterFactory("GettingStarted::configureClusterWithSecurity", configContext); // <4>
     Tsa tsa = factory.tsa() // <5>
@@ -74,9 +75,8 @@ public class GettingStarted {
   @Test
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
-        distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB),
-        tcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-ap.xml")));
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+        distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
+        tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-ap.xml")));
     ConfigurationContext configContext = customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(topology)
@@ -110,9 +110,9 @@ public class GettingStarted {
     // tag::runClient[]
     ConfigurationContext configContext = customConfigurationContext()
         .clientArray(clientArray -> clientArray // <1>
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"))) // <2>
+            .license(license) // <2>
             .clientArrayTopology(new ClientArrayTopology( // <3>
-                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TC_DB), // <4>
+                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
                 newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) // <5>
             )
         );

@@ -77,9 +77,9 @@ public class TmsSecurityCredentialsTest {
 
     clientTruststoreUri = clientSecurityRootDirectory.getTruststorePaths().iterator().next().toUri();
 
-    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB);
+    Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
 
-    License license = new License(TmsSecurityCredentialsTest.class.getResource("/terracotta/10/TerracottaDB101_license.xml"));
+    License license = new License(TmsSecurityCredentialsTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
     TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
         .with(config->{
@@ -95,7 +95,7 @@ public class TmsSecurityCredentialsTest {
         .tsa(tsa -> tsa.topology(new Topology(
             distribution(
                 version(Versions.TERRACOTTA_VERSION),
-                PackageType.KIT, LicenseType.TC_DB
+                PackageType.KIT, LicenseType.TERRACOTTA
             ),
             secureTcConfig(
                 version(Versions.TERRACOTTA_VERSION),
@@ -108,7 +108,7 @@ public class TmsSecurityCredentialsTest {
             .hostname(TMS_HOSTNAME)
             .securityConfig(securityConfig)
         ).clientArray(clientArray -> clientArray.license(license)
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
     factory = new ClusterFactory("TmsSecurityCredentialsTest::testSecureConnection", configContext);

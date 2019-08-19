@@ -9,7 +9,6 @@ import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFile;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -26,12 +25,14 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_RESOURCE;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -45,12 +46,11 @@ import static org.junit.Assert.fail;
  * @author Ludovic Orban
  */
 public class BrowseTest {
-
   @Test
   public void testClient() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+        .clientArray(clientArray -> clientArray.license(TestUtils.LICENSE)
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testClient", configContext)) {
       ClientArray clientArray = factory.clientArray();
@@ -88,9 +88,9 @@ public class BrowseTest {
   @Test
   public void testTsa() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
+            .license(TestUtils.LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTsa", configContext)) {
@@ -128,11 +128,10 @@ public class BrowseTest {
 
   @Test
   public void testTms() throws Exception {
-    License license = new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tms(tms -> tms
-            .distribution(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB))
-            .license(license)
+            .distribution(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA))
+            .license(TestUtils.LICENSE)
             .hostname("localhost")
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTms", configContext)) {
@@ -147,8 +146,8 @@ public class BrowseTest {
   @Test
   public void testNonExistentFolder() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+        .clientArray(clientArray -> clientArray.license(TestUtils.LICENSE)
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testNonExistentFolder", configContext)) {
@@ -166,8 +165,8 @@ public class BrowseTest {
   @Test
   public void testUpload() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(new License(getClass().getResource("/terracotta/10/TerracottaDB101_license.xml")))
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TC_DB), newClientArrayConfig().host("localhost")))
+        .clientArray(clientArray -> clientArray.license(TestUtils.LICENSE)
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testUpload", configContext)) {
@@ -175,7 +174,7 @@ public class BrowseTest {
       Client localhost = clientArray.getClients().stream().findFirst().get();
       RemoteFolder folder = localhost.browse("does-not-exist"); // check that we can upload to non-existent folder & the folder will be created
 
-      folder.upload("license.xml", getClass().getResource("/terracotta/10/TerracottaDB101_license.xml"));
+      folder.upload("license.xml", LICENSE_RESOURCE);
 
       Optional<RemoteFile> createdFolder = localhost.browse(".").list().stream().filter(remoteFile -> remoteFile.getName().equals("does-not-exist") && remoteFile.isFolder()).findAny();
       assertThat(createdFolder.isPresent(), is(true));

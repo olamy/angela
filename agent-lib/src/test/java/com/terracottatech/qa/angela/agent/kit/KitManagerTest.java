@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.agent.kit;
 
 import org.junit.Test;
 
+import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.topology.Version;
 
@@ -46,6 +47,7 @@ public class KitManagerTest {
       Distribution distribution = mock(Distribution.class);
       Version version = mock(Version.class);
       when(distribution.getVersion()).thenReturn(version);
+      when(distribution.getPackageType()).thenReturn(PackageType.SAG_INSTALLER);
       when(version.getVersion(false)).thenReturn(testedVersion);
       when(version.getMajor()).thenReturn(Integer.parseInt(testedVersionNumbers[0]));
       when(version.getMinor()).thenReturn(Integer.parseInt(testedVersionNumbers[1]));
