@@ -5,7 +5,6 @@ import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.net.ClientToServerDisruptor;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -29,6 +28,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.util.Optional;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -42,8 +42,6 @@ import static org.junit.Assert.fail;
  */
 
 public class MultistripesTest {
-  private static final License LICENSE = new License(MultistripesTest.class.getResource("/terracotta/10/Terracotta101.xml"));
-
   @Test
   public void test2StripesSsh() throws Exception {
     InetAddress local = InetAddress.getLocalHost();
@@ -100,9 +98,11 @@ public class MultistripesTest {
 
   @Test
   public void testUpgrade() throws Exception {
+    String baseVersion = "10.3.1.0.102";
+    String newVersion = "10.3.1.1.12";
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
+            .topology(new Topology(distribution(version(baseVersion), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes1.xml")),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-multistripes2.xml"))))
             .license(LICENSE)
@@ -119,7 +119,7 @@ public class MultistripesTest {
 
       tsa.stop(server);
       tsa.browse(server, "dataroot/Server1-1").downloadTo(new File("target/dataroot"));
-      tsa.upgrade(server, distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA));
+      tsa.upgrade(server, distribution(version(newVersion), PackageType.KIT, LicenseType.TERRACOTTA));
       tsa.browse(server, "dataroot/Server1-1").upload(new File("target/dataroot"));
       tsa.start(server);
 

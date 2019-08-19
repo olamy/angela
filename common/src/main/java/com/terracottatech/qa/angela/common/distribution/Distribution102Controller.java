@@ -51,16 +51,15 @@ import static java.util.regex.Pattern.compile;
  * @author Aurelien Broszniowski
  */
 public class Distribution102Controller extends DistributionController {
+  private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
   private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
   private final boolean tmsFullLogs = Boolean.getBoolean("angela.tms.log.full");
 
-  private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
-
   Distribution102Controller(Distribution distribution) {
     super(distribution);
     Version version = distribution.getVersion();
-    if (version.getMajor() != 5 && version.getMajor() != 10) {
+    if (version.getMajor() != 10) {
       throw new IllegalStateException(getClass().getSimpleName() + " cannot work with distribution version " + version);
     }
   }

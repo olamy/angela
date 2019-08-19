@@ -1,14 +1,12 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
-import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,7 +27,6 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
-import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -51,25 +48,24 @@ public class LocalKitManager extends KitManager {
       logger.info("Using kitInstallationPath: \"{}\"", kitInstallationPath);
       if (!new File(kitInstallationPath).isDirectory()) {
         throw new IllegalArgumentException("You set the kitIntallationPath property to ["
-                                           + kitInstallationPath + "] but the location ins't a directory");
+            + kitInstallationPath + "] but the location ins't a directory");
       }
       this.kitInstallationPath = new File(kitInstallationPath);
     } else if (rootInstallationPath != null) {
-      logger.debug("getting install from the kit/installer");
-      File localInstallerFilename = new File(resolveLocalInstallerFilename());
+      String file = resolveLocalInstallerFilename();
+      logger.debug("Using kit/installer: {}", file);
+      File localInstallerFilename = new File(file);
       if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
         downloadLocalInstaller(localInstallerFilename);
       }
 
-      this.kitInstallationPath = new File(this.rootInstallationPath
-                                          + File.separatorChar + getDirFromArchive(localInstallerFilename));
+      this.kitInstallationPath = new File(rootInstallationPath, getDirFromArchive(localInstallerFilename));
 
       if (!isValidKitInstallationPath(offline, this.kitInstallationPath)) {
         logger.debug("Local install not available");
-
-        logger.debug("Local installer not available");
         if (offline) {
-          throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because the kit compressed package is not available. Please run in online mode with an internet connection.");
+          throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
+              " the kit compressed package is not available. Please run in online mode with an internet connection.");
         }
         createLocalInstallFromInstaller(license, localInstallerFilename);
       }
@@ -180,11 +176,9 @@ public class LocalKitManager extends KitManager {
     URL md5Url = null;
     try {
       Version version = distribution.getVersion();
-      PackageType packageType = distribution.getPackageType();
       LicenseType licenseType = distribution.getLicenseType();
 
-      if (packageType == KIT) {
-
+      if (distribution.getPackageType() == KIT) {
         String fullVersionString = version.getVersion(false);
         String pathMatch = "";
         if (version.isSnapshot()) {
@@ -194,34 +188,15 @@ public class LocalKitManager extends KitManager {
         }
         kitUrl = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, fullVersionString, licenseType.getKratosTag(), "false", pathMatch));
         md5Url = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, fullVersionString, licenseType.getKratosTag(), "true", pathMatch));
-
-        if (version.getMajor() == 5) {
-          if (licenseType == LicenseType.OS) {
-            String realVersion = version.getRealVersion(true, false);
-            StringBuilder sb = new StringBuilder(" https://oss.sonatype.org/service/local/artifact/maven/redirect?")
-                .append("g=org.ehcache&")
-                .append("a=ehcache-clustered&")
-                .append("c=kit&")
-                .append("e=zip&")
-                .append(realVersion.contains("SNAPSHOT") ? "r=snapshots&" : "r=releases&")
-                .append("v=" + realVersion);
-            kitUrl = new URL(sb.toString());
-            // no md5 in OSS
-          }
-        }
-      } else if (packageType == SAG_INSTALLER) {
+      } else {
         if (version.getMajor() >= 10) {
-          if (licenseType == LicenseType.TERRACOTTA) {
-            StringBuilder sb = new StringBuilder("http://aquarius_va.ame.ad.sag/PDShare/");
-            sb.append(getSAGInstallerName(version));
-            kitUrl = new URL(sb.toString());
-          }
+          kitUrl = new URL("http://aquarius_va.ame.ad.sag/PDShare/" + getSAGInstallerName(version));
         }
       }
     } catch (MalformedURLException e) {
       throw new RuntimeException("Can not resolve the kratos url for the distribution package: " + distribution, e);
     }
-    return new URL[] {kitUrl, md5Url};
+    return new URL[]{kitUrl, md5Url};
   }
 
   private static void createParentDirs(File file) throws IOException {
@@ -236,34 +211,19 @@ public class LocalKitManager extends KitManager {
   }
 
   private String getDirFromArchive(File localInstaller) {
-    try {
-      if (distribution.getPackageType() == KIT) {
-        if (distribution.getVersion().getMajor() == 4) {
-          return compressionUtils.getParentDirFromTarGz(localInstaller);
-        } else if (distribution.getVersion().getMajor() == 5) {
-          return compressionUtils.getParentDirFromZip(localInstaller);
-        } else if (distribution.getVersion().getMajor() == 10) {
-          return compressionUtils.getParentDirFromTarGz(localInstaller);
-        }
-      } else if (distribution.getPackageType() == SAG_INSTALLER) {
-        if (distribution.getVersion().getMajor() >= 10) {
-          return "TDB";
-        }
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Can not resolve the local kit distribution package: " + distribution + " from: " + localInstaller, e);
+    if (distribution.getPackageType() == KIT) {
+      return compressionUtils.getParentDirFromTarGz(localInstaller);
+    } else {
+      return "TDB";
     }
-    throw new RuntimeException("Can not resolve the local kit distribution package: " + distribution + " from: " + localInstaller);
   }
 
   private void createLocalInstallFromInstaller(License license, File localInstallerFilename) {
     File dest = new File(this.rootInstallationPath);
     if (distribution.getPackageType() == KIT) {
       compressionUtils.extract(localInstallerFilename, dest);
-    } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      compressionUtils.extractSag(getSandboxName(distribution.getVersion()), distribution.getVersion(), license, localInstallerFilename, dest);
     } else {
-      throw new RuntimeException("Can not resolve the local kit distribution package");
+      compressionUtils.extractSag(getSandboxName(), distribution.getVersion(), license, localInstallerFilename, dest);
     }
   }
 

@@ -1,14 +1,10 @@
 package com.terracottatech.qa.angela;
 
-import com.terracottatech.qa.angela.client.config.ConfigurationContext;
-import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
+import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.net.ClientToServerDisruptor;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -20,20 +16,19 @@ import com.terracottatech.store.StoreReconnectFailedException;
 import com.terracottatech.store.Type;
 import com.terracottatech.store.definition.CellDefinition;
 import com.terracottatech.store.manager.DatasetManager;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 
-/**
- *
- */
 public class ClientToServerDisruptionTest {
   private static final CellDefinition<Integer> CELL_1 = CellDefinition.defineInt("cell1");
-  private static final License LICENSE = new License(ClientToServerDisruptionTest.class.getResource("/terracotta/10/Terracotta101.xml"));
 
   /**
    * Create partition between client and server and verify store operation throws exeception after reconnect attempts get

@@ -9,7 +9,6 @@ import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFile;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
@@ -33,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_RESOURCE;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -46,13 +46,10 @@ import static org.junit.Assert.fail;
  * @author Ludovic Orban
  */
 public class BrowseTest {
-  private static final URL LICENSE_RESOURCE = BrowseTest.class.getResource("/terracotta/10/Terracotta101.xml");
-  private static final License LICENSE = new License(LICENSE_RESOURCE);
-
   @Test
   public void testClient() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE)
+        .clientArray(clientArray -> clientArray.license(TestUtils.LICENSE)
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testClient", configContext)) {
@@ -93,7 +90,7 @@ public class BrowseTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap.xml"))))
-            .license(LICENSE)
+            .license(TestUtils.LICENSE)
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTsa", configContext)) {
@@ -134,7 +131,7 @@ public class BrowseTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tms(tms -> tms
             .distribution(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA))
-            .license(LICENSE)
+            .license(TestUtils.LICENSE)
             .hostname("localhost")
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testTms", configContext)) {
@@ -149,7 +146,7 @@ public class BrowseTest {
   @Test
   public void testNonExistentFolder() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE)
+        .clientArray(clientArray -> clientArray.license(TestUtils.LICENSE)
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 
@@ -168,7 +165,7 @@ public class BrowseTest {
   @Test
   public void testUpload() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE)
+        .clientArray(clientArray -> clientArray.license(TestUtils.LICENSE)
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 

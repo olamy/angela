@@ -30,9 +30,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 /**
- * Terracotta config for Terracotta 5.0
- * <p>
- * 10 -> 5.0
+ * Terracotta config for Terracotta 10.x
  *
  * @author Aurelien Broszniowski
  */

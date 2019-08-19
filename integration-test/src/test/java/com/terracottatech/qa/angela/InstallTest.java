@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
@@ -49,8 +50,6 @@ import static org.junit.Assert.fail;
  */
 
 public class InstallTest {
-  private static final License LICENSE = new License(InstallTest.class.getResource("/terracotta/10/Terracotta101.xml"));
-
   @Test
   public void testHardwareMetricsLogs() throws Exception {
     final File resultPath = new File("target", UUID.randomUUID().toString());

@@ -57,17 +57,11 @@ public class TcConfig {
         if (version.getMajor() == 4) {
           if (version.getMinor() == 0) {
             return new TcConfig8Holder(is);
-          } else if (version.getMinor() >= 1) {
-            return new TcConfig9Holder(is);
           } else {
-            throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
+            return new TcConfig9Holder(is);
           }
-        } else if (version.getMajor() == 5) {
-          return new TcConfig10Holder(is);
-        } else if (version.getMajor() == 10) {
-          return new TcConfig10Holder(is);
         } else {
-          throw new IllegalArgumentException("Cannot parse tc-config for version : " + version.toString());
+          return new TcConfig10Holder(is);
         }
       }
     } catch (IOException e) {

@@ -27,6 +27,11 @@
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-common</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>com.terracottatech.qa</groupId>
+      <artifactId>angela-test-utils</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

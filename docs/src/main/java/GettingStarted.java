@@ -24,6 +24,7 @@ import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secure
 import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static com.terracottatech.qa.angela.test.Versions.TERRACOTTA_VERSION;
 
 /**
  * @author Aurelien Broszniowski
@@ -38,8 +39,8 @@ public class GettingStarted {
     ConfigurationContext configContext = customConfigurationContext() // <1>
         .tsa(tsa -> tsa // <2>
             .topology(new Topology( // <3>
-                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
-                tcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-a.xml")))) // <5>
+                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
+                tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-a.xml")))) // <5>
             .license(license) // <6>
         );
 
@@ -57,8 +58,8 @@ public class GettingStarted {
     // tag::configureClusterWithSecurity[]
     ConfigurationContext configContext = customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA), // <1>
-                secureTcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-a-with-security.xml"), // <2>
+            .topology(new Topology(distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <1>
+                secureTcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-a-with-security.xml"), // <2>
                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(getClass().getResource("/security"))))) // <3>
             ).license(license)
         );
@@ -74,8 +75,8 @@ public class GettingStarted {
   @Test
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
-        distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA),
-        tcConfig(version("10.3.0.1.80"), getClass().getResource("/tc-config-ap.xml")));
+        distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
+        tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-ap.xml")));
     ConfigurationContext configContext = customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(topology)
@@ -111,7 +112,7 @@ public class GettingStarted {
         .clientArray(clientArray -> clientArray // <1>
             .license(license) // <2>
             .clientArrayTopology(new ClientArrayTopology( // <3>
-                distribution(version("10.3.0.1.80"), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
+                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
                 newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) // <5>
             )
         );
