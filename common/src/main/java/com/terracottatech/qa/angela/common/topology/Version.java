@@ -27,6 +27,9 @@ public class Version implements Comparable<Version> {
   }
 
   public Version(String version) {
+    if (version == null) {
+      throw new IllegalArgumentException("Version parameter is null");
+    }
     String versionToSplit = version;
     if (version.endsWith("-SNAPSHOT")) {
       this.snapshot = true;
