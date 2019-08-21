@@ -11,13 +11,13 @@ import org.junit.rules.TemporaryFolder;
 
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.security.test.util.SecurityRootDirectoryBuilder;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
@@ -52,7 +52,7 @@ public class MultiStripeWithSecurityTest {
                     withSecurityFor(new ServerSymbolicName("Server2-1"), securityRootDirectory(securityRootDirectory)),
                     withSecurityFor(new ServerSymbolicName("Server2-2"), securityRootDirectory(securityRootDirectory))
                 )
-            )).license(new License(getClass().getResource("/terracotta/10/Terracotta101.xml")))
+            )).license(LICENSE_10X)
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity", configContext)) {

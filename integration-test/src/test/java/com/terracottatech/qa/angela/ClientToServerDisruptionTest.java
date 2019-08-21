@@ -22,7 +22,7 @@ import org.junit.Test;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE;
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -40,7 +40,7 @@ public class ClientToServerDisruptionTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
-            .license(LICENSE));
+            .license(LICENSE_10X));
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {
       try (Tsa tsa = factory.tsa().startAll().licenseAll()) {
@@ -80,7 +80,7 @@ public class ClientToServerDisruptionTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
                 tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a-short-lease.xml"))))
-            .license(LICENSE)
+            .license(LICENSE_10X)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", config)) {
