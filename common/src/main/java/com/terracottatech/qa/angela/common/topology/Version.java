@@ -1,35 +1,26 @@
 package com.terracottatech.qa.angela.common.topology;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
-/**
- * Version holder
- * example :
- * 4.0.0
- * 4.0.0-SNAPSHOT
- * 4.3.0.1.15
- * 4.3.0-SNAPSHOT
- * 9.12
- *
- * @author Tim Eck
- */
-public class Version implements Comparable<Version> {
+import static java.util.Objects.requireNonNull;
 
-  private int major;
-  private int minor;
-  private int revision;
-  private int build_major;
-  private int build_minor;
-  private boolean snapshot;
+public class Version implements Comparable<Version> {
+  private final int major;
+  private final int minor;
+  private final int revision;
+  private final int build_major;
+  private final int build_minor;
+  private final boolean snapshot;
 
   public static Version version(String version) {
     return new Version(version);
   }
 
   public Version(String version) {
-    if (version == null) {
-      throw new IllegalArgumentException("Version parameter is null");
-    }
+    requireNonNull(version);
+
     String versionToSplit = version;
     if (version.endsWith("-SNAPSHOT")) {
       this.snapshot = true;
@@ -39,12 +30,22 @@ public class Version implements Comparable<Version> {
     }
 
     String[] split = versionToSplit.split("\\.");
-    if (split.length == 3 || split.length == 5) {
+    if (split.length == 2 || split.length == 3 || split.length == 5) {
       this.major = parseMajorVersion(split[0]);
       this.minor = parseMinorVersion(split[1]);
-      this.revision = parseRevisionVersion(split[2]);
-      this.build_major = parse(split[3]);
-      this.build_minor = parse(split[4]);
+      if (split.length == 2) {
+        this.revision = -1;
+      } else {
+        this.revision = parseRevisionVersion(split[2]);
+      }
+
+      if (split.length == 5) {
+        this.build_major = parse(split[3]);
+        this.build_minor = parse(split[4]);
+      } else {
+        this.build_major = -1;
+        this.build_minor = -1;
+      }
     } else {
       throw new IllegalArgumentException("Cannot parse string: " + version + " into a valid Version object");
     }
@@ -52,8 +53,9 @@ public class Version implements Comparable<Version> {
 
   private int parseMajorVersion(String input) {
     int majorVersion = parse(input);
-    if (majorVersion != 10 && majorVersion != 4) {
-      throw new IllegalArgumentException("Expected major version to be either 10 or 4, but found: " + input);
+    List<Integer> acceptableVersions = Arrays.asList(3, 4, 10);
+    if (!acceptableVersions.contains(majorVersion)) {
+      throw new IllegalArgumentException("Expected major version to be one of: " + acceptableVersions + ", but found: " + input);
     }
     return majorVersion;
   }
@@ -108,11 +110,6 @@ public class Version implements Comparable<Version> {
     return snapshot;
   }
 
-  @Override
-  public String toString() {
-    return getVersion(true);
-  }
-
   public String getVersion(boolean showSnapshot) {
     StringBuilder sb = new StringBuilder();
     if (major != -1) {
@@ -134,6 +131,11 @@ public class Version implements Comparable<Version> {
       }
     }
     return sb.toString();
+  }
+
+  @Override
+  public String toString() {
+    return getVersion(true);
   }
 
   @Override

@@ -27,9 +27,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
 /**
  * @author Aurelien Broszniowski
  */
-
 public abstract class KitManager {
-
   private static final Logger logger = LoggerFactory.getLogger(KitManager.class);
 
   protected final Distribution distribution;
@@ -65,7 +63,7 @@ public abstract class KitManager {
    */
   protected boolean isValidLocalInstallerFilePath(final boolean offline, File localInstallerFile) {
     if (!localInstallerFile.isFile()) {
-      logger.debug("Kit {} is not an existing file", localInstallerFile.getAbsolutePath());
+      logger.info("Kit {} is not an existing file", localInstallerFile.getAbsolutePath());
       return false;
     }
 
@@ -147,27 +145,14 @@ public abstract class KitManager {
    * This is the directory containing the exploded terracotta install, that will be copied to give a
    * single instance working installation
    * <p>
-   * e.g. : /data/tsamanager/kits/10.1.0/terracotta-10.5.0-SNAPSHOT
+   * e.g. : /data/tsamanager/kits/10.5.0/terracotta-10.5.0-SNAPSHOT
    *
-   * @param offline
    * @param installationPath
    * @return location of the install to be used to create the working install
    */
-  protected boolean isValidKitInstallationPath(final boolean offline, final File installationPath) {
+  protected boolean isValidKitInstallationPath(File installationPath) {
     if (!installationPath.isDirectory()) {
       logger.debug("Install is not available.");
-      return false;
-    }
-
-    // if we have a snapshot that is older than 24h, we reload it
-    if (!offline && distribution.getVersion().isSnapshot()
-        && Math.abs(System.currentTimeMillis() - installationPath.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
-      try {
-        logger.debug("Version is snapshot and older than 24h and mode is online, so we reinstall it.");
-        FileUtils.deleteDirectory(installationPath);
-      } catch (IOException e) {
-        return false;
-      }
       return false;
     }
     return true;
@@ -188,6 +173,8 @@ public abstract class KitManager {
           sb.append("max-");
         }
         return sb.append(version.getVersion(true)).append(".tar.gz").toString();
+      } else if (version.getMajor() == 3) {
+        return sb.append("ehcache-clustered-").append(version.getVersion(true)).append("-kit.zip").toString();
       } else {
         if (version.getMinor() == 5 && version.getBuild_minor() >= 179) {
           // 'db' was dropped from kits after 10.5.0.0.179

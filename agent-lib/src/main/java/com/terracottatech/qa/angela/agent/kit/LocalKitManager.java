@@ -23,21 +23,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
+import static com.terracottatech.qa.angela.common.topology.LicenseType.EHCACHE_OS;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static java.util.stream.Collectors.toList;
 
 /**
  * @author Aurelien Broszniowski
  */
-
 public class LocalKitManager extends KitManager {
-
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
+  private static final long STALE_SNAPSHOT_LIMIT = TimeUnit.DAYS.toMillis(1);
+
   private final Map<String, File> clientJars = new HashMap<>();
-  private static final String KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST = "http://kits.terracotta.eur.ad.sag:3000/release/download_latest?branch=%s&showrc=1&tag=%s&md5=%s&filename=%s";
 
   public LocalKitManager(Distribution distribution) {
     super(distribution);
@@ -53,7 +54,7 @@ public class LocalKitManager extends KitManager {
       this.kitInstallationPath = new File(kitInstallationPath);
     } else if (rootInstallationPath != null) {
       String file = resolveLocalInstallerFilename();
-      logger.debug("Using kit/installer: {}", file);
+      logger.info("Using local kit from: {}", file);
       File localInstallerFilename = new File(file);
       if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
         downloadLocalInstaller(localInstallerFilename);
@@ -61,7 +62,11 @@ public class LocalKitManager extends KitManager {
 
       this.kitInstallationPath = new File(rootInstallationPath, getDirFromArchive(localInstallerFilename));
 
-      if (!isValidKitInstallationPath(offline, this.kitInstallationPath)) {
+      if (isArchiveStale(offline, this.kitInstallationPath, localInstallerFilename)) {
+        throw new IllegalArgumentException("Local snapshot archive found to be older than " + STALE_SNAPSHOT_LIMIT + " milliseconds");
+      }
+
+      if (!isValidKitInstallationPath(this.kitInstallationPath)) {
         logger.debug("Local install not available");
         if (offline) {
           throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
@@ -157,7 +162,7 @@ public class LocalKitManager extends KitManager {
         }
       }
 
-      logger.debug("Success -> file downloaded succesfully");
+      logger.debug("Success -> file downloaded successfully");
     } catch (IOException e) {
       // messed up download -> delete it
       FileUtils.deleteQuietly(localInstallerFile.getParentFile());
@@ -167,7 +172,7 @@ public class LocalKitManager extends KitManager {
 
 
   /**
-   * define kratos url for version
+   * define Kratos/Sonatype URL for version
    *
    * @return Array, [url of package, url of md5]
    */
@@ -181,20 +186,35 @@ public class LocalKitManager extends KitManager {
       if (distribution.getPackageType() == KIT) {
         String fullVersionString = version.getVersion(false);
         String pathMatch = "";
-        if (version.isSnapshot()) {
+        if (version.getMajor() == 4 && version.isSnapshot()) {
           // at least in 4.x we upload snapshot kits under "trunk" version (in 10.x there are no snapshots yet)
           fullVersionString = "trunk";
           pathMatch = version.getVersion(false); //we'll have to restrict by filename
         }
-        kitUrl = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, fullVersionString, licenseType.getKratosTag(), "false", pathMatch));
-        md5Url = new URL(String.format(KRATOS_URL_TEMPLATE_DOWNLOAD_LATEST, fullVersionString, licenseType.getKratosTag(), "true", pathMatch));
+
+        if (licenseType == EHCACHE_OS) {
+          String realVersion = version.getVersion(true);
+          StringBuilder sb = new StringBuilder("https://oss.sonatype.org/service/local/artifact/maven/redirect?")
+              .append("g=org.ehcache&")
+              .append("a=ehcache-clustered&")
+              .append("c=kit&")
+              .append(realVersion.contains("SNAPSHOT") ? "r=snapshots&" : "r=releases&")
+              .append("v=").append(realVersion).append("&")
+              .append("e=zip");
+          kitUrl = new URL(sb.toString());
+          md5Url = new URL(sb.toString() + ".md5");
+        } else {
+          String format = "http://kits.terracotta.eur.ad.sag:3000/release/download_latest?branch=%s&showrc=1&tag=%s&md5=%s&filename=%s";
+          kitUrl = new URL(String.format(format, fullVersionString, licenseType.getKratosTag(), "false", pathMatch));
+          md5Url = new URL(String.format(format, fullVersionString, licenseType.getKratosTag(), "true", pathMatch));
+        }
       } else {
         if (version.getMajor() >= 10) {
           kitUrl = new URL("http://aquarius_va.ame.ad.sag/PDShare/" + getSAGInstallerName(version));
         }
       }
     } catch (MalformedURLException e) {
-      throw new RuntimeException("Can not resolve the kratos url for the distribution package: " + distribution, e);
+      throw new RuntimeException("Can not resolve the url for the distribution package: " + distribution, e);
     }
     return new URL[]{kitUrl, md5Url};
   }
@@ -212,6 +232,9 @@ public class LocalKitManager extends KitManager {
 
   private String getDirFromArchive(File localInstaller) {
     if (distribution.getPackageType() == KIT) {
+      if (distribution.getVersion().getMajor() == 3) {
+        return compressionUtils.getParentDirFromZip(localInstaller);
+      }
       return compressionUtils.getParentDirFromTarGz(localInstaller);
     } else {
       return "TDB";
@@ -246,5 +269,23 @@ public class LocalKitManager extends KitManager {
       logger.error("Error loading the JAR manifest of " + file, ioe);
       return null;
     }
+  }
+
+  private boolean isArchiveStale(boolean offline, File installationPath, File archiveFilePath) {
+    // If we have a snapshot that is older than STALE_SNAPSHOT_LIMIT, we reload it
+    // Use the archive because blah-blah to check the modified time, because the timestamp on the inflated directory
+    // corresponds to the creation of the archive, and not to its download
+    long lastModified = archiveFilePath.lastModified();
+    long timeSinceLastModified = System.currentTimeMillis() - lastModified;
+    if (!offline && distribution.getVersion().isSnapshot() && timeSinceLastModified > STALE_SNAPSHOT_LIMIT) {
+      try {
+        logger.info("Mode is online, and version is a snapshot older than: {} milliseconds. Reinstalling it.", STALE_SNAPSHOT_LIMIT);
+        FileUtils.deleteDirectory(installationPath);
+      } catch (IOException e) {
+        return true;
+      }
+      return true;
+    }
+    return false;
   }
 }

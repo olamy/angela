@@ -7,7 +7,8 @@ import java.util.Properties;
 public class Versions {
 
   public static final String TERRACOTTA_VERSION;
-  public static final String TERRACOTTA_VERSION_4X = "4.3.7.0.55";
+  public static final String EHCACHE_OS_VERSION;
+  public static final String TERRACOTTA_VERSION_4X;
 
   static {
     try {
@@ -16,6 +17,8 @@ public class Versions {
         versionsProps.load(in);
       }
       TERRACOTTA_VERSION = versionsProps.getProperty("terracotta.version");
+      EHCACHE_OS_VERSION = versionsProps.getProperty("ehcache-os.version");
+      TERRACOTTA_VERSION_4X = versionsProps.getProperty("terracotta-4x.version");
     } catch (IOException ioe) {
       throw new RuntimeException("Cannot find versions.properties in classpath");
     }

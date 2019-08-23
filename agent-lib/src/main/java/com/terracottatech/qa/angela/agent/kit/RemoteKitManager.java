@@ -14,21 +14,18 @@ import java.io.IOException;
 
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
 
-
 /**
  * Download the kit tarball from Kratos
  *
  * @author Aurelien Broszniowski
  */
 public class RemoteKitManager extends KitManager {
-
   private static final Logger logger = LoggerFactory.getLogger(RemoteKitManager.class);
 
   private final File workingKitInstallationPath; // the location where we will copy the install
 
   public RemoteKitManager(InstanceId instanceId, Distribution distribution, String kitInstallationName) {
     super(distribution);
-
     this.kitInstallationPath = new File(this.rootInstallationPath, kitInstallationName);
     this.workingKitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
   }
@@ -39,7 +36,7 @@ public class RemoteKitManager extends KitManager {
 
   public boolean verifyKitAvailability(boolean offline) {
     logger.debug("verifying if the extracted kit is already available locally to setup an install");
-    if (!isValidKitInstallationPath(offline, kitInstallationPath)) {
+    if (!isValidKitInstallationPath(kitInstallationPath)) {
       logger.debug("Local kit installation is not available");
       return false;
     }
@@ -59,7 +56,9 @@ public class RemoteKitManager extends KitManager {
       boolean res = workingInstallPath.mkdirs();
       logger.debug("Directories created? {}", res);
       FileUtils.copyDirectory(localInstall, workingInstallPath);
-      license.writeToFile(workingInstallPath);
+      if (license != null) {
+        license.writeToFile(workingInstallPath);
+      }
 
       //install extra server jars
       if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {

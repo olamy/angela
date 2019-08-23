@@ -71,7 +71,7 @@ public class CompressionUtils {
     }
   }
 
-  private void extractTarGzJava(File kitInstaller, File kitDest) throws IOException {
+  private void extractTarGzJava(File kitInstaller, File kitDest) {
     Project project = new Project();
     Untar untar = new Untar();
     untar.setProject(project);
@@ -144,7 +144,7 @@ public class CompressionUtils {
     }
   }
 
-  private void extractZip(final File kitInstaller, final File kitDest) throws IOException, ArchiveException, TimeoutException, InterruptedException {
+  private void extractZip(final File kitInstaller, final File kitDest) throws IOException, TimeoutException, InterruptedException {
     if (OS.INSTANCE.isWindows()) {
       extractZipJava(kitInstaller, kitDest);
     } else {
@@ -152,7 +152,7 @@ public class CompressionUtils {
     }
   }
 
-  private void extractZipJava(final File kitInstaller, final File kitDest) throws IOException {
+  private void extractZipJava(final File kitInstaller, final File kitDest) {
     ZipUtil.unpack(kitInstaller, kitDest);
     cleanupPermissions(kitDest);
   }
@@ -165,7 +165,7 @@ public class CompressionUtils {
     logger.debug(out.toString());
   }
 
-  public void cleanupPermissions(File dest) throws IOException {
+  public void cleanupPermissions(File dest) {
     Chmod chmod = new Chmod();
     chmod.setProject(new Project());
     chmod.setPerm("ugo+x");
@@ -213,12 +213,16 @@ public class CompressionUtils {
     is.close();
   }
 
-  public String getParentDirFromZip(final File localInstaller) throws ArchiveException, IOException {
-    final InputStream is = new FileInputStream(localInstaller);
-    ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP, is);
-    ZipArchiveEntry entry = (ZipArchiveEntry)ais.getNextEntry();
-    String[] entryPieces = entry.getName().split("\\/");
-    return entryPieces[0];
+  public String getParentDirFromZip(final File localInstaller) {
+    try {
+      final InputStream is = new FileInputStream(localInstaller);
+      ArchiveInputStream ais = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP, is);
+      ZipArchiveEntry entry = (ZipArchiveEntry)ais.getNextEntry();
+      String[] entryPieces = entry.getName().split("/");
+      return entryPieces[0];
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public synchronized byte[] zipAsByteArray(final File dirToBeCompressed) {
