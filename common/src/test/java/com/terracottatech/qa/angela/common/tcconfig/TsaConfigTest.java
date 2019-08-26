@@ -2,28 +2,26 @@ package com.terracottatech.qa.angela.common.tcconfig;
 
 import org.junit.Test;
 
-import com.terracottatech.qa.angela.common.topology.Version;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 import static com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig.stripe;
+import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static com.terracottatech.qa.angela.test.Versions.TERRACOTTA_VERSION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
-
 /**
  * @author Aurelien Broszniowski
  */
-
 public class TsaConfigTest {
 
   @Test
   public void testPlatformData() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2")
             .data("name1", "root1")
             .data("platformData", "platformData", true)
@@ -40,7 +38,7 @@ public class TsaConfigTest {
 
   @Test
   public void testNoPlatformData() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2")
             .data("name1", "root1")
             .persistence("name1")
@@ -54,7 +52,7 @@ public class TsaConfigTest {
 
   @Test
   public void testNoPersistence() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2")
             .data("platformData", "platformData", true)
     );
@@ -67,7 +65,7 @@ public class TsaConfigTest {
 
   @Test
   public void testDataRootNoPersistence() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2")
             .data("data", "data1")
             .data("platformData", "platformData1", true)
@@ -83,7 +81,7 @@ public class TsaConfigTest {
 
   @Test
   public void testAddServer() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")
     );
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
@@ -98,7 +96,7 @@ public class TsaConfigTest {
 
   @Test
   public void testTsaPortsRange() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1"),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("name1", "root1")
     );
@@ -154,7 +152,7 @@ public class TsaConfigTest {
 
   @Test
   public void testSingleStripe() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2").offheap("primary", "50", "GB")
     );
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
@@ -163,7 +161,7 @@ public class TsaConfigTest {
 
   @Test
   public void testMultiStripe() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(Version.version("10.0.0.0.0"),
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(version(TERRACOTTA_VERSION),
         stripe("host1", "host2").offheap("primary", "50", "GB").data("data", "root1"),
         stripe("host1", "host2").offheap("primary", "50", "GB")
     );
@@ -173,23 +171,23 @@ public class TsaConfigTest {
 
   @Test
   public void testOneTcConfig() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")));
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config10.xml")));
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(1));
   }
 
   @Test
   public void testMultipleTcConfigs() {
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")),
-        TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")));
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config10.xml")),
+        TcConfig.tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config10.xml")));
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(2));
   }
 
   @Test
   public void testListOfTcConfigs() {
-    List<TcConfig> tcConfigList = Arrays.asList(TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")),
-        TcConfig.tcConfig(Version.version("10.0.0.0.0"), getClass().getResource("/terracotta/10/tc-config10.xml")));
+    List<TcConfig> tcConfigList = Arrays.asList(TcConfig.tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config10.xml")),
+        TcConfig.tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config10.xml")));
     TsaConfig tsaConfig = TsaConfig.tsaConfig(tcConfigList);
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(2));

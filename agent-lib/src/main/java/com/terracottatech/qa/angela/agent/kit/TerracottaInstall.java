@@ -44,12 +44,15 @@ public class TerracottaInstall {
     }
   }
 
-  public void addServer(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory, File installLocation, License license, Distribution distribution, Topology topology) {
+  public void addServer(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory, File installLocation,
+                        License license, Distribution distribution, Topology topology) {
     synchronized (terracottaServerInstances) {
       int stripeId = topology.findStripeIdOf(terracottaServer.getServerSymbolicName());
       boolean netDisruptionEnabled = topology.isNetDisruptionEnabled();
       TcConfig tcConfig = topology.findTcConfigOf(terracottaServer.getServerSymbolicName());
-      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), new TerracottaServerInstance(terracottaServer.getServerSymbolicName(), installLocation, tcConfig, netDisruptionEnabled, stripeId, securityRootDirectory, license, distribution));
+      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer.getServerSymbolicName(),
+          installLocation, tcConfig, netDisruptionEnabled, stripeId, securityRootDirectory, license, distribution);
+      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), serverInstance);
     }
   }
 

@@ -56,6 +56,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.terracottatech.qa</groupId>
+      <artifactId>angela-test-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.github.netcrusherorg</groupId>
       <artifactId>netcrusher-core</artifactId>
     </dependency>

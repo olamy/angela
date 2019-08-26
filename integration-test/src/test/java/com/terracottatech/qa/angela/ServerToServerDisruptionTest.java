@@ -15,7 +15,6 @@ import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.net.ServerToServerDisruptor;
 import com.terracottatech.qa.angela.client.net.SplitCluster;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
@@ -29,6 +28,9 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_4X;
+import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_4X_AP;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -42,9 +44,6 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-/**
- *
- */
 public class ServerToServerDisruptionTest {
   private static final int STATE_TIMEOUT = 60_000;
   private static final int STATE_POLL_INTERVAL = 1_000;
@@ -59,7 +58,7 @@ public class ServerToServerDisruptionTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-app-consistent.xml"))))
-            .license(new License(getClass().getResource("/terracotta/10/Terracotta101.xml")))
+            .license(LICENSE_10X)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
@@ -109,7 +108,7 @@ public class ServerToServerDisruptionTest {
 
   private static boolean isServerBlocked(TerracottaServer server) {
     try {
-      return Boolean.valueOf(getServerBlockedState(server));
+      return Boolean.parseBoolean(getServerBlockedState(server));
     } catch (Exception e) {
       return false;
     }
@@ -170,8 +169,8 @@ public class ServerToServerDisruptionTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
-                tcConfig(version(Versions.TERRACOTTA_VERSION_4X), getClass().getResource("/terracotta/4/tc-config-ap.xml"))))
-            .license(new License(getClass().getResource("/terracotta/4/terracotta-license.key")))
+                tcConfig(version(Versions.TERRACOTTA_VERSION_4X), TC_CONFIG_4X_AP)))
+            .license(LICENSE_4X)
         );
 
     try (ClusterFactory factory = new ClusterFactory("ServerToServerDisruptionTest::testFailoverActivePassiveStripe", config)) {

@@ -52,12 +52,13 @@ public class TerracottaServerInstance implements Closeable {
   private final Map<ServerSymbolicName, Disruptor> disruptionLinks = new ConcurrentHashMap<>();
   private final boolean netDisruptionEnabled;
 
-  public TerracottaServerInstance(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, boolean netDisruptionEnabled, int stripeId, SecurityRootDirectory securityRootDirectory, License license, Distribution distribution) {
+  public TerracottaServerInstance(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, boolean netDisruptionEnabled,
+                                  int stripeId, SecurityRootDirectory securityRootDirectory, License license, Distribution distribution) {
     this.serverSymbolicName = serverSymbolicName;
     this.distributionController = distribution.createDistributionController();
     this.installLocation = installLocation;
     this.distribution = distribution;
-    this.licenseFileLocation = new File(installLocation, license.getFilename());
+    this.licenseFileLocation = license == null ? null : new File(installLocation, license.getFilename());
     this.netDisruptionEnabled = netDisruptionEnabled;
 
     this.tcConfig = TcConfig.copy(tcConfig);

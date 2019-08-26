@@ -71,7 +71,8 @@ public class AgentController {
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
   }
 
-  public boolean installTsa(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license, SecurityRootDirectory securityRootDirectory, String kitInstallationName, Distribution distribution) {
+  public boolean installTsa(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license,
+                            SecurityRootDirectory securityRootDirectory, String kitInstallationName, Distribution distribution) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
 
     File installLocation;
@@ -82,12 +83,12 @@ public class AgentController {
         return false;
       }
 
-      logger.debug("Installing kit for {} from {}", terracottaServer, distribution);
+      logger.info("Installing kit for {} from {}", terracottaServer, distribution);
       installLocation = kitManager.installKit(license);
       terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(kitManager.getWorkingKitInstallationPath()));
     } else {
       installLocation = terracottaInstall.installLocation(distribution);
-      logger.debug("Kit for {} already installed", terracottaServer);
+      logger.info("Kit for {} already installed", terracottaServer);
     }
 
     terracottaInstall.addServer(terracottaServer, securityRootDirectory, installLocation, license, distribution, topology);
@@ -109,7 +110,8 @@ public class AgentController {
     if (terracottaInstall == null) {
       throw new IllegalStateException("Server has not been installed");
     }
-    return terracottaInstall.getLicenseFileLocation(terracottaServer).getPath();
+    File licenseFileLocation = terracottaInstall.getLicenseFileLocation(terracottaServer);
+    return licenseFileLocation == null ? null : licenseFileLocation.getPath();
   }
 
   public boolean installTms(InstanceId instanceId, String tmsHostname,

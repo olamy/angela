@@ -8,12 +8,8 @@ import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.cluster.Barrier;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
-import com.terracottatech.qa.angela.common.topology.LicenseType;
-import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import com.terracottatech.qa.angela.test.Versions;
 import com.terracottatech.store.Dataset;
 import com.terracottatech.store.DatasetReader;
 import com.terracottatech.store.DatasetWriterReader;
@@ -29,10 +25,15 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.Optional;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
+import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
+import static com.terracottatech.qa.angela.common.topology.LicenseType.TERRACOTTA;
+import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static com.terracottatech.qa.angela.test.Versions.TERRACOTTA_VERSION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -41,19 +42,26 @@ import static org.hamcrest.core.Is.is;
  */
 
 public class TcDBTest {
-
   private final static Logger logger = LoggerFactory.getLogger(TcDBTest.class);
 
   @Test
   public void testConnection() throws Exception {
     final int clientCount = 2;
-    final License license = new License(getClass().getResource("/terracotta/10/Terracotta101.xml"));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
-            tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(license)
-        ).clientArray(clientArray -> clientArray.license(license)
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().hostSerie(clientCount, "localhost")))
+        .tsa(tsa -> tsa
+            .topology(
+                new Topology(
+                    distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
+                    tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)
+                )
+            ).license(LICENSE_10X)
+        ).clientArray(clientArray -> clientArray
+            .clientArrayTopology(
+                new ClientArrayTopology(
+                    distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
+                    newClientArrayConfig().hostSerie(clientCount, "localhost")
+                )
+            ).license(LICENSE_10X)
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {

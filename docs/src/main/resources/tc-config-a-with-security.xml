@@ -15,16 +15,14 @@
         <data:directory name="dataroot">root1</data:directory>
       </data:data-directories>
     </config>
-  </plugins>
-
-  <!-- tag::security[] -->
-  <plugins>
+    <!-- tag::security[] -->
     <service>
       <security:security xmlns:security="http://www.terracottatech.com/config/security">
         <security:security-root-directory>security-root-directory</security:security-root-directory>
         <security:ssl-tls/>
       </security:security>
     </service>
+    <!-- end::security[] -->
   </plugins>
 
   <servers>
@@ -34,6 +32,5 @@
       <tsa-group-port>9530</tsa-group-port>
     </server>
   </servers>
-  <!-- end::security[] -->
 </tc-config>
 

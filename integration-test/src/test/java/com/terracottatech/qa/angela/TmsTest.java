@@ -10,7 +10,6 @@ import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
@@ -31,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
+import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -55,19 +56,16 @@ public class TmsTest {
   @BeforeClass
   public static void setUp() {
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
-    License license = new License(TmsTest.class.getResource("/terracotta/10/Terracotta101.xml"));
-
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution,
-            tcConfig(version(Versions.TERRACOTTA_VERSION), TmsTest.class.getResource("/terracotta/10/tc-config-a.xml"))))
-            .license(license)
+            tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
+            .license(LICENSE_10X)
         ).tms(tms -> tms.distribution(distribution)
-            .license(license)
+            .license(LICENSE_10X)
             .hostname(TMS_HOSTNAME)
-        ).clientArray(clientArray -> clientArray.license(license)
+        ).clientArray(clientArray -> clientArray.license(LICENSE_10X)
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
-
 
     factory = new ClusterFactory("TmsTest::testConnection", configContext);
     Tsa tsa = factory.tsa()

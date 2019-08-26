@@ -59,7 +59,7 @@ public class Distribution102Controller extends DistributionController {
   Distribution102Controller(Distribution distribution) {
     super(distribution);
     Version version = distribution.getVersion();
-    if (version.getMajor() != 10) {
+    if (version.getMajor() != 3 && version.getMajor() != 10) {
       throw new IllegalStateException(getClass().getSimpleName() + " cannot work with distribution version " + version);
     }
   }

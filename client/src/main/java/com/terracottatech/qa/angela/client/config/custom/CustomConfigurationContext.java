@@ -57,7 +57,7 @@ public class CustomConfigurationContext implements ConfigurationContext {
     if (customTsaConfigurationContext.getTopology() == null) {
       throw new IllegalArgumentException("You added a tsa to the Configuration but did not define its topology");
     }
-    if (customTsaConfigurationContext.getLicense() == null) {
+    if (!customTsaConfigurationContext.getTopology().getLicenseType().isOpenSource() && customTsaConfigurationContext.getLicense() == null) {
       throw new IllegalArgumentException("LicenseType " + customTsaConfigurationContext.getTopology().getLicenseType() + " requires a license.");
     }
     return this;
@@ -92,7 +92,7 @@ public class CustomConfigurationContext implements ConfigurationContext {
     customClientArrayConfigurationContext = new CustomClientArrayConfigurationContext();
     clientArray.accept(customClientArrayConfigurationContext);
     Distribution distribution = customClientArrayConfigurationContext.getClientArrayTopology().getDistribution();
-    if (distribution != null && customClientArrayConfigurationContext.getLicense() == null) {
+    if (distribution != null && !distribution.getLicenseType().isOpenSource() && customClientArrayConfigurationContext.getLicense() == null) {
       throw new IllegalArgumentException("Distribution's license type '" + distribution.getLicenseType() + "' requires a license.");
     }
     return this;

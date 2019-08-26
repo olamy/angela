@@ -6,6 +6,7 @@ import com.terracottatech.qa.angela.common.topology.Version;
 
 import java.util.Objects;
 
+import static com.terracottatech.qa.angela.common.topology.LicenseType.EHCACHE_OS;
 import static com.terracottatech.qa.angela.common.topology.LicenseType.GO;
 import static com.terracottatech.qa.angela.common.topology.LicenseType.MAX;
 import static com.terracottatech.qa.angela.common.topology.LicenseType.TERRACOTTA;
@@ -31,29 +32,22 @@ public class Distribution {
     requireNonNull(licenseType);
     if (version.getMajor() == 4) {
       if (licenseType != GO && licenseType != MAX) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Expected license of either type '%s' or '%s for version: %s, but found: %s",
-                GO,
-                MAX,
-                version,
-                licenseType
-            )
-        );
+        return throwException("Expected license of type '%s' or '%s for version: %s, but found: %s", GO, MAX, version, licenseType);
+      }
+    } else if (version.getMajor() == 3) {
+      if (licenseType != EHCACHE_OS) {
+        throwException("Expected license of type '%s' for version: %s, but found: %s", EHCACHE_OS, version, licenseType);
       }
     } else {
       if (licenseType != TERRACOTTA) {
-        throw new IllegalArgumentException(
-            String.format(
-                "Expected license of type '%s' for version: %s, but found: %s",
-                TERRACOTTA,
-                version,
-                licenseType
-            )
-        );
+        throwException("Expected license of type '%s' for version: %s, but found: %s", TERRACOTTA, version, licenseType);
       }
     }
     return licenseType;
+  }
+
+  private LicenseType throwException(String string, Object... args) {
+    throw new IllegalArgumentException(String.format(string, args));
   }
 
   public static Distribution distribution(Version version, PackageType packageType, LicenseType licenseType) {
@@ -73,7 +67,7 @@ public class Distribution {
   }
 
   public DistributionController createDistributionController() {
-    if (version.getMajor() == 10) {
+    if (version.getMajor() == 10 || version.getMajor() == 3) {
       return new Distribution102Controller(this);
     } else {
       if (version.getMinor() >= 3) {

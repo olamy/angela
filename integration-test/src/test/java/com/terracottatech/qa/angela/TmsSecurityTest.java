@@ -9,13 +9,7 @@ import com.terracottatech.qa.angela.client.TmsHttpClient;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
-import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
-import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
-import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
@@ -23,13 +17,9 @@ import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import static com.terracottatech.qa.angela.common.topology.Version.version;
 import com.terracottatech.qa.angela.test.Versions;
 import com.terracottatech.security.test.util.SecurityRootDirectory;
 import com.terracottatech.security.test.util.SecurityRootDirectoryBuilder;
-import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharacteristic.VALID;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,6 +32,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+
+import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
+import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
+import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
+import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
+import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
+import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
+import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static com.terracottatech.security.test.util.SecurityTestUtil.StoreCharacteristic.VALID;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class TmsSecurityTest {
@@ -73,8 +74,6 @@ public class TmsSecurityTest {
 
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
 
-    License license = new License(TmsSecurityTest.class.getResource("/terracotta/10/Terracotta101.xml"));
-
     TmsServerSecurityConfig securityConfig = new TmsServerSecurityConfig.Builder()
         .with(config->{
               config.tmsSecurityRootDirectory = serverSecurityRootDirectory.getPath().toString();
@@ -94,12 +93,12 @@ public class TmsSecurityTest {
                     TmsSecurityTest.class.getResource("/terracotta/10/tc-config-a-with-security.xml"),
                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(serverSecurityRootDirectory.getPath()))
                 )))
-                .license(license)
+                .license(LICENSE_10X)
         ).tms(tms -> tms.distribution(distribution)
-                .license(license)
+                .license(LICENSE_10X)
                 .hostname(TMS_HOSTNAME)
                 .securityConfig(securityConfig)
-        ).clientArray(clientArray -> clientArray.license(license)
+        ).clientArray(clientArray -> clientArray.license(LICENSE_10X)
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 

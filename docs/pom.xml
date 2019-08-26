@@ -32,6 +32,11 @@
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-test-utils</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
