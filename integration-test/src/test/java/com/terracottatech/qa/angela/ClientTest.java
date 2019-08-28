@@ -46,7 +46,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static com.tc.util.Assert.assertNotNull;
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -181,7 +180,7 @@ public class ClientTest {
   public void testMultipleClientsOnSameHost() throws Exception {
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig()
                 .hostSerie(3, "localhost")
             )));
@@ -206,7 +205,7 @@ public class ClientTest {
                     distribution,
                     newClientArrayConfig().hostSerie(serieLength, "localhost")
                 )
-            ).license(LICENSE_10X)
+            )
         );
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testMultipleClientsOnSameHost", configContext)) {
       try (ClientArray clientArray = factory.clientArray()) {
@@ -231,9 +230,9 @@ public class ClientTest {
   public void testRemoteClient() throws Exception {
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))))
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))));
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
@@ -315,7 +314,7 @@ public class ClientTest {
         newClientArrayConfig().host(clientHostname));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X).clientArrayTopology(ct))
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense()).clientArrayTopology(ct))
         .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.CPU)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientCpuMetricsLogs", configContext)) {
@@ -354,7 +353,7 @@ public class ClientTest {
         newClientArrayConfig().host(clientHostname));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X).clientArrayTopology(ct))
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense()).clientArrayTopology(ct))
         .monitoring(monitoring -> monitoring.commands(EnumSet.allOf(HardwareMetric.class)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientAllHardwareMetricsLogs", configContext)) {
@@ -392,7 +391,7 @@ public class ClientTest {
 
      HardwareMetric metric = HardwareMetric.MEMORY;
      ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-         .clientArray(clientArray -> clientArray.license(LICENSE_10X).clientArrayTopology(ct))
+         .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense()).clientArrayTopology(ct))
          .monitoring(monitoring -> monitoring.command(metric, new MonitoringCommand("dummy", "command")));
 
      try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
@@ -422,7 +421,7 @@ public class ClientTest {
          newClientArrayConfig().host("localhost"));
 
      ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-         .clientArray(clientArray -> clientArray.license(LICENSE_10X).clientArrayTopology(ct));
+         .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense()).clientArrayTopology(ct));
 
      try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
        factory.monitor();
@@ -435,7 +434,7 @@ public class ClientTest {
     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         newClientArrayConfig().hostSerie(2, InetAddress.getLocalHost().getHostName()));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X).clientArrayTopology(ct));
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense()).clientArrayTopology(ct));
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       ClientArray clientArray = instance.clientArray();
       ClientArrayFuture f1 = clientArray.executeOnAll((cluster) -> System.out.println("hello world 1"));
@@ -450,7 +449,7 @@ public class ClientTest {
   @Test
   public void testRemoteClientWithJdk9() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense())
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig()
                 .host("localhost")))
             .terracottaCommandLineEnvironment(new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--illegal-access=warn", "--add-exports", "java.base/jdk.internal.misc=ALL-UNNAMED")))
@@ -469,9 +468,9 @@ public class ClientTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         )
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense())
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig()
                 .host("remote-server")))
         );
@@ -494,9 +493,9 @@ public class ClientTest {
     final int loopCount = 20;
     Distribution distribution = distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))))
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testBarrier", configContext)) {
@@ -537,7 +536,7 @@ public class ClientTest {
     ClientArrayTopology ct = new ClientArrayTopology(distribution, clientArrayConfig1);
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LICENSE_10X).clientArrayTopology(ct));
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense()).clientArrayTopology(ct));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {
       ClientJob clientJob = (cluster) -> {

@@ -15,7 +15,6 @@ import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
@@ -45,7 +44,7 @@ public class InstallWithSecurityTest {
             secureTcConfig(version(Versions.TERRACOTTA_VERSION),
                 getClass().getResource("/terracotta/10/tc-config-a-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)))))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
@@ -71,7 +70,7 @@ public class InstallWithSecurityTest {
                 getClass().getResource("/terracotta/10/tc-config-ap-with-security.xml"),
                 withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(securityRootDirectory)),
                 withSecurityFor(new ServerSymbolicName("Server2"), securityRootDirectory(securityRootDirectory)))))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {

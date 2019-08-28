@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
@@ -93,12 +92,12 @@ public class TmsSecurityTest {
                     TmsSecurityTest.class.getResource("/terracotta/10/tc-config-a-with-security.xml"),
                     withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(serverSecurityRootDirectory.getPath()))
                 )))
-                .license(LICENSE_10X)
+                .license(LicenseType.TERRACOTTA.defaultLicense())
         ).tms(tms -> tms.distribution(distribution)
-                .license(LICENSE_10X)
+                .license(LicenseType.TERRACOTTA.defaultLicense())
                 .hostname(TMS_HOSTNAME)
                 .securityConfig(securityConfig)
-        ).clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        ).clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense())
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 

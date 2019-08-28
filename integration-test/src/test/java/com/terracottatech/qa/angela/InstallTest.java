@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_4X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_AP;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_4X_A;
@@ -62,7 +60,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
             tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_AP)))
-            .license(LICENSE_10X))
+            .license(TERRACOTTA.defaultLicense()))
         .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.DISK)));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
@@ -87,7 +85,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
             tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
@@ -105,7 +103,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION_4X), KIT, LicenseType.MAX), tcConfig(version(TERRACOTTA_VERSION_4X), TC_CONFIG_4X_A)))
-            .license(LICENSE_4X)
+            .license(LicenseType.MAX.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall4x", config)) {
@@ -124,7 +122,7 @@ public class InstallTest {
                     distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                     tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)
                 ))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
             .terracottaCommandLineEnvironment(new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--add-modules", "java.xml.bind", "--illegal-access=warn")))
         );
 
@@ -140,7 +138,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA), tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_AP)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
             .terracottaCommandLineEnvironment(SERVER_START_PREFIX + "Server1", new TerracottaCommandLineEnvironment("1.8", Collections.singleton("Oracle Corporation"), Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=Server1_flight_recording.jfr")))
             .terracottaCommandLineEnvironment(SERVER_START_PREFIX + "Server2", new TerracottaCommandLineEnvironment("1.8", Collections.singleton("Oracle Corporation"), Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=Server2_flight_recording.jfr")))
         );
@@ -166,7 +164,7 @@ public class InstallTest {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA), tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall", config)) {
@@ -184,7 +182,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, TERRACOTTA),
                 tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalSagInstall", config)) {
@@ -205,11 +203,11 @@ public class InstallTest {
       CustomConfigurationContext.customConfigurationContext()
           .tsa(tsa -> tsa
               .topology(topology1)
-              .license(LICENSE_10X)
+              .license(TERRACOTTA.defaultLicense())
           )
           .tsa(tsa -> tsa
               .topology(topology2)
-              .license(LICENSE_10X)
+              .license(TERRACOTTA.defaultLicense())
           );
       fail("expected IllegalStateException");
     } catch (IllegalStateException ise) {
@@ -229,11 +227,11 @@ public class InstallTest {
     ConfigurationContext config = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .tsa(tsa -> tsa
             .topology(topology1)
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         )
         .tsa(tsa -> tsa
             .topology(topology2)
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testTwoTsaInstalls", config)) {
@@ -253,7 +251,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                 tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-ap-consistent.xml"))))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer", config)) {
@@ -275,7 +273,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                 tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
@@ -294,7 +292,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                 tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
@@ -313,7 +311,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                 tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_AP)))
-            .license(LICENSE_10X)
+            .license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopPassive", config)) {

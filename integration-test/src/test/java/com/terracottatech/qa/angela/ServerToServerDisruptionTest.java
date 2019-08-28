@@ -28,8 +28,6 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_4X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_4X_AP;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
@@ -58,7 +56,7 @@ public class ServerToServerDisruptionTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
             tcConfig(version(Versions.TERRACOTTA_VERSION), getClass().getResource("/terracotta/10/tc-config-app-consistent.xml"))))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
@@ -170,7 +168,7 @@ public class ServerToServerDisruptionTest {
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
                 tcConfig(version(Versions.TERRACOTTA_VERSION_4X), TC_CONFIG_4X_AP)))
-            .license(LICENSE_4X)
+            .license(LicenseType.MAX.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("ServerToServerDisruptionTest::testFailoverActivePassiveStripe", config)) {

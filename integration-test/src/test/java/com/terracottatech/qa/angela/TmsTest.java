@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -59,11 +58,11 @@ public class TmsTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa.topology(new Topology(distribution,
             tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_A)))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         ).tms(tms -> tms.distribution(distribution)
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
             .hostname(TMS_HOSTNAME)
-        ).clientArray(clientArray -> clientArray.license(LICENSE_10X)
+        ).clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA.defaultLicense())
             .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), newClientArrayConfig().host("localhost")))
         );
 

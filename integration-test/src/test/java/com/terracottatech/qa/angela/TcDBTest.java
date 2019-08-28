@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.Optional;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -54,14 +53,14 @@ public class TcDBTest {
                     distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                     tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)
                 )
-            ).license(LICENSE_10X)
+            ).license(TERRACOTTA.defaultLicense())
         ).clientArray(clientArray -> clientArray
             .clientArrayTopology(
                 new ClientArrayTopology(
                     distribution(version(TERRACOTTA_VERSION), KIT, TERRACOTTA),
                     newClientArrayConfig().hostSerie(clientCount, "localhost")
                 )
-            ).license(LICENSE_10X)
+            ).license(TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("TcDBTest::testConnection", configContext)) {
