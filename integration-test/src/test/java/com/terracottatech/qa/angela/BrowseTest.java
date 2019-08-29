@@ -126,6 +126,27 @@ public class BrowseTest {
   }
 
   @Test
+  public void testUploadPlugin() throws Exception {
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
+            tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_AP)))
+            .license(LicenseType.TERRACOTTA.defaultLicense())
+        );
+
+    try (ClusterFactory factory = new ClusterFactory("BrowseTest::testUploadPlugin", configContext)) {
+      Tsa tsa = factory.tsa();
+      tsa.uploadPlugin(new File(getClass().getResource("/keep-this-file-empty.txt").getFile()));
+
+      for (TerracottaServer server : tsa.getTsaConfigurationContext().getTopology().getServers()) {
+        RemoteFolder remoteFolder = tsa.browse(server, "server/plugins/lib");
+        remoteFolder.list().forEach(System.out::println);
+        Optional<RemoteFile> remoteFile = remoteFolder.list().stream().filter(f -> f.getName().equals("keep-this-file-empty.txt")).findFirst();
+        assertThat(remoteFile.isPresent(), is(true));
+      }
+    }
+  }
+
+  @Test
   public void testTms() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tms(tms -> tms

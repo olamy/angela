@@ -367,6 +367,25 @@ public class Tsa implements AutoCloseable {
     return new RemoteFolder(ignite, terracottaServer.getHostname(), path, root);
   }
 
+  public void uploadPlugin(File localPluginFile) {
+    List<Exception> exceptions = new ArrayList<>();
+
+    Topology topology = tsaConfigurationContext.getTopology();
+    for (TerracottaServer server : topology.getServers()) {
+      try {
+        browse(server, topology.getDistribution().createDistributionController().pluginJarsRootFolderName(topology.getDistribution())).upload(localPluginFile);
+      } catch (IOException ioe) {
+        exceptions.add(ioe);
+      }
+    }
+
+    if (!exceptions.isEmpty()) {
+      RuntimeException re = new RuntimeException("Error uploading TSA plugin");
+      exceptions.forEach(re::addSuppressed);
+      throw re;
+    }
+  }
+
   public void uploadDataDirectories(File localRootPath) {
     List<Exception> exceptions = new ArrayList<>();
 
@@ -388,7 +407,7 @@ public class Tsa implements AutoCloseable {
     }
 
     if (!exceptions.isEmpty()) {
-      RuntimeException re = new RuntimeException("Error downloading TSA data directories");
+      RuntimeException re = new RuntimeException("Error uploading TSA data directories");
       exceptions.forEach(re::addSuppressed);
       throw re;
     }

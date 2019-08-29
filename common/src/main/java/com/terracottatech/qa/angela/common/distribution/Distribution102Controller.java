@@ -365,4 +365,9 @@ public class Distribution102Controller extends DistributionController {
     }
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public String pluginJarsRootFolderName(Distribution distribution) {
+    return "server/plugins/lib";
+  }
 }

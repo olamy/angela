@@ -66,4 +66,6 @@ public abstract class DistributionController {
   public abstract URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts);
 
   public abstract String clientJarsRootFolderName(Distribution distribution);
+
+  public abstract String pluginJarsRootFolderName(Distribution distribution);
 }
