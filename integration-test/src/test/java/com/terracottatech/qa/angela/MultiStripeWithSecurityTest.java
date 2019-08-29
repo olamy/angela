@@ -17,7 +17,6 @@ import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.security.test.util.SecurityRootDirectoryBuilder;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
@@ -52,7 +51,7 @@ public class MultiStripeWithSecurityTest {
                     withSecurityFor(new ServerSymbolicName("Server2-1"), securityRootDirectory(securityRootDirectory)),
                     withSecurityFor(new ServerSymbolicName("Server2-2"), securityRootDirectory(securityRootDirectory))
                 )
-            )).license(LICENSE_10X)
+            )).license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultiStripeWithSecurityTest::test2StripesWithSecurity", configContext)) {

@@ -28,7 +28,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.util.Optional;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_MULTISTRIPE1;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_MULTISTRIPE2;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -57,7 +56,7 @@ public class MultistripesTest {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), tcConfig1, tcConfig2))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
@@ -89,7 +88,7 @@ public class MultistripesTest {
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
             tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE1),
             tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE2)))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes", configContext)) {
@@ -108,7 +107,7 @@ public class MultistripesTest {
             .topology(new Topology(distribution(version(baseVersion), PackageType.KIT, LicenseType.TERRACOTTA),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE1),
                 tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE2)))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
 //    System.setProperty("tc.qa.angela.skipUninstall", "true");
@@ -136,7 +135,7 @@ public class MultistripesTest {
         .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), true,
             tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE1),
             tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE2)))
-            .license(LICENSE_10X)
+            .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes", configContext)) {

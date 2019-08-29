@@ -14,8 +14,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_10X;
-import static com.terracottatech.qa.angela.TestUtils.LICENSE_4X;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_4X_A;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -40,7 +38,7 @@ public class ClusterToolTest {
                     distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
                     tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_A)
                 )
-            ).license(LICENSE_10X)
+            ).license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testExecute", configContext)) {
@@ -68,7 +66,7 @@ public class ClusterToolTest {
                     distribution(version(Versions.TERRACOTTA_VERSION_4X), PackageType.KIT, LicenseType.MAX),
                     tcConfig(version(Versions.TERRACOTTA_VERSION_4X), TC_CONFIG_4X_A)
                 )
-            ).license(LICENSE_4X)
+            ).license(LicenseType.MAX.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("ClusterToolTest::testFailsOn4x", configContext)) {
