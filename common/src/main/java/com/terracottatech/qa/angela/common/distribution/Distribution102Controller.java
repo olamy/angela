@@ -368,6 +368,6 @@ public class Distribution102Controller extends DistributionController {
 
   @Override
   public String pluginJarsRootFolderName(Distribution distribution) {
-    return "server/plugins/lib";
+    return "server" + File.separator + "plugins" + File.separator + "lib";
   }
 }

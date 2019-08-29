@@ -8,7 +8,7 @@ import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 public class CustomClientArrayConfigurationContext implements ClientArrayConfigurationContext {
   private ClientArrayTopology clientArrayTopology;
   private License license;
-  private TerracottaCommandLineEnvironment terracottaCommandLineEnvironment = new TerracottaCommandLineEnvironment(CustomConfigurationContext.DEFAULT_JDK_VERSION, CustomConfigurationContext.DEFAULT_ALLOWED_JDK_VENDORS, null);
+  private TerracottaCommandLineEnvironment terracottaCommandLineEnvironment = TerracottaCommandLineEnvironment.DEFAULT;
 
   protected CustomClientArrayConfigurationContext() {
   }
