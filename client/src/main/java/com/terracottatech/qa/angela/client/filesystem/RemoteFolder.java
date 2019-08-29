@@ -104,4 +104,8 @@ public class RemoteFolder extends RemoteFile {
     }
   }
 
+  @Override
+  public String toString() {
+    return super.toString() + "/";
+  }
 }
