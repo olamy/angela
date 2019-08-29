@@ -1,5 +1,6 @@
 package com.terracottatech.qa.angela.common;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -25,6 +26,22 @@ public class TerracottaCommandLineEnvironment {
 
   public List<String> getJavaOpts() {
     return javaOpts;
+  }
+
+  public TerracottaCommandLineEnvironment withJavaVersion(String javaVersion) {
+    return new TerracottaCommandLineEnvironment(javaVersion, javaVendors, javaOpts);
+  }
+
+  public TerracottaCommandLineEnvironment withJavaVendors(Set<String> javaVendors) {
+    return new TerracottaCommandLineEnvironment(javaVersion, javaVendors, javaOpts);
+  }
+
+  public TerracottaCommandLineEnvironment withJavaVendor(String javaVendor) {
+    return new TerracottaCommandLineEnvironment(javaVersion, Collections.singleton(javaVendor), javaOpts);
+  }
+
+  public TerracottaCommandLineEnvironment withJavaOpts(List<String> javaOpts) {
+    return new TerracottaCommandLineEnvironment(javaVersion, javaVendors, javaOpts);
   }
 
   @Override
