@@ -52,4 +52,9 @@ public class RemoteFile {
   public TransportableFile toTransportableFile() {
     return new TransportableFile(getName(), downloadContents());
   }
+
+  @Override
+  public String toString() {
+    return "[" + nodeName + "]:" + name;
+  }
 }

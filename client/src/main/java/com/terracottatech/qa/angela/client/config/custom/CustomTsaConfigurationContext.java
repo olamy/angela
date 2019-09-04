@@ -13,7 +13,7 @@ public class CustomTsaConfigurationContext implements TsaConfigurationContext {
   private License license;
   private String clusterName;
   private final Map<String, TerracottaCommandLineEnvironment> terracottaCommandLineEnvironments = new HashMap<>();
-  private TerracottaCommandLineEnvironment defaultTerracottaCommandLineEnvironment = new TerracottaCommandLineEnvironment(CustomConfigurationContext.DEFAULT_JDK_VERSION, CustomConfigurationContext.DEFAULT_ALLOWED_JDK_VENDORS, null);
+  private TerracottaCommandLineEnvironment defaultTerracottaCommandLineEnvironment = TerracottaCommandLineEnvironment.DEFAULT;
 
   protected CustomTsaConfigurationContext() {
   }

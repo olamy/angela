@@ -1,7 +1,6 @@
 package com.terracottatech.qa.angela.client.remote.agent;
 
 import com.terracottatech.qa.angela.agent.Agent;
-import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.util.AngelaVersions;
 import com.terracottatech.qa.angela.common.util.JDK;
@@ -45,7 +44,6 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SshRemoteAgentLauncher.class);
   private static final int MAX_LINE_LENGTH = 1024;
-  private static final TerracottaCommandLineEnvironment DEFAULT_TC_ENV = new TerracottaCommandLineEnvironment(CustomConfigurationContext.DEFAULT_JDK_VERSION, CustomConfigurationContext.DEFAULT_ALLOWED_JDK_VENDORS, null);
 
   private final Map<String, RemoteAgentHolder> clients = new HashMap<>();
   private final String remoteUserName;
@@ -68,7 +66,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
 
   public SshRemoteAgentLauncher() {
-    this(DEFAULT_TC_ENV);
+    this(TerracottaCommandLineEnvironment.DEFAULT);
   }
 
   public SshRemoteAgentLauncher(TerracottaCommandLineEnvironment tcEnv) {

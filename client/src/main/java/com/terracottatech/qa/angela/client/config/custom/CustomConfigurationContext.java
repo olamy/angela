@@ -7,18 +7,26 @@ import com.terracottatech.qa.angela.client.config.RemotingConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TmsConfigurationContext;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.remote.agent.SshRemoteAgentLauncher;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class CustomConfigurationContext implements ConfigurationContext {
 
-  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("zulu", "Oracle Corporation", "sun", "openjdk")));
-  public static final String DEFAULT_JDK_VERSION = "1.8";
+  /**
+   * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
+   */
+  @Deprecated
+  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = TerracottaCommandLineEnvironment.DEFAULT_ALLOWED_JDK_VENDORS;
+
+  /**
+   * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
+   */
+  @Deprecated
+  public static final String DEFAULT_JDK_VERSION = TerracottaCommandLineEnvironment.DEFAULT_JDK_VERSION;
 
   private CustomRemotingConfigurationContext customRemotingConfigurationContext = new CustomRemotingConfigurationContext().remoteAgentLauncherSupplier(SshRemoteAgentLauncher::new);
   private CustomTsaConfigurationContext customTsaConfigurationContext;

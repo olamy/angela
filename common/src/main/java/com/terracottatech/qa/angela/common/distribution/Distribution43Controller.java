@@ -262,4 +262,8 @@ public class Distribution43Controller extends DistributionController {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public String pluginJarsRootFolderName(Distribution distribution) {
+    throw new UnsupportedOperationException("4.x does not support plugins");
+  }
 }
