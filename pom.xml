@@ -17,7 +17,7 @@
 
   <properties>
     <ehcache-os.version>3.8.0</ehcache-os.version>
-    <terracotta.version>10.5.0.0.191</terracotta.version>
+    <terracotta.version>10.5.0.0.193</terracotta.version>
     <terracotta-4x.version>4.3.7.0.55</terracotta-4x.version>
     <ignite.version>2.7.5</ignite.version>
   </properties>
