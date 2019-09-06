@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -57,6 +56,7 @@ public class Client implements Closeable {
   private final ClientId clientId;
   private final Ignite ignite;
   private final int subClientPid;
+  private boolean stopped = false;
   private boolean closed = false;
 
 
@@ -156,16 +156,27 @@ public class Client implements Closeable {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     if (closed) {
       return;
     }
     closed = true;
 
+    stop();
     if (!ClusterFactory.SKIP_UNINSTALL) {
       logger.info("Wiping up client '{}' on {}", instanceId, clientId);
-      IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.destroyClient(instanceId, subClientPid));
+      IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.deleteClient(instanceId));
     }
+  }
+
+  public void stop() {
+    if (stopped) {
+      return;
+    }
+    stopped = true;
+
+    logger.info("Killing client '{}' on {}", instanceId, clientId);
+    IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.stopClient(instanceId, subClientPid));
   }
 
   static class ClientJobFuture<V> implements Future<V> {

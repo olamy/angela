@@ -62,6 +62,34 @@ import static org.junit.Assert.fail;
 
 public class ClientTest {
   @Test
+  public void testStopAll() throws Exception {
+    ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
+        .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(2, "localhost")))
+            .terracottaCommandLineEnvironment(TerracottaCommandLineEnvironment.DEFAULT.withJavaVendor("Oracle Corporation").withJavaOpts(Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=flight_recording.jfr"))));
+
+    try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
+      ClientArray clientArray = instance.clientArray();
+      clientArray.executeOnAll((cluster) -> { }).get();
+      clientArray.stopAll();
+
+      for (Client client : clientArray.getClients()) {
+        File targetFolder = new File("target/testStopAll", client.getSymbolicName());
+        targetFolder.mkdirs();
+        File targetFile = new File(targetFolder, "flight_recording.jfr");
+        clientArray.browse(client, ".").list().stream().filter(rf -> rf.getName().startsWith("flight_recording")).forEach(rf -> {
+          try {
+            rf.downloadTo(targetFile);
+          } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+          }
+        });
+        assertThat(targetFile.isFile(), is(true));
+        assertThat(targetFile.length(), greaterThan(0L));
+      }
+    }
+  }
+
+  @Test
   public void testClientArrayDownloadFiles() throws Exception {
     final String clientHostname = "localhost";
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
