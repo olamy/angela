@@ -91,7 +91,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   private void uninstall(ClientId clientId) throws IOException {
-    logger.info("uninstalling from {}", clientId);
+    logger.info("uninstalling {}", clientId);
     Client client = clients.get(clientId);
     try {
       if (client != null) {
@@ -99,6 +99,32 @@ public class ClientArray implements AutoCloseable {
       }
     } finally {
       clients.remove(clientId);
+    }
+  }
+
+  public void stopAll() throws IOException {
+    List<Exception> exceptions = new ArrayList<>();
+
+    for (ClientId clientId : clientArrayConfigurationContext.getClientArrayTopology().getClientIds()) {
+      try {
+        stop(clientId);
+      } catch (Exception e) {
+        exceptions.add(e);
+      }
+    }
+
+    if (!exceptions.isEmpty()) {
+      IOException ioException = new IOException("Error stopping some clients");
+      exceptions.forEach(ioException::addSuppressed);
+      throw ioException;
+    }
+  }
+
+  public void stop(ClientId clientId) {
+    logger.info("stopping {}", clientId);
+    Client client = clients.get(clientId);
+    if (client != null) {
+      client.stop();
     }
   }
 

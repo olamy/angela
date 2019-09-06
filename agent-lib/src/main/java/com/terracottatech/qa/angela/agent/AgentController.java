@@ -336,16 +336,22 @@ public class AgentController {
     }
   }
 
-  public void destroyClient(InstanceId instanceId, int pid) {
+  public void stopClient(InstanceId instanceId, int pid) {
     try {
       logger.info("killing client '{}' with PID {}", instanceId, pid);
       ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid);
+    } catch (Exception e) {
+      throw new RuntimeException("Error stopping client " + instanceId, e);
+    }
+  }
 
+  public void deleteClient(InstanceId instanceId) {
+    try {
       File subAgentRoot = new RemoteClientManager(instanceId).getClientInstallationPath();
       logger.info("cleaning up directory structure '{}' of client {}", subAgentRoot, instanceId);
       FileUtils.deleteDirectory(subAgentRoot);
     } catch (Exception e) {
-      throw new RuntimeException("Error cleaning up client " + instanceId, e);
+      throw new RuntimeException("Error deleting client " + instanceId, e);
     }
   }
 
