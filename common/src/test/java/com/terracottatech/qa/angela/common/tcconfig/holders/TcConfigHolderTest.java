@@ -3,9 +3,9 @@ package com.terracottatech.qa.angela.common.tcconfig.holders;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,8 +29,9 @@ public class TcConfigHolderTest {
                               "</servers>" +
                               "</tc-config>";
     final TcConfig10Holder tcConfig10Holder = new TcConfig10Holder(new ByteArrayInputStream(tcConfigAsString.getBytes(StandardCharsets.UTF_8)));
-    tcConfig10Holder.updateLogsLocation(new File("/mylocation"), 2);
-    assertThat(tcConfig10Holder.tcConfigContent, is(equalTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><tc-config xmlns=\"http://www.terracotta.org/config\"><plugins/><servers><server><logs>/mylocation/logs-2-1</logs></server></servers></tc-config>")));
+    Path kitDir = Paths.get("mylocation");
+    tcConfig10Holder.updateLogsLocation(kitDir.toFile(), 2);
+    assertThat(tcConfig10Holder.tcConfigContent, is(equalTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><tc-config xmlns=\"http://www.terracotta.org/config\"><plugins/><servers><server><logs>" + kitDir.toAbsolutePath().resolve("logs-2-1") + "</logs></server></servers></tc-config>")));
   }
 
  @Test
@@ -45,8 +46,9 @@ public class TcConfigHolderTest {
                               "</servers>" +
                               "</tc-config>";
     final TcConfig10Holder tcConfig10Holder = new TcConfig10Holder(new ByteArrayInputStream(tcConfigAsString.getBytes(StandardCharsets.UTF_8)));
-    tcConfig10Holder.updateLogsLocation(new File("/mylocation"), 0);
-    assertThat(tcConfig10Holder.tcConfigContent, is(equalTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><tc-config xmlns=\"http://www.terracotta.org/config\"><plugins/><servers><server><logs>/mylocation/logs-0-1</logs></server></servers></tc-config>")));
+    Path kitDir = Paths.get("mylocation");
+    tcConfig10Holder.updateLogsLocation(kitDir.toFile(), 0);
+    assertThat(tcConfig10Holder.tcConfigContent, is(equalTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><tc-config xmlns=\"http://www.terracotta.org/config\"><plugins/><servers><server><logs>" + kitDir.toAbsolutePath().resolve("logs-0-1") + "</logs></server></servers></tc-config>")));
   }
 
   @Test
@@ -63,8 +65,9 @@ public class TcConfigHolderTest {
                               "</servers>" +
                               "</tc-config>";
     final TcConfig10Holder tcConfig10Holder = new TcConfig10Holder(new ByteArrayInputStream(tcConfigAsString.getBytes(StandardCharsets.UTF_8)));
-    tcConfig10Holder.updateLogsLocation(new File("/mylocation"), 0);
-    assertThat(tcConfig10Holder.tcConfigContent, is(equalTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><tc-config xmlns=\"http://www.terracotta.org/config\"><plugins/><servers><server><logs>/mylocation/logs-0-1</logs></server><server><logs>/mylocation/logs-0-2</logs></server></servers></tc-config>")));
+    Path kitDir = Paths.get("target","mylocation");
+    tcConfig10Holder.updateLogsLocation(kitDir.toFile(), 0);
+    assertThat(tcConfig10Holder.tcConfigContent, is(equalTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?><tc-config xmlns=\"http://www.terracotta.org/config\"><plugins/><servers><server><logs>" + kitDir.toAbsolutePath().resolve("logs-0-1") + "</logs></server><server><logs>" + kitDir.toAbsolutePath().resolve("logs-0-2") + "</logs></server></servers></tc-config>")));
   }
 
 }

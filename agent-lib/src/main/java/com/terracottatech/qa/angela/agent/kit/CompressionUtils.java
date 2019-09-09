@@ -135,10 +135,8 @@ public class CompressionUtils {
 
   public String getParentDirFromTarGz(final File localInstaller) {
     try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(new GZIPInputStream(new FileInputStream(localInstaller)))) {
-      TarArchiveEntry tarArchiveEntry;
-      tarArchiveEntry = tarArchiveInputStream.getNextTarEntry();
-      String[] split = tarArchiveEntry.getName().split(Pattern.quote(File.separator));
-      return split[0];
+      TarArchiveEntry tarArchiveEntry = tarArchiveInputStream.getNextTarEntry();
+      return tarArchiveEntry.getName().split("/")[0];
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

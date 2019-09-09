@@ -16,4 +16,4 @@
 
 //Jenkins integration.
 //See https://svn.terracotta.org/repo/internal/infrastructure/jenkins-pipeline-job-builder/trunk/shared/vars/
-mavenBuild maven_goal: '-V clean deploy -DskipTests -Pdeploy'
+mavenBuild maven_goal: '-V clean deploy -DskipTests'

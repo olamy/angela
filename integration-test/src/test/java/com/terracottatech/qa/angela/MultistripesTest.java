@@ -10,6 +10,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.test.Versions;
 import com.terracottatech.store.Dataset;
 import com.terracottatech.store.DatasetReader;
@@ -37,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * @author Aurelien Broszniowski
@@ -45,6 +47,9 @@ import static org.junit.Assert.fail;
 public class MultistripesTest {
   @Test
   public void test2StripesSsh() throws Exception {
+    // Don't run on Windows as Jenkins Windows machines don't have SSH server installed
+    assumeFalse(OS.INSTANCE.isWindows());
+
     InetAddress local = InetAddress.getLocalHost();
     TcConfig tcConfig1 = tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE1);
     tcConfig1.updateServerHost(0, local.getHostName());

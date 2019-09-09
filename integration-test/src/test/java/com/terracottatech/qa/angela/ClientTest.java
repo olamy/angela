@@ -23,6 +23,7 @@ import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.test.Versions;
 import org.junit.Test;
 
@@ -47,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.tc.util.Assert.assertNotNull;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
+import static com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment.DEFAULT;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
@@ -59,13 +61,19 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 public class ClientTest {
   @Test
   public void testStopAll() throws Exception {
+    String gcLogFileName = "gclog.log";
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(2, "localhost")))
-            .terracottaCommandLineEnvironment(TerracottaCommandLineEnvironment.DEFAULT.withJavaVendor("Oracle Corporation").withJavaOpts(Arrays.asList("-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=dumponexit=true,filename=flight_recording.jfr"))));
+        .clientArray(clientArray -> {
+          List<String> javaOpts = Arrays.asList("-XX:+PrintGCDetails", "-XX:+PrintGCApplicationStoppedTime",
+              "-XX:+PrintGCApplicationConcurrentTime", "-XX:+PrintGCDateStamps", "-Xloggc:" + gcLogFileName);
+          clientArray.clientArrayTopology(new ClientArrayTopology(newClientArrayConfig().hostSerie(2, "localhost")))
+              .terracottaCommandLineEnvironment(DEFAULT.withJavaVendor("Oracle Corporation").withJavaOpts(javaOpts));
+        });
 
     try (ClusterFactory instance = new ClusterFactory("ClientTest::testRemoteClient", configContext)) {
       ClientArray clientArray = instance.clientArray();
@@ -73,18 +81,19 @@ public class ClientTest {
       clientArray.stopAll();
 
       for (Client client : clientArray.getClients()) {
-        File targetFolder = new File("target/testStopAll", client.getSymbolicName());
-        targetFolder.mkdirs();
-        File targetFile = new File(targetFolder, "flight_recording.jfr");
-        clientArray.browse(client, ".").list().stream().filter(rf -> rf.getName().startsWith("flight_recording")).forEach(rf -> {
+        Path targetFolder = Paths.get("target", "testStopAll", client.getSymbolicName());
+        Files.createDirectories(targetFolder);
+        Path targetFile = targetFolder.resolve(gcLogFileName);
+        clientArray.browse(client, ".").list().stream().filter(rf -> rf.getName().startsWith(gcLogFileName)).forEach(rf -> {
           try {
-            rf.downloadTo(targetFile);
+            assertThat(rf.toTransportableFile().getContent().length, greaterThan(0));
+            rf.downloadTo(targetFile.toFile());
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
           }
         });
-        assertThat(targetFile.isFile(), is(true));
-        assertThat(targetFile.length(), greaterThan(0L));
+        assertThat(Files.isRegularFile(targetFile), is(true));
+        assertThat(Files.size(targetFile), greaterThan(0L));
       }
     }
   }
@@ -458,6 +467,9 @@ public class ClientTest {
 
   @Test
   public void testMultipleRemoteClients() throws Exception {
+    // Don't run on Windows as Jenkins Windows machines don't have SSH server installed
+    assumeFalse(OS.INSTANCE.isWindows());
+
     System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         newClientArrayConfig().hostSerie(2, InetAddress.getLocalHost().getHostName()));
