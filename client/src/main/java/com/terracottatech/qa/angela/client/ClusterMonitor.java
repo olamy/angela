@@ -45,7 +45,7 @@ public class ClusterMonitor implements AutoCloseable {
       try {
         IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.startHardwareMonitoring(workingPath.getPath(), commands));
       } catch (Exception e) {
-        exceptions.add(e);
+        exceptions.add(new RuntimeException("Error starting hardware monitoring on " + hostname, e));
       }
     }
 
