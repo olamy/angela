@@ -11,6 +11,7 @@ import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
 import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.util.DirectoryUtil;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -134,7 +135,8 @@ public class ClusterFactory implements AutoCloseable {
       IgniteConfiguration cfg = new IgniteConfiguration();
       cfg.setDiscoverySpi(spi);
       cfg.setClientMode(true);
-      cfg.setIgniteHome(new File(Agent.ROOT_DIR, "ignite").getPath());
+      DirectoryUtil.createAndAssertDir(Agent.IGNITE_DIR, "ignite");
+      cfg.setIgniteHome(new File(Agent.IGNITE_DIR, System.getProperty("user.name")).getPath());
       cfg.setPeerClassLoadingEnabled(true);
       boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
