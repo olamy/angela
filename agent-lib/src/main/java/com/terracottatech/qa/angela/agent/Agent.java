@@ -16,6 +16,7 @@
 package com.terracottatech.qa.angela.agent;
 
 import com.terracottatech.qa.angela.common.util.AngelaVersion;
+import com.terracottatech.qa.angela.common.util.DirectoryUtil;
 import com.terracottatech.qa.angela.common.util.IgniteCommonHelper;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
@@ -48,11 +49,12 @@ public class Agent {
   private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
 
   public static final int DFLT_ANGELA_PORT_RANGE = 1000;
-  public static final String ROOT_DIR;
   public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
   public static final String IGNITE_LOGGING_SYSPROP_NAME = "tc.qa.angela.logging";
+  public static final String ROOT_DIR;
   public static final File WORK_DIR;
+  public static final File IGNITE_DIR;
 
   static {
     final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
@@ -65,6 +67,7 @@ public class Agent {
       ROOT_DIR = dir;
     }
     WORK_DIR = new File(ROOT_DIR, "work");
+    IGNITE_DIR = new File(ROOT_DIR, "ignite");
   }
 
 
@@ -116,23 +119,13 @@ public class Agent {
     }
 
     private void init(String nodeName, List<String> nodesToJoin, int portRange) {
-      File rootDirFile = new File(ROOT_DIR);
-      LOGGER.info("Root directory is : " + rootDirFile);
-      if (!rootDirFile.exists()) {
-        if (!rootDirFile.mkdirs()) {
-          throw new RuntimeException("Auto creation of root directory: " + rootDirFile + " failed. " +
-                                     "Make sure that the provided directory is writable or create one manually.");
-        }
-      }
-      if (!rootDirFile.isDirectory()) {
-        throw new RuntimeException("Root directory is not a folder : " + rootDirFile);
-      }
-      if (!rootDirFile.canWrite()) {
-        throw new RuntimeException("Root directory is not writable : " + rootDirFile);
-      }
+      LOGGER.info("Root directory is : " + ROOT_DIR);
+      DirectoryUtil.createAndAssertDir(new File(ROOT_DIR), "root");
+      DirectoryUtil.createAndAssertDir(WORK_DIR, "work");
+      DirectoryUtil.createAndAssertDir(IGNITE_DIR, "ignite");
 
       IgniteConfiguration cfg = new IgniteConfiguration();
-      cfg.setIgniteHome(new File(rootDirFile, "ignite").getPath());
+      cfg.setIgniteHome(new File(IGNITE_DIR, System.getProperty("user.name")).getPath());
       Map<String, String> userAttributes = new HashMap<>();
       userAttributes.put("angela.version", AngelaVersion.getAngelaVersion());
       userAttributes.put("nodename", nodeName);

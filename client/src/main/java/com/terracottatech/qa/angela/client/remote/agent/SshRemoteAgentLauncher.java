@@ -115,6 +115,8 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
       Path baseDir = Paths.get(Agent.ROOT_DIR, angelaHome);
       Path jarsDir = baseDir.resolve("jars");
+      exec(ssh, "mkdir -p " + baseDir.toString());
+      exec(ssh, "chmod a+w " + baseDir.toString());
       exec(ssh, "mkdir -p " + jarsDir.toString());
       if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e " + jarsDir.resolve(agentJarFile.getName()).toString() + " ]") != 0) {
         // jar file is a snapshot or does not exist, upload it

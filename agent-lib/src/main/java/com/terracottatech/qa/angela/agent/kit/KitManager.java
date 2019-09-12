@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
+import com.terracottatech.qa.angela.common.util.DirectoryUtil;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,8 @@ public abstract class KitManager {
       throw new RuntimeException("Can not resolve the local kit distribution package: " + packageType);
     }
     sb.append(packageType == SAG_INSTALLER ? "sag" : "kits").append(File.separator);
+
+    DirectoryUtil.createAndAssertDir(new File(sb.toString()), packageType == SAG_INSTALLER ? "SAG installer" : "kits");
 
     sb.append(distribution.getVersion().getVersion(false));
     return sb.toString();

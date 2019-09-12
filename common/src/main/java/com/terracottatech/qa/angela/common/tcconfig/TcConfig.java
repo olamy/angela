@@ -85,6 +85,10 @@ public class TcConfig {
     tcConfigHolder.createOrUpdateTcProperty(name, value);
   }
 
+  public String toXml() {
+    return tcConfigHolder.getTcConfigContent();
+  }
+
   public void writeTcConfigFile(File kitDir) {
     this.tcConfigHolder.writeTcConfigFile(kitDir, tcConfigName);
   }
