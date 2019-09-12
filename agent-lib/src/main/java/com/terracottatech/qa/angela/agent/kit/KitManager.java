@@ -209,6 +209,8 @@ public abstract class KitManager {
         }
       } else if (version.getMinor() == 5) {
         versionValue = "105";
+      } else if (version.getMinor() == 7) {
+        versionValue = "107";
       }
     } else {
       if (version.getMinor() == 3) {
