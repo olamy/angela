@@ -38,6 +38,7 @@ public class KitManagerTest {
       put("10.3.0", "SoftwareAGInstaller103_LATEST.jar");
       put("10.3.1", "SoftwareAGInstaller104_LATEST.jar");
       put("10.5.0", "SoftwareAGInstaller105_LATEST.jar");
+      put("10.7.0", "SoftwareAGInstaller107_LATEST.jar");
     }};
 
 
