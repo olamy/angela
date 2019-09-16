@@ -179,7 +179,7 @@ public abstract class KitManager {
       } else if (version.getMajor() == 3) {
         return sb.append("ehcache-clustered-").append(version.getVersion(true)).append("-kit.zip").toString();
       } else {
-        if (version.getMinor() == 5 && version.getBuild_minor() >= 179) {
+        if (version.getMinor() > 5 || (version.getMinor() == 5 && version.getBuild_minor() >= 179)) {
           // 'db' was dropped from kits after 10.5.0.0.179
           sb.append("terracotta-");
         } else {
