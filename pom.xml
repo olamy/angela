@@ -36,8 +36,6 @@
     <logback-classic.version>1.2.3</logback-classic.version>
     <netcrusher-core.version>0.10</netcrusher-core.version>
     <jaxb-runtime.version>2.3.2</jaxb-runtime.version>
-    <ant.version>1.10.5</ant.version>
-    <zt-zip.version>1.13</zt-zip.version>
   </properties>
 
   <modules>
@@ -148,16 +146,6 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.ant</groupId>
-        <artifactId>ant</artifactId>
-        <version>${ant.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.zeroturnaround</groupId>
-        <artifactId>zt-zip</artifactId>
-        <version>${zt-zip.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>

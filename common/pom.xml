@@ -38,14 +38,6 @@
       <artifactId>commons-compress</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.ant</groupId>
-      <artifactId>ant</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.zeroturnaround</groupId>
-      <artifactId>zt-zip</artifactId>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
