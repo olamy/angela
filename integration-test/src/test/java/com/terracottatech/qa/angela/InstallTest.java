@@ -15,7 +15,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import org.junit.Ignore;
+import com.terracottatech.qa.angela.common.util.OS;
 import org.junit.Test;
 
 import java.io.File;
@@ -48,6 +48,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * @author Aurelien Broszniowski
@@ -174,10 +175,15 @@ public class InstallTest {
     }
   }
 
-  @Ignore("The sandbox doesn't keep enough builds to make this test pass beyond a couple of days. So we keep for testing manually")
   @Test
   public void testLocalSagInstall() throws Exception {
-    System.setProperty("sandbox", "TDB_PI_103oct2018");
+    // 10.x server doesn't install on mac
+    assumeFalse(OS.INSTANCE.isMac());
+
+    // SAG installer needs a non-root directory (anything other than C:\)
+    assumeFalse(OS.INSTANCE.isWindows());
+
+    System.setProperty("sandbox", "TDB_PI_105oct2019");
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(new Topology(distribution(version(TERRACOTTA_VERSION), PackageType.SAG_INSTALLER, TERRACOTTA),

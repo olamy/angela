@@ -113,7 +113,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         ssh.authPublickey(remoteUserName, remoteUserNameKeyPath);
       }
 
-      Path baseDir = Paths.get(Agent.ROOT_DIR, angelaHome);
+      Path baseDir = Agent.ROOT_DIR.resolve(angelaHome);
       Path jarsDir = baseDir.resolve("jars");
       exec(ssh, "mkdir -p " + baseDir.toString());
       exec(ssh, "chmod a+w " + baseDir.toString());

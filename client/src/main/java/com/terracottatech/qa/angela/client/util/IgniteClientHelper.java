@@ -54,7 +54,7 @@ public class IgniteClientHelper {
   private static void checkAgentHealth(Ignite ignite, String nodeName) {
     ClusterGroup location = ignite.cluster().forAttribute("nodename", nodeName);
     IgniteFuture<Collection<Map<String, ?>>> future = ignite.compute(location)
-        .broadcastAsync((IgniteCallable<Map<String, ?>>)() -> Agent.CONTROLLER.getNodeAttributes());
+        .broadcastAsync((IgniteCallable<Map<String, ?>>) () -> Agent.controller.getNodeAttributes());
     try {
       Collection<Map<String, ?>> attributeMaps = future.get(60, TimeUnit.SECONDS);
       if (attributeMaps.size() != 1) {
@@ -75,17 +75,22 @@ public class IgniteClientHelper {
 
   public static void uploadKit(Ignite ignite, String hostname, InstanceId instanceId, Distribution distribution,
                                String kitInstallationName, File kitInstallationPath) throws IOException, InterruptedException {
-    IgniteFuture<Void> remoteDownloadFuture = executeRemotelyAsync(ignite, hostname,
-        () -> Agent.CONTROLLER.downloadFiles(instanceId, new RemoteKitManager(instanceId, distribution, kitInstallationName)
-            .getKitInstallationPath()
-            .getParentFile()));
+    IgniteFuture<Void> remoteDownloadFuture = executeRemotelyAsync(
+        ignite,
+        hostname,
+        () -> {
+          RemoteKitManager remoteKitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
+          File installDir = remoteKitManager.getKitInstallationPath().getParent().toFile();
+          Agent.controller.downloadFiles(instanceId, installDir);
+        }
+    );
 
     uploadFiles(ignite, instanceId, Collections.singletonList(kitInstallationPath), remoteDownloadFuture);
   }
 
   public static void uploadClientJars(Ignite ignite, String hostname, InstanceId instanceId, List<File> filesToUpload) throws IOException, InterruptedException {
     IgniteFuture<Void> remoteDownloadFuture = executeRemotelyAsync(ignite, hostname,
-        () -> Agent.CONTROLLER.downloadFiles(instanceId, new RemoteClientManager(instanceId).getClientClasspathRoot()));
+        () -> Agent.controller.downloadFiles(instanceId, new RemoteClientManager(instanceId).getClientClasspathRoot()));
 
     uploadFiles(ignite, instanceId, filesToUpload, remoteDownloadFuture);
   }

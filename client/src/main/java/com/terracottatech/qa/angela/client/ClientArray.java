@@ -151,7 +151,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public RemoteFolder browse(Client client, String remoteLocation) {
-    String clientWorkDir = IgniteClientHelper.executeRemotely(ignite, client.getHostname(), () -> Agent.CONTROLLER.instanceWorkDir(client.getInstanceId()));
+    String clientWorkDir = IgniteClientHelper.executeRemotely(ignite, client.getHostname(), () -> Agent.controller.instanceWorkDir(client.getInstanceId()));
     return new RemoteFolder(ignite, client.getHostname(), clientWorkDir, remoteLocation);
   }
 

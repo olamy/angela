@@ -107,11 +107,11 @@ public class ServerToServerDisruptor implements Disruptor {
   }
 
   private static IgniteRunnable blockRemotely(InstanceId instanceId, TerracottaServer server, Collection<TerracottaServer> otherServers) {
-    return (IgniteRunnable)() -> Agent.CONTROLLER.disrupt(instanceId, server, otherServers);
+    return (IgniteRunnable)() -> Agent.controller.disrupt(instanceId, server, otherServers);
   }
 
   private static IgniteRunnable undisruptRemotely(InstanceId instanceId, TerracottaServer server, Collection<TerracottaServer> otherServers) {
-    return (IgniteRunnable)() -> Agent.CONTROLLER.undisrupt(instanceId, server, otherServers);
+    return (IgniteRunnable)() -> Agent.controller.undisrupt(instanceId, server, otherServers);
   }
 
   @Override

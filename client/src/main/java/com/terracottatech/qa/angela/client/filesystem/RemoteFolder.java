@@ -28,8 +28,8 @@ public class RemoteFolder extends RemoteFile {
 
   public List<RemoteFile> list() {
     String absoluteName = getAbsoluteName();
-    List<String> remoteFiles = IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteCallable<List<String>>) () -> Agent.CONTROLLER.listFiles(absoluteName));
-    List<String> remoteFolders = IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteCallable<List<String>>) () -> Agent.CONTROLLER.listFolders(absoluteName));
+    List<String> remoteFiles = IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteCallable<List<String>>) () -> Agent.controller.listFiles(absoluteName));
+    List<String> remoteFolders = IgniteClientHelper.executeRemotely(ignite, nodeName, (IgniteCallable<List<String>>) () -> Agent.controller.listFolders(absoluteName));
 
     List<RemoteFile> result = new ArrayList<>();
     result.addAll(remoteFiles.stream().map(s -> new RemoteFile(ignite, nodeName, getAbsoluteName(), s)).collect(toList()));
@@ -70,7 +70,7 @@ public class RemoteFolder extends RemoteFile {
   public void upload(String remoteFilename, InputStream localStream) throws IOException {
     byte[] data = IOUtils.toByteArray(localStream);
     String filename = getAbsoluteName() + "/" + remoteFilename;
-    IgniteClientHelper.executeRemotely(ignite, nodeName, () -> Agent.CONTROLLER.uploadFile(filename, data));
+    IgniteClientHelper.executeRemotely(ignite, nodeName, () -> Agent.controller.uploadFile(filename, data));
   }
 
   @Override
@@ -78,7 +78,7 @@ public class RemoteFolder extends RemoteFile {
     String foldername = getAbsoluteName();
     byte[] bytes;
     try {
-      bytes = IgniteClientHelper.executeRemotely(ignite, nodeName, () -> Agent.CONTROLLER.downloadFolder(foldername));
+      bytes = IgniteClientHelper.executeRemotely(ignite, nodeName, () -> Agent.controller.downloadFolder(foldername));
     } catch (IgniteException ie) {
       throw new IOException("Error downloading remote folder '" + foldername + "' into local folder '" + localPath + "'", ie);
     }

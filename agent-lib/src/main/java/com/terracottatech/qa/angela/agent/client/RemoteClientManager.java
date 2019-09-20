@@ -34,7 +34,7 @@ public class RemoteClientManager {
   private final File kitInstallationPath;
 
   public RemoteClientManager(InstanceId instanceId) {
-    this.kitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
+    this.kitInstallationPath = Agent.WORK_DIR.resolve(instanceId.toString()).toFile();
   }
 
   public File getClientInstallationPath() {

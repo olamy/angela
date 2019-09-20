@@ -4,21 +4,22 @@ import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.Version;
-import org.apache.commons.io.FileUtils;
+import com.terracottatech.qa.angela.common.util.DirectoryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,23 +47,22 @@ public class LocalKitManager extends KitManager {
 
   public void setupLocalInstall(License license, String kitInstallationPath, boolean offline) {
     if (kitInstallationPath != null) {
-      logger.info("Using kitInstallationPath: \"{}\"", kitInstallationPath);
-      if (!new File(kitInstallationPath).isDirectory()) {
-        throw new IllegalArgumentException("You set the kitIntallationPath property to ["
-            + kitInstallationPath + "] but the location ins't a directory");
+      logger.info("Using kitInstallationPath: {}", kitInstallationPath);
+      Path path = Paths.get(kitInstallationPath);
+      if (!Files.isDirectory(path)) {
+        throw new IllegalArgumentException("kitInstallationPath: " + kitInstallationPath + " isn't a directory");
       }
-      this.kitInstallationPath = new File(kitInstallationPath);
+      this.kitInstallationPath = path;
     } else if (rootInstallationPath != null) {
-      String file = resolveLocalInstallerFilename();
-      logger.info("Using local kit from: {}", file);
-      File localInstallerFilename = new File(file);
-      if (!isValidLocalInstallerFilePath(offline, localInstallerFilename)) {
-        downloadLocalInstaller(localInstallerFilename);
+      Path localInstallerPath = resolveLocalInstallerPath();
+      logger.info("Using local kit from: {}", localInstallerPath);
+      if (!isValidLocalInstallerFilePath(offline, localInstallerPath)) {
+        downloadLocalInstaller(localInstallerPath);
       }
 
-      this.kitInstallationPath = new File(rootInstallationPath, getDirFromArchive(localInstallerFilename));
+      this.kitInstallationPath = rootInstallationPath.resolve(getDirFromArchive(localInstallerPath));
 
-      if (isArchiveStale(offline, this.kitInstallationPath, localInstallerFilename)) {
+      if (isArchiveStale(offline, this.kitInstallationPath, localInstallerPath)) {
         throw new IllegalArgumentException("Local snapshot archive found to be older than " + STALE_SNAPSHOT_LIMIT + " milliseconds");
       }
 
@@ -72,7 +72,7 @@ public class LocalKitManager extends KitManager {
           throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
               " the kit compressed package is not available. Please run in online mode with an internet connection.");
         }
-        createLocalInstallFromInstaller(license, localInstallerFilename);
+        createLocalInstallFromInstaller(license, localInstallerPath);
       }
     }
     if (this.kitInstallationPath != null) {
@@ -90,7 +90,7 @@ public class LocalKitManager extends KitManager {
     try {
       String clientJarsRootFolderName = distribution.createDistributionController()
           .clientJarsRootFolderName(distribution);
-      List<File> clientJars = Files.walk(new File(kitInstallationPath, clientJarsRootFolderName).toPath())
+      List<File> clientJars = Files.walk(kitInstallationPath.resolve(clientJarsRootFolderName))
           .filter(Files::isRegularFile)
           .map(Path::toFile)
           .collect(toList());
@@ -114,10 +114,10 @@ public class LocalKitManager extends KitManager {
   }
 
   public String getKitInstallationName() {
-    return kitInstallationPath.getName();
+    return kitInstallationPath.getFileName().toString();
   }
 
-  private void downloadLocalInstaller(File localInstallerFile) {
+  private void downloadLocalInstaller(Path localInstallerFile) {
     URL[] urls = resolveKitUrls();
     URL kitUrl = urls[0];
     URL md5Url = urls[1];
@@ -125,13 +125,13 @@ public class LocalKitManager extends KitManager {
       URLConnection urlConnection = kitUrl.openConnection();
       urlConnection.connect();
 
-      int contentlength = urlConnection.getContentLength();
-      logger.info("Downloading {} - {} bytes", kitUrl, contentlength);
+      int contentLength = urlConnection.getContentLength();
+      logger.info("Downloading {} from {}", humanReadableByteCount(contentLength), kitUrl);
 
       createParentDirs(localInstallerFile);
 
       long lastProgress = -1;
-      try (OutputStream fos = new FileOutputStream(localInstallerFile);
+      try (OutputStream fos = Files.newOutputStream(localInstallerFile);
            InputStream is = kitUrl.openStream()) {
         byte[] buffer = new byte[8192];
         long len = 0;
@@ -139,7 +139,7 @@ public class LocalKitManager extends KitManager {
         while ((count = is.read(buffer)) != -1) {
           len += count;
 
-          long progress = 100 * len / contentlength;
+          long progress = 100 * len / contentLength;
           if (progress % 10 == 0 && progress > lastProgress) {
             logger.info("Download progress = {}%", progress);
             lastProgress = progress;
@@ -153,23 +153,26 @@ public class LocalKitManager extends KitManager {
         return;
       }
 
-      try (OutputStream fos = new FileOutputStream(localInstallerFile + ".md5");
-           InputStream is = md5Url.openStream()) {
-        byte[] buffer = new byte[64];
-        int count;
-        while ((count = is.read(buffer)) != -1) {
-          fos.write(buffer, 0, count);
-        }
+      try (InputStream is = md5Url.openStream()) {
+        Files.copy(is, Paths.get(localInstallerFile + ".md5"));
       }
 
       logger.debug("Success -> file downloaded successfully");
     } catch (IOException e) {
       // messed up download -> delete it
-      FileUtils.deleteQuietly(localInstallerFile.getParentFile());
-      throw new RuntimeException("Can not download kit located at " + kitUrl, e);
+      logger.debug("Deleting: " + localInstallerFile.getParent() + " dir as it's messed up");
+      DirectoryUtils.deleteQuietly(localInstallerFile.getParent());
+      throw new UncheckedIOException(e);
     }
   }
 
+  // Adapted from https://programming.guide/java/formatting-byte-size-to-human-readable-format.html
+  private static String humanReadableByteCount(long bytes) {
+    if (bytes < 1024) return bytes + " B";
+    int exp = (int) (Math.log(bytes) / Math.log(1024));
+    String pre = "" + "KMGTPE".charAt(exp - 1);
+    return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
+  }
 
   /**
    * define Kratos/Sonatype URL for version
@@ -219,18 +222,15 @@ public class LocalKitManager extends KitManager {
     return new URL[]{kitUrl, md5Url};
   }
 
-  private static void createParentDirs(File file) throws IOException {
+  private static void createParentDirs(Path file) throws IOException {
     Objects.requireNonNull(file);
-    File parent = file.getCanonicalFile().getParentFile();
+    Path parent = file.getParent();
     if (parent != null) {
-      parent.mkdirs();
-      if (!parent.isDirectory()) {
-        throw new IOException("Unable to create parent directories of " + file);
-      }
+      Files.createDirectories(parent);
     }
   }
 
-  private String getDirFromArchive(File localInstaller) {
+  private String getDirFromArchive(Path localInstaller) {
     if (distribution.getPackageType() == KIT) {
       if (distribution.getVersion().getMajor() == 3) {
         return compressionUtils.getParentDirFromZip(localInstaller);
@@ -241,12 +241,11 @@ public class LocalKitManager extends KitManager {
     }
   }
 
-  private void createLocalInstallFromInstaller(License license, File localInstallerFilename) {
-    File dest = new File(this.rootInstallationPath);
+  private void createLocalInstallFromInstaller(License license, Path localInstallerFilename) {
     if (distribution.getPackageType() == KIT) {
-      compressionUtils.extract(localInstallerFilename, dest);
+      compressionUtils.extract(localInstallerFilename, rootInstallationPath);
     } else {
-      compressionUtils.extractSag(getSandboxName(), distribution.getVersion(), license, localInstallerFilename, dest);
+      compressionUtils.extractSag(getSandboxName(), license, localInstallerFilename, rootInstallationPath);
     }
   }
 
@@ -271,19 +270,20 @@ public class LocalKitManager extends KitManager {
     }
   }
 
-  private boolean isArchiveStale(boolean offline, File installationPath, File archiveFilePath) {
+  private boolean isArchiveStale(boolean offline, Path installationPath, Path archiveFilePath) {
     // If we have a snapshot that is older than STALE_SNAPSHOT_LIMIT, we reload it
     // Use the archive because blah-blah to check the modified time, because the timestamp on the inflated directory
     // corresponds to the creation of the archive, and not to its download
-    long lastModified = archiveFilePath.lastModified();
-    long timeSinceLastModified = System.currentTimeMillis() - lastModified;
+    long timeSinceLastModified;
+    try {
+      timeSinceLastModified = System.currentTimeMillis() - Files.getLastModifiedTime(archiveFilePath).toMillis();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
     if (!offline && distribution.getVersion().isSnapshot() && timeSinceLastModified > STALE_SNAPSHOT_LIMIT) {
-      try {
-        logger.info("Mode is online, and version is a snapshot older than: {} milliseconds. Reinstalling it.", STALE_SNAPSHOT_LIMIT);
-        FileUtils.deleteDirectory(installationPath);
-      } catch (IOException e) {
-        return true;
-      }
+      logger.info("Mode is online, and version is a snapshot older than: {} milliseconds. Reinstalling it.", STALE_SNAPSHOT_LIMIT);
+      DirectoryUtils.deleteQuietly(installationPath);
       return true;
     }
     return false;

@@ -68,18 +68,18 @@ public class Tms implements AutoCloseable {
 
   public RemoteFolder browse(String root) {
     String tmsHostname = tmsConfigurationContext.getHostname();
-    String path = IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.getTmsInstallationPath(instanceId));
+    String path = IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.getTmsInstallationPath(instanceId));
     return new RemoteFolder(ignite, tmsHostname, path, root);
   }
 
   public TerracottaManagementServerState getTmsState() {
-    return IgniteClientHelper.executeRemotely(ignite, tmsConfigurationContext.getHostname(), () -> Agent.CONTROLLER.getTmsState(instanceId));
+    return IgniteClientHelper.executeRemotely(ignite, tmsConfigurationContext.getHostname(), () -> Agent.controller.getTmsState(instanceId));
   }
 
   public Tms start() {
     String tmsHostname = tmsConfigurationContext.getHostname();
     logger.info("Starting TMS on {}", tmsHostname);
-    IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.startTms(instanceId));
+    IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.startTms(instanceId));
     return this;
   }
 
@@ -115,7 +115,7 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("Uninstalling TMS from {}", tmsHostname);
-    IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.uninstallTms(instanceId, tmsConfigurationContext.getDistribution(), localKitManager
+    IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.uninstallTms(instanceId, tmsConfigurationContext.getDistribution(), localKitManager
         .getKitInstallationName(), tmsHostname));
   }
 
@@ -136,7 +136,7 @@ public class Tms implements AutoCloseable {
     logger.info("Attempting to remotely install if distribution already exists on {}", tmsHostname);
     boolean isRemoteInstallationSuccessful;
     if (kitInstallationPath == null) {
-      isRemoteInstallationSuccessful = IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.installTms(
+      isRemoteInstallationSuccessful = IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.installTms(
           instanceId, tmsHostname, distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv));
     } else {
       isRemoteInstallationSuccessful = false;
@@ -144,9 +144,9 @@ public class Tms implements AutoCloseable {
     if (!isRemoteInstallationSuccessful) {
       try {
         IgniteClientHelper.uploadKit(ignite, tmsHostname, instanceId, distribution,
-            localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath());
+            localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath().toFile());
 
-        IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.installTms(instanceId, tmsHostname,
+        IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.installTms(instanceId, tmsHostname,
             distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv));
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + tmsHostname, e);
@@ -165,7 +165,7 @@ public class Tms implements AutoCloseable {
     }
 
     logger.info("Stopping TMS on {}", tmsHostname);
-    IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.CONTROLLER.stopTms(instanceId));
+    IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.stopTms(instanceId));
   }
 
 }
