@@ -46,6 +46,7 @@
     <module>integration-test</module>
     <module>docs</module>
     <module>test-utils</module>
+    <module>integration-test-os</module>
   </modules>
 
   <dependencyManagement>
