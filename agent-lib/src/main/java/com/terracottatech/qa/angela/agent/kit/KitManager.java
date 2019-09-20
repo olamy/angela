@@ -1,27 +1,27 @@
 package com.terracottatech.qa.angela.agent.kit;
 
-import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.topology.LicenseType;
 import com.terracottatech.qa.angela.common.topology.PackageType;
 import com.terracottatech.qa.angela.common.topology.Version;
-import com.terracottatech.qa.angela.common.util.DirectoryUtil;
-import org.apache.commons.io.FileUtils;
+import com.terracottatech.qa.angela.common.util.DirectoryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.TimeUnit;
 
+import static com.terracottatech.qa.angela.agent.Agent.ROOT_DIR;
+import static com.terracottatech.qa.angela.common.topology.LicenseType.GO;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
 
@@ -33,29 +33,24 @@ public abstract class KitManager {
 
   protected final Distribution distribution;
   protected final CompressionUtils compressionUtils = new CompressionUtils();
-  protected final String rootInstallationPath;  // the work directory where installs are stored for caching
-  protected File kitInstallationPath; // the extracted install to be used as a cached install
+  protected final Path rootInstallationPath;  // the work directory where installs are stored for caching
+  protected Path kitInstallationPath; // the extracted install to be used as a cached install
 
   public KitManager(Distribution distribution) {
     this.distribution = distribution;
     this.rootInstallationPath = distribution == null ? null : buildRootInstallationPath(distribution);
   }
 
-  private String buildRootInstallationPath(Distribution distribution) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(Agent.ROOT_DIR).append(File.separator);
-
+  private Path buildRootInstallationPath(Distribution distribution) {
     PackageType packageType = distribution.getPackageType();
     if (packageType != KIT && packageType != SAG_INSTALLER) {
       // Can happen if someone adds a new packageType but doesn't provide a suitable handling here
       throw new RuntimeException("Can not resolve the local kit distribution package: " + packageType);
     }
-    sb.append(packageType == SAG_INSTALLER ? "sag" : "kits").append(File.separator);
 
-    DirectoryUtil.createAndAssertDir(new File(sb.toString()), packageType == SAG_INSTALLER ? "SAG installer" : "kits");
-
-    sb.append(distribution.getVersion().getVersion(false));
-    return sb.toString();
+    Path sagOrKitDir = ROOT_DIR.resolve(packageType == SAG_INSTALLER ? "sag" : "kits");
+    DirectoryUtils.createAndValidateDir(sagOrKitDir);
+    return sagOrKitDir.resolve(distribution.getVersion().getVersion(false));
   }
 
   /**
@@ -64,17 +59,23 @@ public abstract class KitManager {
    * @param offline
    * @return location of the installer archive file
    */
-  protected boolean isValidLocalInstallerFilePath(final boolean offline, File localInstallerFile) {
-    if (!localInstallerFile.isFile()) {
-      logger.info("Kit {} is not an existing file", localInstallerFile.getAbsolutePath());
+  protected boolean isValidLocalInstallerFilePath(boolean offline, Path localInstallerFile) {
+    if (!Files.isRegularFile(localInstallerFile)) {
+      logger.info("Kit {} is not an existing file", localInstallerFile.toAbsolutePath());
       return false;
     }
 
     // if we have a snapshot that is older than 24h, we reload it
-    if (!offline && distribution.getVersion().isSnapshot()
-        && Math.abs(System.currentTimeMillis() - localInstallerFile.lastModified()) > TimeUnit.DAYS.toMillis(1)) {
+    long timeSinceModified;
+    try {
+      timeSinceModified = System.currentTimeMillis() - Files.getLastModifiedTime(localInstallerFile).toMillis();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    if (!offline && distribution.getVersion().isSnapshot() && Math.abs(timeSinceModified) > TimeUnit.DAYS.toMillis(1)) {
       logger.debug("Our version is a snapshot, is older than 24h and we are not offline so we are deleting it to produce a reload.");
-      FileUtils.deleteQuietly(localInstallerFile.getParentFile());
+      DirectoryUtils.deleteQuietly(localInstallerFile.getParent());
       return false;
     }
 
@@ -83,38 +84,23 @@ public abstract class KitManager {
       return true;
     }
 
-    File md5File = new File(localInstallerFile.getAbsolutePath() + ".md5");
-    StringBuilder sb = new StringBuilder();
-    try (FileInputStream fis = new FileInputStream(md5File)) {
-      byte[] buffer = new byte[64];
-      while (true) {
-        int read = fis.read(buffer);
-        if (read == -1) {
-          break;
-        } else {
-          sb.append(new String(buffer, 0, read, StandardCharsets.US_ASCII));
-        }
-      }
-    } catch (FileNotFoundException fnfe) {
+    String md5File = localInstallerFile.toAbsolutePath().toString() + ".md5";
+    String md5FileHash;
+    try {
+      byte[] bytes = Files.readAllBytes(Paths.get(md5File));
+      md5FileHash = new String(bytes, StandardCharsets.US_ASCII).trim();
+    } catch (NoSuchFileException nsfe) {
       // no MD5 file? let's consider the archive corrupt
       logger.warn("{} does not have corresponding {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
-      try {
-        Files.walk(localInstallerFile.getParentFile().toPath())
-            .map(Path::toFile)
-            .sorted((o1, o2) -> -o1.compareTo(o2))
-            .forEach(File::delete);
-      } catch (IOException e) {
-        throw new RuntimeException("Cannot recursively delete local installer location (" + localInstallerFile.getParentFile().toPath() + ")");
-      }
+      DirectoryUtils.deleteQuietly(localInstallerFile.getParent());
       return false;
     } catch (IOException ioe) {
       throw new RuntimeException("Error reading " + md5File, ioe);
     }
-    String md5FileHash = sb.toString().trim();
 
     try {
       MessageDigest md = MessageDigest.getInstance("MD5");
-      try (FileInputStream fis = new FileInputStream(localInstallerFile)) {
+      try (InputStream fis = Files.newInputStream(localInstallerFile)) {
         byte[] buffer = new byte[8192];
         while (true) {
           int read = fis.read(buffer);
@@ -130,7 +116,7 @@ public abstract class KitManager {
       if (!localInstallerFileHash.equalsIgnoreCase(md5FileHash)) {
         // MD5 does not match? let's consider the archive corrupt
         logger.warn("{} secure hash does not match the contents of {} secure hash file on disk, considering it corrupt", localInstallerFile, md5File);
-        FileUtils.deleteQuietly(localInstallerFile.getParentFile());
+        DirectoryUtils.deleteQuietly(localInstallerFile.getParent());
         return false;
       }
     } catch (NoSuchAlgorithmException nsae) {
@@ -153,45 +139,34 @@ public abstract class KitManager {
    * @param installationPath
    * @return location of the install to be used to create the working install
    */
-  protected boolean isValidKitInstallationPath(File installationPath) {
-    if (!installationPath.isDirectory()) {
+  protected boolean isValidKitInstallationPath(Path installationPath) {
+    if (!Files.isDirectory(installationPath)) {
       logger.debug("Install is not available.");
       return false;
     }
     return true;
   }
 
-  String resolveLocalInstallerFilename() {
+  Path resolveLocalInstallerPath() {
     logger.debug("Resolving the local installer name");
-    StringBuilder sb = new StringBuilder(this.rootInstallationPath);
-    sb.append(File.separator);
     Version version = distribution.getVersion();
 
+    String fileName;
     if (distribution.getPackageType() == KIT) {
       if (version.getMajor() == 4) {
-        sb.append("bigmemory-");
-        if (distribution.getLicenseType() == LicenseType.GO) {
-          sb.append("go-");
-        } else if (distribution.getLicenseType() == LicenseType.MAX) {
-          sb.append("max-");
-        }
-        return sb.append(version.getVersion(true)).append(".tar.gz").toString();
+        fileName = "bigmemory-" + (distribution.getLicenseType() == GO ? "go-" : "max-") + version.getVersion(true) + ".tar.gz";
       } else if (version.getMajor() == 3) {
-        return sb.append("ehcache-clustered-").append(version.getVersion(true)).append("-kit.zip").toString();
+        fileName = "ehcache-clustered-" + version.getVersion(true) + "-kit.zip";
       } else {
-        if (version.getMinor() > 5 || (version.getMinor() == 5 && version.getBuild_minor() >= 179)) {
-          // 'db' was dropped from kits after 10.5.0.0.179
-          sb.append("terracotta-");
-        } else {
-          // Continue to old the old name to support older kits
-          sb.append("terracotta-db-");
-        }
-        return sb.append(version.getVersion(true)).append(".tar.gz").toString();
+        // 'db' was dropped from kits after 10.5.0.0.179, use 'terracotta' for such kits, 'terracotta-db' otherwise
+        fileName = version.getMinor() > 5 || (version.getMinor() == 5 && version.getBuild_minor() >= 179) ? "terracotta-" : "terracotta-db-";
+        fileName += version.getVersion(true) + ".tar.gz";
       }
     } else {
       // Corresponds to LicenseType TERRACOTTA and major version >=10
-      return sb.append(getSAGInstallerName(version)).toString();
+      fileName = getSAGInstallerName(version);
     }
+    return rootInstallationPath.resolve(fileName);
   }
 
   String getSAGInstallerName(Version version) {
@@ -253,7 +228,7 @@ public abstract class KitManager {
     return distribution;
   }
 
-  public File getKitInstallationPath() {
+  public Path getKitInstallationPath() {
     return kitInstallationPath;
   }
 }

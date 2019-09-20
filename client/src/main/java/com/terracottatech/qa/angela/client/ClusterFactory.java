@@ -11,7 +11,7 @@ import com.terracottatech.qa.angela.common.cluster.Cluster;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
 import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
-import com.terracottatech.qa.angela.common.util.DirectoryUtil;
+import com.terracottatech.qa.angela.common.util.DirectoryUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -23,7 +23,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -39,9 +38,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class ClusterFactory implements AutoCloseable {
-  static final boolean SKIP_UNINSTALL = Boolean.getBoolean("tc.qa.angela.skipUninstall");
+import static com.terracottatech.qa.angela.agent.Agent.IGNITE_DIR;
+import static com.terracottatech.qa.angela.common.AngelaProperties.IGNITE_LOGGING;
 
+public class ClusterFactory implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
 
   private static final String TSA = "tsa";
@@ -135,10 +135,10 @@ public class ClusterFactory implements AutoCloseable {
       IgniteConfiguration cfg = new IgniteConfiguration();
       cfg.setDiscoverySpi(spi);
       cfg.setClientMode(true);
-      DirectoryUtil.createAndAssertDir(Agent.IGNITE_DIR, "ignite");
-      cfg.setIgniteHome(new File(Agent.IGNITE_DIR, System.getProperty("user.name")).getPath());
+      DirectoryUtils.createAndValidateDir(IGNITE_DIR);
+      cfg.setIgniteHome(IGNITE_DIR.resolve(System.getProperty("user.name")).toString());
       cfg.setPeerClassLoadingEnabled(true);
-      boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
+      boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING.getValue());
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setIgniteInstanceName("Instance@" + instanceId);
       cfg.setMetricsLogFrequency(0);

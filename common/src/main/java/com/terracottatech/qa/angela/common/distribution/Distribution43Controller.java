@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.TSA_FULL_LOGGING;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
@@ -43,10 +44,9 @@ import static java.util.regex.Pattern.compile;
  * @author Aurelien Broszniowski
  */
 public class Distribution43Controller extends DistributionController {
-
-  private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
-
   private final static Logger logger = LoggerFactory.getLogger(Distribution43Controller.class);
+
+  private final boolean tsaFullLogging = Boolean.parseBoolean(TSA_FULL_LOGGING.getValue());
 
   Distribution43Controller(Distribution distribution) {
     super(distribution);
@@ -75,7 +75,7 @@ public class Distribution43Controller extends DistributionController {
     ).andTriggerOn(
         compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
     ).andTriggerOn(
-        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
+        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
             .getSymbolicName(), mr.group())
     );
 

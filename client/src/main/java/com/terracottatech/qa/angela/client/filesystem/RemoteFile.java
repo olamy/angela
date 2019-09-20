@@ -45,8 +45,7 @@ public class RemoteFile {
 
   private byte[] downloadContents() {
     String filename = getAbsoluteName();
-    return IgniteClientHelper.executeRemotely(ignite, nodeName,
-            () -> Agent.CONTROLLER.downloadFile(filename));
+    return IgniteClientHelper.executeRemotely(ignite, nodeName, () -> Agent.controller.downloadFile(filename));
   }
 
   public TransportableFile toTransportableFile() {

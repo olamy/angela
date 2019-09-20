@@ -22,7 +22,7 @@
     <terracotta-4x.version>4.3.8.0.56</terracotta-4x.version>
 
     <!-- Third-party dependencies -->
-    <ignite.version>2.7.5</ignite.version>
+    <ignite.version>2.7.6</ignite.version>
     <json-path.version>3.3.0</json-path.version>
     <mockito-core.version>2.25.0</mockito-core.version>
     <hamcrest.version>1.3</hamcrest.version>
@@ -30,6 +30,7 @@
     <slf4j-api.version>1.7.28</slf4j-api.version>
     <sshj.version>0.27.0</sshj.version>
     <awaitility.version>4.0.1</awaitility.version>
+    <commons-io.version>2.6</commons-io.version>
     <commons-compress.version>1.19</commons-compress.version>
     <zt-process-killer.version>1.10</zt-process-killer.version>
     <zt-exec.version>1.11</zt-exec.version>
@@ -147,6 +148,11 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>

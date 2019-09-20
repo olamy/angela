@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
 
 /**
  * @author Aurelien Broszniowski
@@ -56,7 +58,7 @@ public class ClientArray implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
 
     logger.info("Setting up locally the extracted install to be deployed remotely");
-    String kitInstallationPath = System.getProperty("kitInstallationPath");
+    String kitInstallationPath = KIT_INSTALLATION_PATH.getValue();
     localKitManager.setupLocalInstall(clientArrayConfigurationContext.getLicense(), kitInstallationPath, offline);
 
     try {
@@ -151,7 +153,7 @@ public class ClientArray implements AutoCloseable {
   }
 
   public RemoteFolder browse(Client client, String remoteLocation) {
-    String clientWorkDir = IgniteClientHelper.executeRemotely(ignite, client.getHostname(), () -> Agent.CONTROLLER.instanceWorkDir(client.getInstanceId()));
+    String clientWorkDir = IgniteClientHelper.executeRemotely(ignite, client.getHostname(), () -> Agent.controller.instanceWorkDir(client.getInstanceId()));
     return new RemoteFolder(ignite, client.getHostname(), clientWorkDir, remoteLocation);
   }
 
@@ -179,7 +181,7 @@ public class ClientArray implements AutoCloseable {
     }
     closed = true;
 
-    if (!ClusterFactory.SKIP_UNINSTALL) {
+    if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
       uninstallAll();
     }
   }

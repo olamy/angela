@@ -16,8 +16,8 @@
 package com.terracottatech.qa.angela.agent;
 
 import com.terracottatech.qa.angela.common.util.AngelaVersion;
-import com.terracottatech.qa.angela.common.util.DirectoryUtil;
 import com.terracottatech.qa.angela.common.util.IgniteCommonHelper;
+import com.terracottatech.qa.angela.common.util.IpUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -32,57 +32,57 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.File;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
+import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
+import static com.terracottatech.qa.angela.common.AngelaProperties.IGNITE_LOGGING;
+import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
+import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
+import static com.terracottatech.qa.angela.common.util.DirectoryUtils.createAndValidateDir;
+
 /**
  * @author Ludovic Orban
  */
 public class Agent {
-
-  private final static Logger LOGGER = LoggerFactory.getLogger(Agent.class);
-
-  public static final int DFLT_ANGELA_PORT_RANGE = 1000;
-  public static final String ROOT_DIR_SYSPROP_NAME = "kitsDir";
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
-  public static final String IGNITE_LOGGING_SYSPROP_NAME = "tc.qa.angela.logging";
-  public static final String ROOT_DIR;
-  public static final File WORK_DIR;
-  public static final File IGNITE_DIR;
+  private final static Logger logger = LoggerFactory.getLogger(Agent.class);
+
+  public static final Path ROOT_DIR;
+  public static final Path WORK_DIR;
+  public static final Path IGNITE_DIR;
+  public static volatile AgentController controller;
 
   static {
-    final String dir = System.getProperty(ROOT_DIR_SYSPROP_NAME);
-    final String DEFAULT_ROOT_DIR = new File("/data/angela").getAbsolutePath();
-    if (dir == null || dir.isEmpty()) {
-      ROOT_DIR = DEFAULT_ROOT_DIR;
-    } else if (dir.startsWith(".")) {
+    String rootDirSysProp = KITS_DIR.getSpecifiedValue();
+    if (rootDirSysProp == null || rootDirSysProp.isEmpty()) {
+      ROOT_DIR = Paths.get(KITS_DIR.getDefaultValue()).toAbsolutePath();
+    } else if (rootDirSysProp.startsWith(".")) {
       throw new IllegalArgumentException("Can not use relative path for the ROOT_DIR. Please use a fixed one.");
     } else {
-      ROOT_DIR = dir;
+      ROOT_DIR = Paths.get(rootDirSysProp);
     }
-    WORK_DIR = new File(ROOT_DIR, "work");
-    IGNITE_DIR = new File(ROOT_DIR, "ignite");
+    WORK_DIR = ROOT_DIR.resolve("work");
+    IGNITE_DIR = ROOT_DIR.resolve("ignite");
   }
-
-
-  public static volatile AgentController CONTROLLER;
 
   public static void main(String[] args) throws Exception {
     // the angela-agent jar may end up on the classpath, so its logback config cannot have the default filename
     System.setProperty("logback.configurationFile", "angela-logback.xml");
-    String nodeName = System.getProperty("tc.qa.nodeName", InetAddress.getLocalHost().getHostName());
-    String directjoin = System.getProperty("tc.qa.directjoin");
-    String portRange = System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE);
+    String nodeName = NODE_NAME.getValue();
+    String directJoin = DIRECT_JOIN.getValue();
+    String portRange = PORT_RANGE.getValue();
 
     List<String> nodesToJoin = new ArrayList<>();
-    if (directjoin != null) {
-      for (String node : directjoin.split(",")) {
+    if (directJoin != null) {
+      for (String node : directJoin.split(",")) {
         if (!node.trim().isEmpty()) {
           nodesToJoin.add(node);
         }
@@ -102,7 +102,7 @@ public class Agent {
     private volatile Ignite ignite;
 
     public Node(String nodeName, List<String> nodesToJoin) {
-      this(nodeName, nodesToJoin, DFLT_ANGELA_PORT_RANGE);
+      this(nodeName, nodesToJoin, Integer.parseInt(PORT_RANGE.getDefaultValue()));
     }
 
     public Node(String nodeName, List<String> nodesToJoin, int portRange) {
@@ -119,27 +119,27 @@ public class Agent {
     }
 
     private void init(String nodeName, List<String> nodesToJoin, int portRange) {
-      LOGGER.info("Root directory is : " + ROOT_DIR);
-      DirectoryUtil.createAndAssertDir(new File(ROOT_DIR), "root");
-      DirectoryUtil.createAndAssertDir(WORK_DIR, "work");
-      DirectoryUtil.createAndAssertDir(IGNITE_DIR, "ignite");
+      logger.info("Root directory is : " + ROOT_DIR);
+      createAndValidateDir(ROOT_DIR);
+      createAndValidateDir(WORK_DIR);
+      createAndValidateDir(IGNITE_DIR);
 
       IgniteConfiguration cfg = new IgniteConfiguration();
-      cfg.setIgniteHome(new File(IGNITE_DIR, System.getProperty("user.name")).getPath());
+      cfg.setIgniteHome(IGNITE_DIR.resolve(System.getProperty("user.name")).toString());
       Map<String, String> userAttributes = new HashMap<>();
       userAttributes.put("angela.version", AngelaVersion.getAngelaVersion());
       userAttributes.put("nodename", nodeName);
       cfg.setUserAttributes(userAttributes);
       cfg.setIgniteInstanceName(nodeName);
-      boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING_SYSPROP_NAME);
+      boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING.getValue());
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setPeerClassLoadingEnabled(true);
       cfg.setMetricsLogFrequency(0);
 
       if (nodesToJoin.isEmpty()) {
-        LOGGER.info("'{}' creating new isolated cluster", nodeName);
+        logger.info("'{}' creating new isolated cluster", nodeName);
       } else {
-        LOGGER.info("'{}' joining isolated cluster on {}", nodeName, nodesToJoin);
+        logger.info("'{}' joining isolated cluster on {}", nodeName, nodesToJoin);
       }
 
       List<String> nodesToJoinHostnames = new ArrayList<>();
@@ -163,7 +163,7 @@ public class Agent {
 
       // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
       if (!hostnameToIpMapping.isEmpty()) {
-        LOGGER.info("Adding address resolver for : " + hostnameToIpMapping);
+        logger.info("Adding address resolver for : " + hostnameToIpMapping);
         try {
           cfg.setAddressResolver(new BasicAddressResolver(hostnameToIpMapping));
         } catch (UnknownHostException e) {
@@ -171,11 +171,7 @@ public class Agent {
         }
 
         // only configure the localhost when joining other nodes with public IPs.
-        try {
-          cfg.setLocalHost(InetAddress.getLocalHost().getHostAddress());
-        } catch (UnknownHostException e) {
-          throw new IllegalStateException(e);
-        }
+        cfg.setLocalHost(IpUtils.getHostName());
       }
 
       try {
@@ -185,13 +181,13 @@ public class Agent {
         throw new RuntimeException("Error starting agent " + nodeName, e);
       }
 
-      CONTROLLER = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(nodeName + ":40000") : nodesToJoin);
-      LOGGER.info("Registered node '" + nodeName + "'");
+      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(nodeName + ":40000") : nodesToJoin);
+      logger.info("Registered node '" + nodeName + "'");
     }
 
     @Override
     public void close() {
-      CONTROLLER = null;
+      controller = null;
       if (ignite != null) {
         ignite.close();
         ignite = null;

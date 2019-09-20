@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_MULTISTRIPE1;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_MULTISTRIPE2;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
@@ -64,13 +65,13 @@ public class MultistripesTest {
             .license(LicenseType.TERRACOTTA.defaultLicense())
         );
 
-    System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
+    SSH_STRICT_HOST_CHECKING.setProperty("false");
     try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2StripesSsh", configContext)) {
       factory.tsa()
           .startAll()
           .licenseAll();
     } finally {
-      System.clearProperty("tc.qa.angela.ssh.strictHostKeyChecking");
+      SSH_STRICT_HOST_CHECKING.clearProperty();
     }
   }
 
@@ -114,8 +115,6 @@ public class MultistripesTest {
                 tcConfig(version(Versions.TERRACOTTA_VERSION), TC_CONFIG_10X_MULTISTRIPE2)))
             .license(LicenseType.TERRACOTTA.defaultLicense())
         );
-
-//    System.setProperty("tc.qa.angela.skipUninstall", "true");
 
     try (ClusterFactory factory = new ClusterFactory("MultistripesTest::test2Stripes", configContext)) {
       Tsa tsa = factory.tsa()

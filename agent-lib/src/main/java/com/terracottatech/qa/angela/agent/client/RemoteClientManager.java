@@ -19,7 +19,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.terracottatech.qa.angela.agent.Agent.DFLT_ANGELA_PORT_RANGE;
+import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
+import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
+import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
+import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
 
 /**
  * @author Aurelien Broszniowski
@@ -34,7 +37,7 @@ public class RemoteClientManager {
   private final File kitInstallationPath;
 
   public RemoteClientManager(InstanceId instanceId) {
-    this.kitInstallationPath = new File(Agent.WORK_DIR, instanceId.toString());
+    this.kitInstallationPath = Agent.WORK_DIR.resolve(instanceId.toString()).toFile();
   }
 
   public File getClientInstallationPath() {
@@ -62,10 +65,10 @@ public class RemoteClientManager {
       cmdLine.add("-classpath");
       cmdLine.add(buildClasspath());
 
-      cmdLine.add("-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE));
-      cmdLine.add("-Dtc.qa.directjoin=" + String.join(",", joinedNodes));
-      cmdLine.add("-Dtc.qa.nodeName=" + instanceId);
-      cmdLine.add("-D" + Agent.ROOT_DIR_SYSPROP_NAME + "=" + Agent.ROOT_DIR);
+      cmdLine.add("-D" + PORT_RANGE.getPropertyName() + "=" + PORT_RANGE.getValue());
+      cmdLine.add("-D" + DIRECT_JOIN.getPropertyName() + "=" + String.join(",", joinedNodes));
+      cmdLine.add("-D" + NODE_NAME.getPropertyName() + "=" + instanceId);
+      cmdLine.add("-D" + KITS_DIR.getPropertyName() + "=" + Agent.ROOT_DIR);
       cmdLine.add(Agent.class.getName());
 
       logger.info("Spawning client {}", cmdLine);

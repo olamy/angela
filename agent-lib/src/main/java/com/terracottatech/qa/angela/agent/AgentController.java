@@ -85,7 +85,7 @@ public class AgentController {
 
       logger.info("Installing kit for {} from {}", terracottaServer, distribution);
       installLocation = kitManager.installKit(license);
-      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(kitManager.getWorkingKitInstallationPath()));
+      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(kitManager.getWorkingKitInstallationPath().toFile()));
     } else {
       installLocation = terracottaInstall.installLocation(distribution);
       logger.info("Kit for {} already installed", terracottaServer);
@@ -356,8 +356,7 @@ public class AgentController {
   }
 
   public String instanceWorkDir(InstanceId instanceId) {
-    File path = new File(Agent.WORK_DIR, instanceId.toString());
-    return path.getAbsolutePath();
+    return Agent.WORK_DIR.resolve(instanceId.toString()).toAbsolutePath().toString();
   }
 
   public int spawnClient(InstanceId instanceId, TerracottaCommandLineEnvironment tcEnv) {

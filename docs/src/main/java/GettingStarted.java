@@ -33,7 +33,7 @@ import static org.hamcrest.CoreMatchers.is;
  * @author Aurelien Broszniowski
  */
 public class GettingStarted {
-  private static final License LICENSE = new License(GettingStarted.class.getResource("/Terracotta101.xml"));
+  private static final License LICENSE = LicenseType.TERRACOTTA.defaultLicense();
 
   @Test
   public void configureCluster() throws Exception {

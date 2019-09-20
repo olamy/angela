@@ -45,6 +45,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
+
 /**
  * @author Ludovic Orban
  */
@@ -76,7 +78,7 @@ public class Client implements Closeable {
     try {
       IgniteClientHelper.uploadClientJars(ignite, getHostname(), instanceId, listClasspathFiles(localKitManager));
 
-      int pid = IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteCallable<Integer>) () -> Agent.CONTROLLER.spawnClient(instanceId, tcEnv));
+      int pid = IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteCallable<Integer>) () -> Agent.controller.spawnClient(instanceId, tcEnv));
       logger.info("client '{}' on {} started with PID {}", instanceId, clientId, pid);
 
       return pid;
@@ -163,9 +165,9 @@ public class Client implements Closeable {
     closed = true;
 
     stop();
-    if (!ClusterFactory.SKIP_UNINSTALL) {
+    if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
       logger.info("Wiping up client '{}' on {}", instanceId, clientId);
-      IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.deleteClient(instanceId));
+      IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.controller.deleteClient(instanceId));
     }
   }
 
@@ -176,7 +178,7 @@ public class Client implements Closeable {
     stopped = true;
 
     logger.info("Killing client '{}' on {}", instanceId, clientId);
-    IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.CONTROLLER.stopClient(instanceId, subClientPid));
+    IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.controller.stopClient(instanceId, subClientPid));
   }
 
   static class ClientJobFuture<V> implements Future<V> {

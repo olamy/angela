@@ -7,6 +7,7 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.lang.IgniteCallable;
 
 public class ClusterTool {
   private final TerracottaServer terracottaServer;
@@ -22,7 +23,8 @@ public class ClusterTool {
   }
 
   public ClusterToolExecutionResult executeCommand(String... arguments) {
-    return IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.CONTROLLER.clusterTool(instanceId, terracottaServer, tcEnv, arguments));
+    IgniteCallable<ClusterToolExecutionResult> callable = () -> Agent.controller.clusterTool(instanceId, terracottaServer, tcEnv, arguments);
+    return IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), callable);
   }
 
 }

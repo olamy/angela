@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.client.remote.agent;
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.util.AngelaVersions;
+import com.terracottatech.qa.angela.common.util.IpUtils;
 import com.terracottatech.qa.angela.common.util.JDK;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import net.schmizz.sshj.SSHClient;
@@ -25,12 +26,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +36,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.terracottatech.qa.angela.agent.Agent.DFLT_ANGELA_PORT_RANGE;
+import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
+import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
+import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
+import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_USERNAME;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_USERNAME_KEY_PATH;
 
 public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
@@ -71,8 +75,8 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
   public SshRemoteAgentLauncher(TerracottaCommandLineEnvironment tcEnv) {
     this.tcEnv = tcEnv;
-    this.remoteUserName = System.getProperty("tc.qa.angela.ssh.user.name", System.getProperty("user.name"));
-    this.remoteUserNameKeyPath = System.getProperty("tc.qa.angela.ssh.user.name.key.path");
+    this.remoteUserName = SSH_USERNAME.getValue();
+    this.remoteUserNameKeyPath = SSH_USERNAME_KEY_PATH.getValue();
   }
 
   private void initAgentJar() {
@@ -100,7 +104,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       SSHClient ssh = new SSHClient();
       final String angelaHome = ".angela/" + targetServerName;
 
-      if (!Boolean.parseBoolean(System.getProperty("tc.qa.angela.ssh.strictHostKeyChecking", "true"))) {
+      if (!Boolean.parseBoolean(SSH_STRICT_HOST_CHECKING.getValue())) {
         ssh.addHostKeyVerifier(new PromiscuousVerifier());
       }
       ssh.loadKnownHosts();
@@ -113,7 +117,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         ssh.authPublickey(remoteUserName, remoteUserNameKeyPath);
       }
 
-      Path baseDir = Paths.get(Agent.ROOT_DIR, angelaHome);
+      Path baseDir = Agent.ROOT_DIR.resolve(angelaHome);
       Path jarsDir = baseDir.resolve("jars");
       exec(ssh, "mkdir -p " + baseDir.toString());
       exec(ssh, "chmod a+w " + baseDir.toString());
@@ -131,23 +135,19 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
       String joinHosts = nodesToJoin.stream().map(node -> {
-        try {
-          String str = node + ":40000";
-          String resolvedIPAddr = InetAddress.getByName(node).getHostAddress();
-          if (!node.equals(resolvedIPAddr)) {
-            str += "/" + resolvedIPAddr;
-          }
-          return str;
-        } catch (UnknownHostException e) {
-          throw new IllegalArgumentException(e);
+        String resolvedIPAddr = IpUtils.getHostAddress(node);
+        String str = node + ":40000";
+        if (!node.equals(resolvedIPAddr)) {
+          str += "/" + resolvedIPAddr;
         }
+        return str;
       }).collect(Collectors.joining(","));
 
       Session.Command cmd = session.exec(remoteJavaHome + "/bin/java " +
-          "-Dtc.qa.nodeName=" + targetServerName + " " +
-          "-Dtc.qa.directjoin=" + joinHosts + " " +
-          "-DkitsDir=" + baseDir.toString() + " " +
-          "-Dtc.qa.portrange=" + System.getProperty("tc.qa.portrange", "" + DFLT_ANGELA_PORT_RANGE) + " " +
+          "-D" + NODE_NAME.getPropertyName() + "=" + targetServerName + " " +
+          "-D" + DIRECT_JOIN.getPropertyName() + "=" + joinHosts + " " +
+          "-D" + KITS_DIR.getPropertyName() + "=" + baseDir.toString() + " " +
+          "-D" + PORT_RANGE.getPropertyName() + "=" + PORT_RANGE.getValue() + " " +
           "-jar " + jarsDir.resolve(agentJarFile.getName()).toString());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);

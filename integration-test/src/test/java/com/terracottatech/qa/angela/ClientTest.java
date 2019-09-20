@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.tc.util.Assert.assertNotNull;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
 import static com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment.DEFAULT;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
@@ -470,7 +471,7 @@ public class ClientTest {
     // Don't run on Windows as Jenkins Windows machines don't have SSH server installed
     assumeFalse(OS.INSTANCE.isWindows());
 
-    System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
+    SSH_STRICT_HOST_CHECKING.setProperty("false");
     ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         newClientArrayConfig().hostSerie(2, InetAddress.getLocalHost().getHostName()));
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
@@ -482,7 +483,7 @@ public class ClientTest {
       f1.get();
       f2.get();
     } finally {
-      System.clearProperty("tc.qa.angela.ssh.strictHostKeyChecking");
+      SSH_STRICT_HOST_CHECKING.clearProperty();
     }
   }
 

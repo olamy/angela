@@ -26,14 +26,14 @@ import java.util.function.BiConsumer;
 public class ClusterMonitor implements AutoCloseable {
 
   private final Ignite ignite;
-  private final File workingPath;
+  private final Path workingPath;
   private final Set<String> hostnames;
   private final Map<HardwareMetric, MonitoringCommand> commands;
   private boolean closed = false;
 
   ClusterMonitor(Ignite ignite, InstanceId instanceId, Set<String> hostnames, Map<HardwareMetric, MonitoringCommand> commands) {
     this.ignite = ignite;
-    this.workingPath = new File(Agent.WORK_DIR, instanceId.toString());
+    this.workingPath = Agent.WORK_DIR.resolve(instanceId.toString());
     this.hostnames = hostnames;
     this.commands = commands;
   }
@@ -43,7 +43,7 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.startHardwareMonitoring(workingPath.getPath(), commands));
+        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.controller.startHardwareMonitoring(workingPath.toString(), commands));
       } catch (Exception e) {
         exceptions.add(new RuntimeException("Error starting hardware monitoring on " + hostname, e));
       }
@@ -62,7 +62,7 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.stopHardwareMonitoring());
+        IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.controller.stopHardwareMonitoring());
       } catch (Exception e) {
         exceptions.add(e);
       }
@@ -81,7 +81,7 @@ public class ClusterMonitor implements AutoCloseable {
 
     for (String hostname : hostnames) {
       try {
-        Path metricsPath = workingPath.toPath().resolve(HardwareMetricsCollector.METRICS_DIRECTORY);
+        Path metricsPath = workingPath.resolve(HardwareMetricsCollector.METRICS_DIRECTORY);
         new RemoteFolder(ignite, hostname, null, metricsPath.toString()).downloadTo(new File(location, hostname));
       } catch (IOException e) {
         exceptions.add(e);
@@ -99,7 +99,7 @@ public class ClusterMonitor implements AutoCloseable {
     List<Exception> exceptions = new ArrayList<>();
     for (String hostname : hostnames) {
       try {
-        Path metricsPath = workingPath.toPath().resolve(HardwareMetricsCollector.METRICS_DIRECTORY);
+        Path metricsPath = workingPath.resolve(HardwareMetricsCollector.METRICS_DIRECTORY);
         RemoteFolder remoteFolder = new RemoteFolder(ignite, hostname, null, metricsPath.toString());
         remoteFolder.list().forEach(remoteFile -> processor.accept(hostname, remoteFile.toTransportableFile()));
       } catch (Exception e) {
@@ -116,7 +116,7 @@ public class ClusterMonitor implements AutoCloseable {
 
   public boolean isMonitoringRunning(HardwareMetric metric) {
     for (String hostname : hostnames) {
-      boolean running = IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.CONTROLLER.isMonitoringRunning(metric));
+      boolean running = IgniteClientHelper.executeRemotely(ignite, hostname, () -> Agent.controller.isMonitoringRunning(metric));
       if (!running) {
         return false;
       }
