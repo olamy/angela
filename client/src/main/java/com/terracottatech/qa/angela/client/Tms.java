@@ -16,6 +16,9 @@ import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
+
 public class Tms implements AutoCloseable {
 
   private final static Logger logger = LoggerFactory.getLogger(Tsa.class);
@@ -99,7 +102,7 @@ public class Tms implements AutoCloseable {
     } catch (Exception e) {
       // ignore, not installed
     }
-    if (!ClusterFactory.SKIP_UNINSTALL) {
+    if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
       uninstall();
     }
   }
@@ -130,7 +133,7 @@ public class Tms implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
 
     logger.debug("Setting up locally the extracted install to be deployed remotely");
-    String kitInstallationPath = System.getProperty("kitInstallationPath");
+    String kitInstallationPath = KIT_INSTALLATION_PATH.getValue();
     localKitManager.setupLocalInstall(license, kitInstallationPath, offline);
 
     logger.info("Attempting to remotely install if distribution already exists on {}", tmsHostname);

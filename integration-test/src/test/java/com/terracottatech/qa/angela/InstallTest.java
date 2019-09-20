@@ -31,6 +31,7 @@ import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_A;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_10X_AP;
 import static com.terracottatech.qa.angela.TestUtils.TC_CONFIG_4X_A;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
@@ -89,13 +90,13 @@ public class InstallTest {
             .license(TERRACOTTA.defaultLicense())
         );
 
-    System.setProperty("tc.qa.angela.ssh.strictHostKeyChecking", "false");
+    SSH_STRICT_HOST_CHECKING.setProperty("false");
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testSsh", config)) {
       Tsa tsa = factory.tsa();
       tsa.startAll();
       tsa.licenseAll();
     } finally {
-      System.clearProperty("tc.qa.angela.ssh.strictHostKeyChecking");
+      SSH_STRICT_HOST_CHECKING.clearProperty();
     }
   }
 

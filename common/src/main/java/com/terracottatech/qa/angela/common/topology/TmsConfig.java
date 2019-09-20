@@ -1,7 +1,6 @@
 package com.terracottatech.qa.angela.common.topology;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import com.terracottatech.qa.angela.common.util.IpUtils;
 
 public class TmsConfig {
 
@@ -17,9 +16,8 @@ public class TmsConfig {
     return hostname;
   }
 
-  public String getIp() throws UnknownHostException {
-    InetAddress address = InetAddress.getByName(hostname);
-    return address.getHostAddress();
+  public String getIp() {
+    return IpUtils.getHostAddress(hostname);
   }
 
   public int getTmsPort() {

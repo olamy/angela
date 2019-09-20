@@ -45,6 +45,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
+
 /**
  * @author Ludovic Orban
  */
@@ -163,7 +165,7 @@ public class Client implements Closeable {
     closed = true;
 
     stop();
-    if (!ClusterFactory.SKIP_UNINSTALL) {
+    if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
       logger.info("Wiping up client '{}' on {}", instanceId, clientId);
       IgniteClientHelper.executeRemotely(ignite, getHostname(), (IgniteRunnable)() -> Agent.controller.deleteClient(instanceId));
     }

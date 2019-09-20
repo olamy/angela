@@ -38,6 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.TMS_FULL_LOGGING;
+import static com.terracottatech.qa.angela.common.AngelaProperties.TSA_FULL_LOGGING;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING;
@@ -53,8 +55,8 @@ import static java.util.regex.Pattern.compile;
 public class Distribution102Controller extends DistributionController {
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
 
-  private final boolean tsaFullLogs = Boolean.getBoolean("angela.tsa.log.full");
-  private final boolean tmsFullLogs = Boolean.getBoolean("angela.tms.log.full");
+  private final boolean tsaFullLogging = Boolean.parseBoolean(TSA_FULL_LOGGING.getValue());
+  private final boolean tmsFullLogging = Boolean.parseBoolean(TMS_FULL_LOGGING.getValue());
 
   Distribution102Controller(Distribution distribution) {
     super(distribution);
@@ -82,7 +84,7 @@ public class Distribution102Controller extends DistributionController {
           stateRef.compareAndSet(STOPPED, STARTING);
         }
     ).andTriggerOn(
-        tsaFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
+        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
             .getSymbolicName(), mr.group())
     );
 
@@ -280,7 +282,7 @@ public class Distribution102Controller extends DistributionController {
     ).andTriggerOn(
         compile("^.*\\QStarting TmsApplication\\E.*with PID (\\d+).*$"), mr -> javaPid.set(parseInt(mr.group(1)))
     ).andTriggerOn(
-        tmsFullLogs ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group())
+        tmsFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group())
     );
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTmsCommand(installLocation))

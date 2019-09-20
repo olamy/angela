@@ -39,10 +39,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.agent.Agent.IGNITE_DIR;
+import static com.terracottatech.qa.angela.common.AngelaProperties.IGNITE_LOGGING;
 
 public class ClusterFactory implements AutoCloseable {
-  static final boolean SKIP_UNINSTALL = Boolean.getBoolean("tc.qa.angela.skipUninstall");
-
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
 
   private static final String TSA = "tsa";
@@ -139,7 +138,7 @@ public class ClusterFactory implements AutoCloseable {
       DirectoryUtils.createAndValidateDir(IGNITE_DIR);
       cfg.setIgniteHome(IGNITE_DIR.resolve(System.getProperty("user.name")).toString());
       cfg.setPeerClassLoadingEnabled(true);
-      boolean enableLogging = Boolean.getBoolean(Agent.IGNITE_LOGGING_SYSPROP_NAME);
+      boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING.getValue());
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setIgniteInstanceName("Instance@" + instanceId);
       cfg.setMetricsLogFrequency(0);

@@ -40,6 +40,8 @@ import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_STOP_PREFIX;
 import static com.terracottatech.qa.angela.client.util.IgniteClientHelper.executeRemotely;
 import static com.terracottatech.qa.angela.client.util.IgniteClientHelper.uploadKit;
+import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
+import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
@@ -118,7 +120,7 @@ public class Tsa implements AutoCloseable {
     Topology topology = tsaConfigurationContext.getTopology();
     License license = tsaConfigurationContext.getLicense();
 
-    String kitInstallationPath = System.getProperty("kitInstallationPath");
+    String kitInstallationPath = KIT_INSTALLATION_PATH.getValue();
     localKitManager.setupLocalInstall(license, kitInstallationPath, offline);
 
     boolean isRemoteInstallationSuccessful;
@@ -453,7 +455,7 @@ public class Tsa implements AutoCloseable {
       logger.error("Error when trying to stop servers : {}", e.getMessage());
       // ignore, not installed
     }
-    if (!ClusterFactory.SKIP_UNINSTALL) {
+    if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
       uninstallAll();
     }
 

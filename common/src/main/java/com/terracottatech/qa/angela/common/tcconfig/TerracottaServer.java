@@ -1,7 +1,6 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import com.terracottatech.qa.angela.common.util.IpUtils;
 
 /**
  * Logical definition of a Terracotta server instance
@@ -24,9 +23,8 @@ public class TerracottaServer {
     return hostname;
   }
 
-  public String getIp() throws UnknownHostException {
-    InetAddress address = InetAddress.getByName(hostname);
-    return address.getHostAddress();
+  public String getIp() {
+    return IpUtils.getHostAddress(hostname);
   }
 
   public Ports getPorts() {

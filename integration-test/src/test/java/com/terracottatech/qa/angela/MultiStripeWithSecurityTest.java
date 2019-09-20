@@ -31,8 +31,6 @@ public class MultiStripeWithSecurityTest {
 
   @Test
   public void test2StripesWithSecurity() throws Exception {
-//    System.setProperty("tc.qa.angela.skipUninstall", "true");
-
     Path securityRootDirectory = new SecurityRootDirectoryBuilder(temporaryFolder.newFolder())
         .withTruststore(VALID)
         .withKeystore(VALID)
