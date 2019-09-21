@@ -9,7 +9,7 @@ import java.nio.file.Paths;
  */
 public enum AngelaProperties {
   DIRECT_JOIN("tc.qa.directjoin", null),
-  KITS_DIR("kitsDir", Paths.get("data" ,"angela").toAbsolutePath().toString()),
+  KITS_DIR("kitsDir", Paths.get("/data/angela").toAbsolutePath().toString()),
   KIT_INSTALLATION_PATH("kitInstallationPath", null),
   IGNITE_LOGGING("tc.qa.ignite.logging", "false"),
   NODE_NAME("tc.qa.nodeName", IpUtils.getHostName()),

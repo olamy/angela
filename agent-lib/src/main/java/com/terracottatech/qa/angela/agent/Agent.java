@@ -42,8 +42,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
-import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.IGNITE_LOGGING;
+import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
 import static com.terracottatech.qa.angela.common.util.DirectoryUtils.createAndValidateDir;
@@ -61,19 +61,15 @@ public class Agent {
   public static volatile AgentController controller;
 
   static {
-    String rootDirSysProp = KITS_DIR.getSpecifiedValue();
-    if (rootDirSysProp == null || rootDirSysProp.isEmpty()) {
-      ROOT_DIR = Paths.get(KITS_DIR.getDefaultValue()).toAbsolutePath();
-    } else if (rootDirSysProp.startsWith(".")) {
-      throw new IllegalArgumentException("Can not use relative path for the ROOT_DIR. Please use a fixed one.");
-    } else {
-      ROOT_DIR = Paths.get(rootDirSysProp);
+    ROOT_DIR = Paths.get(KITS_DIR.getValue());
+    if (!ROOT_DIR.isAbsolute()) {
+      throw new IllegalArgumentException("Expected ROOT_DIR to be an absolute path, got: " + ROOT_DIR);
     }
     WORK_DIR = ROOT_DIR.resolve("work");
     IGNITE_DIR = ROOT_DIR.resolve("ignite");
   }
 
-  public static void main(String[] args) throws Exception {
+  public static void main(String[] args) {
     // the angela-agent jar may end up on the classpath, so its logback config cannot have the default filename
     System.setProperty("logback.configurationFile", "angela-logback.xml");
     String nodeName = NODE_NAME.getValue();
