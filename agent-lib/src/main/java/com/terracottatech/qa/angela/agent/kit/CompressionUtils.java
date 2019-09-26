@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.agent.kit;
 
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.util.DirectoryUtils;
+import com.terracottatech.qa.angela.common.util.OS;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -164,10 +165,15 @@ public class CompressionUtils {
         "e2ei/11/TDB_.LATEST/TDB/TDBConsole," +
         "e2ei/11/TDB_.LATEST/TDB/TDBCluster," +
         "e2ei/11/TPL_.LATEST/License/license");
-    lines.add("InstallDir=" + localInstallDir);
-    lines.add("TDB.licenseAll=__VERSION1__," + license.writeToFile(dest.toFile()));
+    lines.add("InstallDir=" + replaceWithDoubleSlashes(localInstallDir.toString()));
+    lines.add("TDB.licenseAll=__VERSION1__," + replaceWithDoubleSlashes(license.writeToFile(dest.toFile()).getPath()));
     lines.add("ServerURL=http://aquarius_va.ame.ad.sag/cgi-bin/dataserve" + sandboxName + ".cgi");
-    lines.add("sagInstallerLogFile=" + dest.resolve("installLog.txt"));
+    lines.add("sagInstallerLogFile=" + replaceWithDoubleSlashes(dest.resolve("installLog.txt").toString()));
     return lines;
+  }
+
+  private String replaceWithDoubleSlashes(String path) {
+    //SAG installer script needs double backslashes to work correctly on Windows
+    return OS.INSTANCE.isWindows() ? path.replace("\\", "\\\\") : path;
   }
 }

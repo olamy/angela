@@ -49,7 +49,7 @@ public class KitManagerTest {
       Version version = mock(Version.class);
       when(distribution.getVersion()).thenReturn(version);
       when(distribution.getPackageType()).thenReturn(PackageType.SAG_INSTALLER);
-      when(version.getVersion(false)).thenReturn(testedVersion);
+      when(version.getVersion(true)).thenReturn(testedVersion);
       when(version.getMajor()).thenReturn(Integer.parseInt(testedVersionNumbers[0]));
       when(version.getMinor()).thenReturn(Integer.parseInt(testedVersionNumbers[1]));
       when(version.getRevision()).thenReturn(Integer.parseInt(testedVersionNumbers[2]));
