@@ -50,7 +50,7 @@ public abstract class KitManager {
 
     Path sagOrKitDir = ROOT_DIR.resolve(packageType == SAG_INSTALLER ? "sag" : "kits");
     DirectoryUtils.createAndValidateDir(sagOrKitDir);
-    return sagOrKitDir.resolve(distribution.getVersion().getVersion(false));
+    return sagOrKitDir.resolve(distribution.getVersion().getVersion(true));
   }
 
   /**
