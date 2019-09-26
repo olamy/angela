@@ -181,7 +181,7 @@ public class InstallTest {
     // 10.x server doesn't install on mac
     assumeFalse(OS.INSTANCE.isMac());
 
-    // SAG installer needs a non-root directory (anything other than C:\)
+    // SAG installer needs administrator privileges
     assumeFalse(OS.INSTANCE.isWindows());
 
     System.setProperty("sandbox", "TDB_PI_105oct2019");
