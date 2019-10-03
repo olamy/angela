@@ -1,7 +1,6 @@
 package com.terracottatech.qa.angela.common;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -19,7 +18,7 @@ public class TerracottaCommandLineEnvironment {
    * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
    */
   @Deprecated
-  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("zulu", "Oracle Corporation", "sun", "openjdk")));
+  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Collections.singletonList("zulu")));
 
   /**
    * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
