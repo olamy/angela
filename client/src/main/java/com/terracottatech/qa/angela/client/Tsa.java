@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CLUSTER_TOOL;
+import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.JCMD;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_STOP_PREFIX;
 import static com.terracottatech.qa.angela.client.util.IgniteClientHelper.executeRemotely;
@@ -187,6 +188,12 @@ public class Tsa implements AutoCloseable {
         .map(server -> CompletableFuture.runAsync(() -> create(server, startUpArgs)))
         .reduce(CompletableFuture::allOf).ifPresent(CompletableFuture::join);
     return this;
+  }
+
+  public Jcmd jcmd(TerracottaServer terracottaServer) {
+    String whatFor = JCMD + terracottaServer.getServerSymbolicName().getSymbolicName();
+    TerracottaCommandLineEnvironment tcEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(whatFor);
+    return new Jcmd(ignite, instanceId, terracottaServer, tcEnv);
   }
 
   public Tsa create(TerracottaServer terracottaServer, String... startUpArgs) {

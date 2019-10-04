@@ -12,22 +12,20 @@ import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zeroturnaround.process.PidProcess;
 import org.zeroturnaround.process.Processes;
 
 import java.io.Closeable;
 import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -136,6 +134,10 @@ public class TerracottaServerInstance implements Closeable {
     return distributionController.invokeClusterTool(installLocation, env, arguments);
   }
 
+  public ToolExecutionResult jcmd(TerracottaCommandLineEnvironment env, String... arguments) {
+    return distributionController.invokeJcmd(terracottaServerInstanceProcess, env, arguments);
+  }
+
   public void waitForState(Predicate<TerracottaServerState> condition) {
     while (this.terracottaServerInstanceProcess.isAlive() && !condition.test(getTerracottaServerState())) {
       try {
@@ -166,16 +168,17 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public static class TerracottaServerInstanceProcess {
-    private final Set<Number> pids;
     private final AtomicReference<TerracottaServerState> state;
+    private final Number wrapperPid;
+    private final Number javaPid;
 
-    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, Number... pids) {
-      for (Number pid : pids) {
-        if (pid.intValue() < 1) {
-          throw new IllegalArgumentException("Pid cannot be < 1");
-        }
+    public TerracottaServerInstanceProcess(AtomicReference<TerracottaServerState> state, Number wrapperPid, Number javaPid) {
+      Objects.requireNonNull(wrapperPid, "wrapperPid cannot be null");
+      if (wrapperPid.intValue() < 1 || (javaPid != null && javaPid.intValue() < 1)) {
+        throw new IllegalArgumentException("Pid cannot be < 1");
       }
-      this.pids = new HashSet<>(Arrays.asList(pids));
+      this.wrapperPid = wrapperPid;
+      this.javaPid = javaPid;
       this.state = state;
     }
 
@@ -184,21 +187,24 @@ public class TerracottaServerInstance implements Closeable {
     }
 
     public Set<Number> getPids() {
+      Set<Number> pids = new HashSet<>();
+      pids.add(wrapperPid);
+      if (javaPid != null) {
+        pids.add(javaPid);
+      }
       return Collections.unmodifiableSet(pids);
+    }
+
+    public Number getJavaPid() {
+      return javaPid;
     }
 
     public boolean isAlive() {
       try {
         // if at least one PID is alive, the process is considered alive
-        for (Number pid : pids) {
-          PidProcess pidProcess = Processes.newPidProcess(pid.intValue());
-          if (pidProcess.isAlive()) {
-            return true;
-          }
-        }
-        return false;
+        return Processes.newPidProcess(wrapperPid.intValue()).isAlive() || Processes.newPidProcess(javaPid.intValue()).isAlive();
       } catch (Exception e) {
-        throw new RuntimeException("Error checking liveness of a process instance with PIDs " + pids, e);
+        throw new RuntimeException("Error checking liveness of a process instance with PIDs " + wrapperPid + " and " + javaPid, e);
       }
     }
   }

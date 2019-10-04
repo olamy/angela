@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.agent.client;
 
 import com.terracottatech.qa.angela.agent.Agent;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
+import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
@@ -10,11 +11,13 @@ import com.terracottatech.qa.angela.common.util.OS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
 import org.zeroturnaround.process.PidUtil;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +49,29 @@ public class RemoteClientManager {
 
   public File getClientClasspathRoot() {
     return new File(kitInstallationPath, CLASSPATH_SUBDIR_NAME);
+  }
+
+  public ToolExecutionResult jcmd(int javaPid, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
+    String javaHome = javaLocationResolver.resolveJavaLocation(tcEnv).getHome();
+
+    List<String> cmdLine = new ArrayList<>();
+    if (OS.INSTANCE.isWindows()) {
+      cmdLine.add(javaHome + "\\bin\\jcmd.exe");
+    } else {
+      cmdLine.add(javaHome + "/bin/jcmd");
+    }
+    cmdLine.add(Integer.toString(javaPid));
+    cmdLine.addAll(Arrays.asList(arguments));
+
+    try {
+      ProcessResult processResult = new ProcessExecutor(cmdLine)
+          .redirectErrorStream(true)
+          .readOutput(true)
+          .execute();
+      return new ToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public int spawnClient(InstanceId instanceId, TerracottaCommandLineEnvironment tcEnv, Collection<String> joinedNodes) {

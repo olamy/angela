@@ -1,9 +1,7 @@
 package com.terracottatech.qa.angela.common.distribution;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
@@ -12,10 +10,18 @@ import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
+import com.terracottatech.qa.angela.common.util.OS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
 
 import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +55,34 @@ public abstract class DistributionController {
       LOGGER.info(" JAVA_OPTS = {}", joinedJavaOpts);
     }
     return env;
+  }
+
+  public ToolExecutionResult invokeJcmd(TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
+    Number javaPid = terracottaServerInstanceProcess.getJavaPid();
+    if (javaPid == null) {
+      return new ToolExecutionResult(-1, Collections.singletonList("PID of java process could not be figured out"));
+    }
+
+    String javaHome = javaLocationResolver.resolveJavaLocation(tcEnv).getHome();
+
+    List<String> cmdLine = new ArrayList<>();
+    if (OS.INSTANCE.isWindows()) {
+      cmdLine.add(javaHome + "\\bin\\jcmd.exe");
+    } else {
+      cmdLine.add(javaHome + "/bin/jcmd");
+    }
+    cmdLine.add(javaPid.toString());
+    cmdLine.addAll(Arrays.asList(arguments));
+
+    try {
+      ProcessResult processResult = new ProcessExecutor(cmdLine)
+          .redirectErrorStream(true)
+          .readOutput(true)
+          .execute();
+      return new ToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);

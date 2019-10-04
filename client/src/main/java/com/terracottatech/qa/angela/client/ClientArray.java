@@ -5,6 +5,7 @@ import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.config.ClientArrayConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.client.util.IgniteClientHelper;
+import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.clientconfig.ClientId;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
@@ -102,6 +103,11 @@ public class ClientArray implements AutoCloseable {
     } finally {
       clients.remove(clientId);
     }
+  }
+
+  public Jcmd jcmd(Client client) {
+    TerracottaCommandLineEnvironment tcEnv = clientArrayConfigurationContext.getTerracottaCommandLineEnvironment();
+    return new Jcmd(ignite, instanceIdSupplier.get(), client, tcEnv);
   }
 
   public void stopAll() throws IOException {
