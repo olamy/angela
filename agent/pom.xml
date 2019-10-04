@@ -22,6 +22,12 @@
       <groupId>com.terracottatech.qa</groupId>
       <artifactId>angela-agent-lib</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

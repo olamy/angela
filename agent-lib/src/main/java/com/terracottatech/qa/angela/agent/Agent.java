@@ -53,7 +53,7 @@ import static com.terracottatech.qa.angela.common.util.DirectoryUtils.createAndV
  */
 public class Agent {
   public static final String AGENT_IS_READY_MARKER_LOG = "Agent is ready";
-  private final static Logger logger = LoggerFactory.getLogger(Agent.class);
+  private final static Logger logger;
 
   public static final Path ROOT_DIR;
   public static final Path WORK_DIR;
@@ -61,6 +61,11 @@ public class Agent {
   public static volatile AgentController controller;
 
   static {
+    // the angela-agent jar may end up on the classpath, so its logback config cannot have the default filename
+    // this must happen before any Logger instance gets created
+    System.setProperty("logback.configurationFile", "angela-logback.xml");
+    logger = LoggerFactory.getLogger(Agent.class);
+
     ROOT_DIR = Paths.get(KITS_DIR.getValue());
     if (!ROOT_DIR.isAbsolute()) {
       throw new IllegalArgumentException("Expected ROOT_DIR to be an absolute path, got: " + ROOT_DIR);
@@ -70,8 +75,11 @@ public class Agent {
   }
 
   public static void main(String[] args) {
-    // the angela-agent jar may end up on the classpath, so its logback config cannot have the default filename
-    System.setProperty("logback.configurationFile", "angela-logback.xml");
+    Node node = startNode();
+    Runtime.getRuntime().addShutdownHook(new Thread(node::close));
+  }
+
+  static Node startNode() {
     String nodeName = NODE_NAME.getValue();
     String directJoin = DIRECT_JOIN.getValue();
     String portRange = PORT_RANGE.getValue();
@@ -84,13 +92,16 @@ public class Agent {
         }
       }
     }
-    final Node node = new Node(nodeName, nodesToJoin, Integer.parseInt(portRange));
-
-    Runtime.getRuntime().addShutdownHook(new Thread(node::close));
+    Node node = new Node(nodeName, nodesToJoin, Integer.parseInt(portRange));
 
     // Do not use logger here as the marker is being grep'ed at and we do not want to depend upon the logger config
     System.out.println(AGENT_IS_READY_MARKER_LOG);
     System.out.flush();
+
+    // keep this debug log as TestAgent depends on it
+    logger.debug("Agent started");
+
+    return node;
   }
 
   public static class Node implements Closeable {

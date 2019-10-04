@@ -120,8 +120,10 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Path baseDir = Agent.ROOT_DIR.resolve(angelaHome);
       Path jarsDir = baseDir.resolve("jars");
       exec(ssh, "mkdir -p " + baseDir.toString());
+      exec(ssh, "chmod a+w " + baseDir.getParent().toString());
       exec(ssh, "chmod a+w " + baseDir.toString());
       exec(ssh, "mkdir -p " + jarsDir.toString());
+      exec(ssh, "chmod a+w " + jarsDir.toString());
       if (agentJarFile.getName().endsWith("-SNAPSHOT.jar") || exec(ssh, "[ -e " + jarsDir.resolve(agentJarFile.getName()).toString() + " ]") != 0) {
         // jar file is a snapshot or does not exist, upload it
         LOGGER.info("uploading agent jar {} ...", agentJarFile.getName());
@@ -198,7 +200,8 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
         throw new RuntimeException("Agent SNAPSHOT jar file not found at " + snapshotLocation);
       } else {
-        File agentFile = Files.createTempFile("angela-agent", ".jar").toFile();
+        File tmpDir = Files.createTempDirectory("angela").toFile();
+        File agentFile = new File(tmpDir, "angela-agent-" + AngelaVersions.INSTANCE.getAngelaVersion() + ".jar");
         String releaseUrl = "http://nexus.terracotta.eur.ad.sag:8080/service/local/repositories/terracotta-ee-releases/content/com/terracottatech/qa/angela-agent/" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +
                             "/angela-agent-" +
