@@ -15,6 +15,7 @@ public interface TsaConfigurationContext {
 
   interface TerracottaCommandLineEnvironmentKeys {
     String CLUSTER_TOOL = "ClusterTool";
+    String JCMD = "Jcmd";
     String SERVER_START_PREFIX = "Server-";
     String SERVER_STOP_PREFIX = "Stop-";
   }

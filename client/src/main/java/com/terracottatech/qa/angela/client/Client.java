@@ -72,6 +72,14 @@ public class Client implements Closeable {
     );
   }
 
+  public ClientId getClientId() {
+    return clientId;
+  }
+
+  int getPid() {
+    return subClientPid;
+  }
+
   private int spawnSubClient(TerracottaCommandLineEnvironment tcEnv, LocalKitManager localKitManager) {
     logger.info("Spawning client '{}' on {}", instanceId, clientId);
 

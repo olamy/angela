@@ -6,6 +6,7 @@ import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -316,6 +318,20 @@ public class AgentController {
       throw new IllegalStateException("Cannot control cluster tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
+  }
+
+  public ToolExecutionResult serverJcmd(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
+    TerracottaServerState tsaState = getTsaState(instanceId, terracottaServer);
+    if (!EnumSet.of(TerracottaServerState.STARTED_AS_ACTIVE, TerracottaServerState.STARTED_AS_PASSIVE).contains(tsaState)) {
+      throw new IllegalStateException("Cannot control jcmd: server " + terracottaServer.getServerSymbolicName() + " has not started");
+    }
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    return terracottaInstall.getTerracottaServerInstance(terracottaServer).jcmd(tcEnv, arguments);
+  }
+
+  public ToolExecutionResult clientJcmd(InstanceId instanceId, int clientPid, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
+    RemoteClientManager remoteClientManager = new RemoteClientManager(instanceId);
+    return remoteClientManager.jcmd(clientPid, tcEnv, arguments);
   }
 
   public void startHardwareMonitoring(String workingPath, Map<HardwareMetric, MonitoringCommand> commands) {

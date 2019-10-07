@@ -1,11 +1,5 @@
 package com.terracottatech.qa.angela.common.distribution;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.zeroturnaround.exec.ProcessExecutor;
-import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
-
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
@@ -20,6 +14,12 @@ import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zeroturnaround.exec.ProcessExecutor;
+import org.zeroturnaround.exec.ProcessResult;
+import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -79,15 +80,88 @@ public class Distribution43Controller extends DistributionController {
             .getSymbolicName(), mr.group())
     );
 
+    // add an identifiable ID to the JVM's system properties
+    String serverUuid = UUID.randomUUID().toString();
+    Map<String, String> env = buildEnv(tcEnv);
+    env.compute("JAVA_OPTS", (key, value) -> {
+      String prop = " -Dangela.processIdentifier=" + serverUuid;
+      return value == null ? prop : value + prop;
+    });
+
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(createTsaCommand(serverSymbolicName, tcConfig, installLocation, startUpArgs))
         .directory(installLocation)
-        .environment(buildEnv(tcEnv))
+        .environment(env)
         .redirectError(System.err)
         .redirectOutput(serverLogOutputStream), stateRef, STOPPED);
 
     int wrapperPid = watchedProcess.getPid();
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid);
+    Number javaPid = findWithJcmdJavaPidOf(serverUuid, tcEnv);
+    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
+  }
+
+  private Number findWithJcmdJavaPidOf(String serverUuid, TerracottaCommandLineEnvironment tcEnv) {
+    String javaHome = javaLocationResolver.resolveJavaLocation(tcEnv).getHome();
+
+    List<String> cmdLine = new ArrayList<>();
+    if (OS.INSTANCE.isWindows()) {
+      cmdLine.add(javaHome + "\\bin\\jcmd.exe");
+    } else {
+      cmdLine.add(javaHome + "/bin/jcmd");
+    }
+    cmdLine.add("com.tc.server.TCServerMain");
+    cmdLine.add("VM.system_properties");
+
+    final int retries = 100;
+    for (int i = 0; i < retries; i++) {
+      ProcessResult processResult;
+      try {
+        processResult = new ProcessExecutor(cmdLine)
+            .redirectErrorStream(true)
+            .readOutput(true)
+            .execute();
+      } catch (Exception e) {
+        logger.warn("Unable to get server pid with jcmd", e);
+        return null;
+      }
+
+      if (processResult.getExitValue() == 0) {
+        return parseOutputAndFindUuid(processResult.getOutput().getLines(), serverUuid);
+      }
+
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+
+      // warn on the last loop
+      if (i == (retries - 1)) {
+        logger.warn("Unable to get server pid with jcmd (rc={})", processResult.getExitValue());
+        logger.warn("{}", processResult.getOutput().getString());
+      }
+    }
+
+    return null;
+  }
+
+  private Number parseOutputAndFindUuid(List<String> lines, String serverUuid) {
+    int pid = 0;
+    for (String line : lines) {
+      if (line.endsWith(":")) {
+        try {
+          pid = Integer.parseInt(line.substring(0, line.length() - 1));
+        } catch (NumberFormatException e) {
+          // false positive, skip
+          continue;
+        }
+      }
+
+      if (line.equals("angela.processIdentifier=" + serverUuid)) {
+        return pid;
+      }
+    }
+    return null;
   }
 
   @Override
