@@ -116,7 +116,7 @@ public class InstallTest {
   }
 
   @Test
-  public void testLocalInstallJava9() throws Exception {
+  public void testLocalInstallJava11() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
             .topology(
@@ -125,10 +125,10 @@ public class InstallTest {
                     tcConfig(version(TERRACOTTA_VERSION), TC_CONFIG_10X_A)
                 ))
             .license(TERRACOTTA.defaultLicense())
-            .terracottaCommandLineEnvironment(new TerracottaCommandLineEnvironment("1.9", null, Arrays.asList("--add-modules", "java.xml.bind", "--illegal-access=warn")))
+            .terracottaCommandLineEnvironment(TerracottaCommandLineEnvironment.DEFAULT.withJavaVersion("1.11"))
         );
 
-    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstallJava9", config)) {
+    try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstallJava11", config)) {
       Tsa tsa = factory.tsa();
       tsa.startAll();
       tsa.licenseAll();
