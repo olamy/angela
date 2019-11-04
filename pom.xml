@@ -138,6 +138,16 @@
         <groupId>org.zeroturnaround</groupId>
         <artifactId>zt-process-killer</artifactId>
         <version>${zt-process-killer.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.zeroturnaround</groupId>
+            <artifactId>zt-exec:1.7</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-io</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.zeroturnaround</groupId>
