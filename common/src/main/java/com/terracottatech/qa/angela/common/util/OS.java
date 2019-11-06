@@ -49,8 +49,8 @@ public class OS {
   public static final OS INSTANCE;
 
   private static final Map<String, String> MAC_OS = new HashMap<>();
-  private static final Map<Integer, String> DARWIN = new HashMap<Integer, String>();
-  private static final List<String> UNIX = new ArrayList<String>();
+  private static final Map<Integer, String> DARWIN = new HashMap<>();
+  private static final List<String> UNIX = new ArrayList<>();
 
   static {
     MAC_OS.put("10.0", "Puma");
@@ -67,6 +67,8 @@ public class OS {
     MAC_OS.put("10.11", "El Captain");
     MAC_OS.put("10.12", "Sierra");
     MAC_OS.put("10.13", "High Sierra");
+    MAC_OS.put("10.14", "Mojave");
+    MAC_OS.put("10.15", "Catalina");
 
     DARWIN.put(5, "Puma");
     DARWIN.put(6, "Jaguar");
@@ -81,6 +83,8 @@ public class OS {
     DARWIN.put(15, "El Captain");
     DARWIN.put(16, "Sierra");
     DARWIN.put(17, "High Sierra");
+    DARWIN.put(18, "Mojave");
+    DARWIN.put(19, "Catalina");
 
     UNIX.addAll(Arrays.asList("Linux", "SunOS"));
 
