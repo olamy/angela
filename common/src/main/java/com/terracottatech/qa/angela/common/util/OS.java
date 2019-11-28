@@ -38,7 +38,7 @@ import java.util.Map;
  * - Mac OS
  * - Solaris
  * <p/>
- * TODO : AIX / HP-UX / ZOS / BSD
+ * TODO :  P-UX / ZOS
  *
  * @author Aurelien Broszniowski
  * http://www.jsoft.biz
