@@ -73,8 +73,13 @@ public class AgentController {
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
   }
 
-  public boolean installTsa(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license,
-                            SecurityRootDirectory securityRootDirectory, String kitInstallationName, Distribution distribution) {
+  public boolean installTsa(InstanceId instanceId,
+                            TerracottaServer terracottaServer,
+                            boolean offline,
+                            License license,
+                            String kitInstallationName,
+                            Distribution distribution,
+                            Topology topology) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
 
     File installLocation;
@@ -93,7 +98,7 @@ public class AgentController {
       logger.info("Kit for {} already installed", terracottaServer);
     }
 
-    terracottaInstall.addServer(terracottaServer, securityRootDirectory, installLocation, license, distribution, topology);
+    terracottaInstall.addServer(terracottaServer, installLocation, license, distribution, topology);
 
     return true;
   }

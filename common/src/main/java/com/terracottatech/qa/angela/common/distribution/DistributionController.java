@@ -5,10 +5,12 @@ import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
 import org.slf4j.Logger;
@@ -85,13 +87,19 @@ public abstract class DistributionController {
     }
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
+  public abstract void disrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled);
+
+  public abstract void undisrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled);
+
+  public abstract void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled);
+
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation, Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
 
   public abstract void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void stopTsa(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File location, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
+  public abstract void stopTsa(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
   public abstract void configureTsaLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 

@@ -3,9 +3,7 @@ package com.terracottatech.qa.angela.agent.kit;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
@@ -44,14 +42,14 @@ public class TerracottaInstall {
     }
   }
 
-  public void addServer(TerracottaServer terracottaServer, SecurityRootDirectory securityRootDirectory, File installLocation,
-                        License license, Distribution distribution, Topology topology) {
+  public void addServer(TerracottaServer terracottaServer,
+                        File installLocation,
+                        License license,
+                        Distribution distribution,
+                        Topology topology) {
     synchronized (terracottaServerInstances) {
-      int stripeId = topology.findStripeIdOf(terracottaServer.getServerSymbolicName());
-      boolean netDisruptionEnabled = topology.isNetDisruptionEnabled();
-      TcConfig tcConfig = topology.findTcConfigOf(terracottaServer.getServerSymbolicName());
       TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer.getServerSymbolicName(),
-          installLocation, tcConfig, netDisruptionEnabled, stripeId, securityRootDirectory, license, distribution);
+          installLocation, license, distribution, topology);
       terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), serverInstance);
     }
   }
