@@ -48,7 +48,7 @@ public class TerracottaInstall {
                         Distribution distribution,
                         Topology topology) {
     synchronized (terracottaServerInstances) {
-      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer.getServerSymbolicName(),
+      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer,
           installLocation, license, distribution, topology);
       terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), serverInstance);
     }

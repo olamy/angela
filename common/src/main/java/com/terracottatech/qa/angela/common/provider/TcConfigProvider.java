@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class TcConfigProvider implements ConfigurationProvider {
-  private volatile List<TcConfig> tcConfigs;
+  private final List<TcConfig> tcConfigs;
 
   private TcConfigProvider() {
     tcConfigs  = new ArrayList<>();

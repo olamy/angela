@@ -107,43 +107,35 @@ public class TsaConfigTest {
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
                        .getTsaPort() > 1024, is(true));
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
-                       .getGroupPort() > 1024, is(true));
+                       .getTsaGroupPort() > 1024, is(true));
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
                        .getJmxPort() > 1024, is(true));
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
                        .getManagementPort() > 1024, is(true));
 
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
                        .getTsaPort() <= 65535, is(true));
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
-                       .getGroupPort() <= 65535, is(true));
+                       .getTsaGroupPort() <= 65535, is(true));
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
                        .getJmxPort() <= 65535, is(true));
         assertThat(tcConfigs.get(tcConfigIndex)
                        .getServers()
                        .get(tcServerIndex)
-                       .getPorts()
                        .getManagementPort() <= 65535, is(true));
       }
     }

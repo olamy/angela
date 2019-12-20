@@ -21,6 +21,7 @@ import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
 import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
@@ -108,7 +109,7 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation,
+  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation,
                                                                             Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     Map<String, String> env = buildEnv(tcEnv);
 
@@ -125,12 +126,12 @@ public class Distribution102Controller extends DistributionController {
           stateRef.compareAndSet(STOPPED, STARTING);
         }
     ).andTriggerOn(
-        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
-            .getSymbolicName(), mr.group())
+        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer
+            .getServerSymbolicName().getSymbolicName(), mr.group())
     );
 
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(serverSymbolicName, topology, installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -145,7 +146,7 @@ public class Distribution102Controller extends DistributionController {
     }
 
     if (!watchedProcess.isAlive()) {
-      throw new RuntimeException("Terracotta server process died in its infancy : " + serverSymbolicName);
+      throw new RuntimeException("Terracotta server process died in its infancy : " + terracottaServer.getServerSymbolicName());
     }
     return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
   }
@@ -182,6 +183,11 @@ public class Distribution102Controller extends DistributionController {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public ConfigToolExecutionResult invokeConfigTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments) {
+    throw new UnsupportedOperationException("Config Tool is supported only for a dynamically-configured cluster");
   }
 
   @Override
@@ -423,8 +429,7 @@ public class Distribution102Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts()
-            .getTsaPort()))
+        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
         .collect(Collectors.joining(",", "terracotta://", "")));
   }
 

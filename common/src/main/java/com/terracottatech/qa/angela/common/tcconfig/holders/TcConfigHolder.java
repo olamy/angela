@@ -128,7 +128,12 @@ public abstract class TcConfigHolder {
 
         String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
-        TerracottaServer terracottaServer = new TerracottaServer(symbolicName, hostname, tsaPort, tsaGroupPort, managementPort, jmxPort);
+        TerracottaServer terracottaServer = TerracottaServer
+            .tcServer(symbolicName, hostname)
+            .tsaPort(tsaPort)
+            .groupPort(tsaGroupPort)
+            .managementPort(managementPort)
+            .jmxPort(jmxPort);
         servers.add(terracottaServer);
       }
     } catch (Exception e) {

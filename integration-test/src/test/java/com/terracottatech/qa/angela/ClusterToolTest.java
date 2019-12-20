@@ -49,7 +49,7 @@ public class ClusterToolTest {
           "-v", "configure",
           "-l", tsa.licensePath(tsa.getActive()),
           "-n", "mycluster",
-          "-s", tsa.getActive().getHostname() + ":" + tsa.getActive().getPorts().getTsaPort()
+          "-s", tsa.getActive().getHostname() + ":" + tsa.getActive().getTsaPort()
       );
 
       int code = execution.getExitStatus();
@@ -78,7 +78,7 @@ public class ClusterToolTest {
             "-v", "configure",
             "-l", tsa.licensePath(tsa.getActive()),
             "-n", "mycluster",
-            "-s", tsa.getActive().getHostname() + ":" + tsa.getActive().getPorts().getTsaPort()
+            "-s", tsa.getActive().getHostname() + ":" + tsa.getActive().getTsaPort()
         );
         fail("cluster tool should fail on 4.x");
       } catch (Exception e) {

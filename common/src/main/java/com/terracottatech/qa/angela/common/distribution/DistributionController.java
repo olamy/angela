@@ -1,11 +1,11 @@
 package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
-import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -93,7 +93,7 @@ public abstract class DistributionController {
 
   public abstract void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled);
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation, Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
 
@@ -104,6 +104,8 @@ public abstract class DistributionController {
   public abstract void configureTsaLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 
   public abstract ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
+
+  public abstract ConfigToolExecutionResult invokeConfigTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
 
   public abstract URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts);
 

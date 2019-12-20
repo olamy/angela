@@ -47,6 +47,7 @@ import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTAL
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_IN_DIAGNOSTIC_MODE;
 import static java.util.EnumSet.of;
 
 /**
@@ -216,7 +217,7 @@ public class Tsa implements AutoCloseable {
 
   public Tsa start(TerracottaServer terracottaServer, String... startUpArgs) {
     create(terracottaServer, startUpArgs);
-    executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.waitForTsaInState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE)));
+    executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.waitForTsaInState(instanceId, terracottaServer, of(STARTED_AS_ACTIVE, STARTED_AS_PASSIVE, STARTED_IN_DIAGNOSTIC_MODE)));
     return this;
   }
 

@@ -5,7 +5,6 @@ import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
@@ -31,7 +30,7 @@ import java.util.function.Predicate;
  */
 public class TerracottaServerInstance implements Closeable {
   private final static Logger logger = LoggerFactory.getLogger(TerracottaServerInstance.class);
-  private final ServerSymbolicName serverSymbolicName;
+  private final TerracottaServer terracottaServer;
   private final DistributionController distributionController;
   private final File installLocation;
   private final Distribution distribution;
@@ -40,12 +39,12 @@ public class TerracottaServerInstance implements Closeable {
   private final boolean netDisruptionEnabled;
   private final Topology topology;
 
-  public TerracottaServerInstance(ServerSymbolicName serverSymbolicName,
+  public TerracottaServerInstance(TerracottaServer terracottaServer,
                                   File installLocation,
                                   License license,
                                   Distribution distribution,
                                   Topology topology) {
-    this.serverSymbolicName = serverSymbolicName;
+    this.terracottaServer = terracottaServer;
     this.distributionController = distribution.createDistributionController();
     this.installLocation = installLocation;
     this.distribution = distribution;
@@ -59,19 +58,19 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public void create(TerracottaCommandLineEnvironment env, List<String> startUpArgs) {
-    this.terracottaServerInstanceProcess = this.distributionController.createTsa(serverSymbolicName, installLocation, topology, env, startUpArgs);
+    this.terracottaServerInstanceProcess = this.distributionController.createTsa(terracottaServer, installLocation, topology, env, startUpArgs);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
-    this.distributionController.disrupt(serverSymbolicName, targets, netDisruptionEnabled);
+    this.distributionController.disrupt(terracottaServer.getServerSymbolicName(), targets, netDisruptionEnabled);
   }
 
   public void undisrupt(Collection<TerracottaServer> targets) {
-    this.distributionController.undisrupt(serverSymbolicName, targets, netDisruptionEnabled);
+    this.distributionController.undisrupt(terracottaServer.getServerSymbolicName(), targets, netDisruptionEnabled);
   }
 
   public void stop(TerracottaCommandLineEnvironment tcEnv) {
-    this.distributionController.stopTsa(serverSymbolicName, installLocation, terracottaServerInstanceProcess, tcEnv);
+    this.distributionController.stopTsa(terracottaServer.getServerSymbolicName(), installLocation, terracottaServerInstanceProcess, tcEnv);
   }
 
   @Override
@@ -85,6 +84,10 @@ public class TerracottaServerInstance implements Closeable {
 
   public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {
     return distributionController.invokeClusterTool(installLocation, env, arguments);
+  }
+
+  public ConfigToolExecutionResult configTool(TerracottaCommandLineEnvironment env, String... arguments) {
+    return distributionController.invokeConfigTool(installLocation, env, arguments);
   }
 
   public ToolExecutionResult jcmd(TerracottaCommandLineEnvironment env, String... arguments) {
@@ -164,7 +167,7 @@ public class TerracottaServerInstance implements Closeable {
 
   private void removeDisruptionLinks() {
     if (netDisruptionEnabled) {
-      distributionController.removeDisruptionLinks(serverSymbolicName, netDisruptionEnabled);
+      distributionController.removeDisruptionLinks(terracottaServer.getServerSymbolicName(), netDisruptionEnabled);
     }
   }
 }

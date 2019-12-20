@@ -35,9 +35,16 @@ public class TsaTest {
     when(tsaConfigurationContext.getLicense()).thenReturn(license);
     Tsa tsa = new Tsa(null, null, tsaConfigurationContext);
     List<TerracottaServer> terracottaServerList = new ArrayList<>();
-    terracottaServerList.add(new TerracottaServer("1", "hostname1", 9510, 9610, 9810, 9910));
-    terracottaServerList.add(new TerracottaServer("2", "hostname2", 9511, 9611, 9811, 9911));
-
+    terracottaServerList.add(TerracottaServer.tcServer("1", "hostname1")
+        .tsaPort(9510)
+        .groupPort(9610)
+        .managementPort(9810)
+        .jmxPort(9910));
+    terracottaServerList.add(TerracottaServer.tcServer("2", "hostname2")
+        .tsaPort(9511)
+        .groupPort(9611)
+        .managementPort(9811)
+        .jmxPort(9911));
     when(tcConfig.getServers()).thenReturn(terracottaServerList);
 
     final URI uri = tsa.uri();
@@ -54,8 +61,16 @@ public class TsaTest {
     when(tsaConfigurationContext.getLicense()).thenReturn(license);
     Tsa tsa = new Tsa(null, null, tsaConfigurationContext);
     List<TerracottaServer> terracottaServerList = new ArrayList<>();
-    terracottaServerList.add(new TerracottaServer("1", "hostname1", 9510, 9610, 9810, 9910));
-    terracottaServerList.add(new TerracottaServer("2", "hostname2", 9511, 9611, 9811, 9911));
+    terracottaServerList.add(TerracottaServer.tcServer("1", "hostname1")
+        .tsaPort(9510)
+        .groupPort(9610)
+        .managementPort(9810)
+        .jmxPort(9910));
+    terracottaServerList.add(TerracottaServer.tcServer("2", "hostname2")
+        .tsaPort(9511)
+        .groupPort(9611)
+        .managementPort(9811)
+        .jmxPort(9911));
 
     when(tcConfig.getServers()).thenReturn(terracottaServerList);
 
