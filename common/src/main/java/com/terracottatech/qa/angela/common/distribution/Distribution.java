@@ -67,6 +67,9 @@ public class Distribution {
   }
 
   public DistributionController createDistributionController() {
+    if (version.getMajor() == 10 && version.getMinor() == 7) {
+      return new Distribution107Controller(this);
+    }
     if (version.getMajor() == 10 || version.getMajor() == 3) {
       return new Distribution102Controller(this);
     } else {

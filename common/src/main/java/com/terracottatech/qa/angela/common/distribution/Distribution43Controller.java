@@ -1,14 +1,18 @@
 package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
+import com.terracottatech.qa.angela.common.provider.TcConfigProvider;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -58,7 +62,22 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(ServerSymbolicName serverSymbolicName, File installLocation, TcConfig tcConfig,
+  public void disrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
+    throw new UnsupportedOperationException("Network Disruption not supported in 4.x");
+  }
+
+  @Override
+  public void undisrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
+    throw new UnsupportedOperationException("Network Disruption not supported in 4.x");
+  }
+
+  @Override
+  public void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled) {
+    throw new UnsupportedOperationException("Network Disruption not supported in 4.x");
+  }
+
+  @Override
+  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology,
                                                                             TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
@@ -76,8 +95,8 @@ public class Distribution43Controller extends DistributionController {
     ).andTriggerOn(
         compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
     ).andTriggerOn(
-        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", serverSymbolicName
-            .getSymbolicName(), mr.group())
+        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer
+            .getServerSymbolicName().getSymbolicName(), mr.group())
     );
 
     // add an identifiable ID to the JVM's system properties
@@ -89,7 +108,7 @@ public class Distribution43Controller extends DistributionController {
     });
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(serverSymbolicName, tcConfig, installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology.getConfigurationProvider(), installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -165,9 +184,9 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void stopTsa(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File installLocation, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     ProcessExecutor executor = new ProcessExecutor()
-        .command(stopTsaCommand(serverSymbolicName, tcConfig, installLocation))
+        .command(stopTsaCommand(serverSymbolicName, installLocation))
         .directory(installLocation)
         .environment(buildEnv(tcEnv))
         .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
@@ -212,7 +231,7 @@ public class Distribution43Controller extends DistributionController {
    *
    * @return String[] representing the start command and its parameters
    */
-  private List<String> stopTsaCommand(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File installLocation) {
+  private List<String> stopTsaCommand(ServerSymbolicName serverSymbolicName, File installLocation) {
     List<String> options = new ArrayList<>();
     options.add(getStopCmd(installLocation));
 
@@ -220,12 +239,6 @@ public class Distribution43Controller extends DistributionController {
     if (!(serverSymbolicName.getSymbolicName().contains(":") || (serverSymbolicName.getSymbolicName().isEmpty()))) {
       options.add("-n");
       options.add(serverSymbolicName.getSymbolicName());
-    }
-
-    // add -f if applicable
-    if (tcConfig.getPath() != null) {
-      options.add("-f");
-      options.add(tcConfig.getPath());
     }
 
     return options;
@@ -249,12 +262,17 @@ public class Distribution43Controller extends DistributionController {
     throw new UnsupportedOperationException("4.x does not have a cluster tool");
   }
 
+  @Override
+  public ConfigToolExecutionResult invokeConfigTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments) {
+    throw new UnsupportedOperationException("4.x does not support config tool");
+  }
+
   /**
    * Construct the Start Command with the Version, Tc Config file and server name
    *
    * @return List of Strings representing the start command and its parameters
    */
-  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName, TcConfig tcConfig, File installLocation, List<String> startUpArgs) {
+  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName, ConfigurationProvider configurationProvider, File installLocation, List<String> startUpArgs) {
     List<String> options = new ArrayList<>();
     // start command
     options.add(getStartCmd(installLocation));
@@ -265,6 +283,9 @@ public class Distribution43Controller extends DistributionController {
       options.add(serverSymbolicName.getSymbolicName());
     }
 
+    TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+    TcConfig tcConfig = TcConfig.copy(tcConfigProvider.findTcConfig(serverSymbolicName));
+    tcConfigProvider.setUpInstallation(tcConfig, serverSymbolicName, installLocation, null);
     // add -f if applicable
     if (tcConfig.getPath() != null) {
       //workaround to have unique platform restart directory for active & passives
@@ -321,8 +342,7 @@ public class Distribution43Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getPorts()
-            .getTsaPort()))
+        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
         .collect(Collectors.joining(",", "", "")));
   }
 

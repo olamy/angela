@@ -4,6 +4,7 @@ import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.terracotta.connection.Connection;
 import org.terracotta.connection.ConnectionService;
@@ -50,6 +51,7 @@ public class ServerToServerDisruptionTest {
    * Create partition between [active] & [passive1,passive2] in consistent mode and verify
    * state of servers.
    */
+  @Ignore("TDB-4769")
   @Test
   public void testPartitionBetweenActivePassives() throws Exception {
     //set netDisruptionEnabled to true to enable disruption
@@ -95,7 +97,7 @@ public class ServerToServerDisruptionTest {
 
   private static String getServerBlockedState(TerracottaServer server) throws Exception {
     ConnectionService connectionService = new DiagnosticConnectionService();
-    URI uri = URI.create("diagnostic://" + server.getHostname() + ":" + server.getPorts().getTsaPort());
+    URI uri = URI.create("diagnostic://" + server.getHostname() + ":" + server.getTsaPort());
     try (Connection connection = connectionService.connect(uri, new Properties())) {
       EntityRef<Diagnostics, Object, Void> ref = connection.getEntityRef(Diagnostics.class, 1, "root");
       try (Diagnostics diagnostics = ref.fetchEntity(null)) {

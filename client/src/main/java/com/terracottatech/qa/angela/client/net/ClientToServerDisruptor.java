@@ -48,8 +48,7 @@ public class ClientToServerDisruptor implements Disruptor {
       final InetSocketAddress clientEndPoint = DISRUPTION_PROVIDER.isProxyBased() ? null : new InetSocketAddress("localhost", -1);
       final InetSocketAddress proxyEndPoint = DISRUPTION_PROVIDER.isProxyBased() ? new InetSocketAddress("localhost", proxiedTsaPorts
           .get(server.getServerSymbolicName())) : null;
-      final InetSocketAddress serverEndPoint = new InetSocketAddress(server.getHostname(), server.getPorts()
-          .getTsaPort());
+      final InetSocketAddress serverEndPoint = new InetSocketAddress(server.getHostname(), server.getTsaPort());
 
       endPoints.putIfAbsent(server.getServerSymbolicName(), DISRUPTION_PROVIDER.isProxyBased() ? proxyEndPoint : serverEndPoint);
       LOGGER.debug("Server {} endpoint {}", server.getServerSymbolicName()

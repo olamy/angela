@@ -6,6 +6,7 @@ import com.terracottatech.qa.angela.agent.kit.RemoteKitManager;
 import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
+import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
@@ -73,8 +74,13 @@ public class AgentController {
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
   }
 
-  public boolean installTsa(InstanceId instanceId, Topology topology, TerracottaServer terracottaServer, boolean offline, License license,
-                            SecurityRootDirectory securityRootDirectory, String kitInstallationName, Distribution distribution) {
+  public boolean installTsa(InstanceId instanceId,
+                            TerracottaServer terracottaServer,
+                            boolean offline,
+                            License license,
+                            String kitInstallationName,
+                            Distribution distribution,
+                            Topology topology) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
 
     File installLocation;
@@ -93,7 +99,7 @@ public class AgentController {
       logger.info("Kit for {} already installed", terracottaServer);
     }
 
-    terracottaInstall.addServer(terracottaServer, securityRootDirectory, installLocation, license, distribution, topology);
+    terracottaInstall.addServer(terracottaServer, installLocation, license, distribution, topology);
 
     return true;
   }
@@ -318,6 +324,14 @@ public class AgentController {
       throw new IllegalStateException("Cannot control cluster tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
     }
     return terracottaInstall.getTerracottaServerInstance(terracottaServer).clusterTool(tcEnv, arguments);
+  }
+
+  public ConfigToolExecutionResult configTool(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      throw new IllegalStateException("Cannot control config tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
+    }
+    return terracottaInstall.getTerracottaServerInstance(terracottaServer).configTool(tcEnv, arguments);
   }
 
   public ToolExecutionResult serverJcmd(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
