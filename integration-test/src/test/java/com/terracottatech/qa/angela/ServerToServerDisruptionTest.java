@@ -4,7 +4,6 @@ import com.terracottatech.qa.angela.client.config.ConfigurationContext;
 import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.terracotta.connection.Connection;
 import org.terracotta.connection.ConnectionService;
@@ -51,7 +50,6 @@ public class ServerToServerDisruptionTest {
    * Create partition between [active] & [passive1,passive2] in consistent mode and verify
    * state of servers.
    */
-  @Ignore("TDB-4769")
   @Test
   public void testPartitionBetweenActivePassives() throws Exception {
     //set netDisruptionEnabled to true to enable disruption
@@ -165,6 +163,7 @@ public class ServerToServerDisruptionTest {
 
 
   @Test
+  @org.junit.Ignore("TDB-4770")
   public void testFailoverActivePassiveStripe() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa

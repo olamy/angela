@@ -1,9 +1,9 @@
 package com.terracottatech.qa.angela.common.provider;
 
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -19,13 +19,12 @@ import java.util.stream.Collectors;
 public class TcConfigProvider implements ConfigurationProvider {
   private final List<TcConfig> tcConfigs;
 
-  private TcConfigProvider() {
-    tcConfigs  = new ArrayList<>();
+  private TcConfigProvider(List<TcConfig> tcConfigs) {
+    this.tcConfigs = new ArrayList<>(tcConfigs);
   }
 
   public static TcConfigProvider withTcConfig(List<TcConfig> tcConfigs, boolean netDisruptionEnabled) {
-    TcConfigProvider tcConfigProvider = new TcConfigProvider();
-    tcConfigProvider.tcConfigs.addAll(tcConfigs);
+    TcConfigProvider tcConfigProvider = new TcConfigProvider(tcConfigs);
     checkConfigsHaveNoSymbolicNameDuplicate(tcConfigProvider.tcConfigs);
     if (netDisruptionEnabled) {
       for (TcConfig cfg : tcConfigProvider.tcConfigs) {
