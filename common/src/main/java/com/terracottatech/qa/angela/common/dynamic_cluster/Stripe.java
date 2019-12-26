@@ -1,25 +1,23 @@
-package com.terracottatech.qa.angela.common.dynamicconfig;
+package com.terracottatech.qa.angela.common.dynamic_cluster;
 
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Stripe {
   private final List<TerracottaServer> terracottaServerList;
 
-  private Stripe() {
-    terracottaServerList = new ArrayList<>();
+  private Stripe(List<TerracottaServer> terracottaServerList) {
+    this.terracottaServerList = terracottaServerList;
   }
 
   public static Stripe stripe(TerracottaServer... terracottaServers) {
-    Stripe stripe = new Stripe();
-    stripe.terracottaServerList.addAll(Arrays.asList(terracottaServers));
-    return stripe;
+    return new Stripe(Arrays.asList(terracottaServers));
   }
 
   public List<TerracottaServer> getTerracottaServerList() {
-    return terracottaServerList;
+    return Collections.unmodifiableList(terracottaServerList);
   }
 }

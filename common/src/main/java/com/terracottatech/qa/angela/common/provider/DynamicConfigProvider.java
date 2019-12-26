@@ -1,6 +1,6 @@
 package com.terracottatech.qa.angela.common.provider;
 
-import com.terracottatech.qa.angela.common.dynamicconfig.Stripe;
+import com.terracottatech.qa.angela.common.dynamic_cluster.Stripe;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 
@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 public class DynamicConfigProvider implements ConfigurationProvider {
   private final String clusterName;
@@ -18,19 +20,15 @@ public class DynamicConfigProvider implements ConfigurationProvider {
     this.stripes = stripes;
   }
 
-  public static DynamicConfigProvider withDynamicCluster(String clusterName, Stripe... stripes) {
-    DynamicConfigProvider dynamicConfigProvider = new DynamicConfigProvider(clusterName, Arrays.asList(stripes));
-    return dynamicConfigProvider;
+  public static DynamicConfigProvider dynamicCluster(String clusterName, Stripe... stripes) {
+    return new DynamicConfigProvider(requireNonNull(clusterName), Arrays.asList(stripes));
   }
-
 
   @Override
   public List<TerracottaServer> getServers() {
     List<TerracottaServer> resServer = new ArrayList<>();
     for (Stripe stripe : stripes) {
-      for (TerracottaServer terracottaServer : stripe.getTerracottaServerList()) {
-        resServer.add(terracottaServer);
-      }
+      resServer.addAll(stripe.getTerracottaServerList());
     }
     return resServer;
   }
@@ -49,13 +47,13 @@ public class DynamicConfigProvider implements ConfigurationProvider {
 
   @Override
   public TerracottaServer findServer(int stripeId, int serverIndex) {
-    //TODO
+    //TODO: TDB-4771
     return null;
   }
 
   @Override
   public int findStripeIdOf(ServerSymbolicName serverSymbolicName) {
-    //TODO
+    //TODO: TDB-4771
     return -1;
   }
 

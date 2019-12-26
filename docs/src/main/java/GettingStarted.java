@@ -20,8 +20,8 @@ import java.util.concurrent.Callable;
 import static com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
-import static com.terracottatech.qa.angela.common.dynamicconfig.Stripe.stripe;
-import static com.terracottatech.qa.angela.common.provider.DynamicConfigProvider.withDynamicCluster;
+import static com.terracottatech.qa.angela.common.dynamic_cluster.Stripe.stripe;
+import static com.terracottatech.qa.angela.common.provider.DynamicConfigProvider.dynamicCluster;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
 import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
@@ -141,10 +141,12 @@ public class GettingStarted {
   public void configureDynamicCluster() throws Exception {
     ConfigurationContext configContext = customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(
+            .topology(
+                new Topology(
                     distribution(version("10.7.0-SNAPSHOT"), PackageType.KIT, LicenseType.TERRACOTTA),
-                    withDynamicCluster("tc-cluster-name",
-                        stripe(tcServer("server-1", "localhost")
+                    dynamicCluster("tc-cluster-name",
+                        stripe(
+                            tcServer("server-1", "localhost")
                                 .tsaPort(9410)
                                 .groupPort(9411)
                                 .repository("terracotta1/repository")
