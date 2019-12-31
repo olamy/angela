@@ -39,7 +39,7 @@ public class RemoteKitManager extends KitManager {
 
   public boolean verifyKitAvailability(boolean offline) {
     logger.debug("verifying if the extracted kit is already available locally to setup an install");
-    if (!isValidKitInstallationPath(kitInstallationPath)) {
+    if (!Files.isDirectory(kitInstallationPath)) {
       logger.debug("Local kit installation is not available");
       return false;
     }

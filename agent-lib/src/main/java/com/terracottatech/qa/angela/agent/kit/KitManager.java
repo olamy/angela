@@ -128,25 +128,6 @@ public abstract class KitManager {
     return true;
   }
 
-  /**
-   * Resolve install path that will be used to create a working copy
-   * <p>
-   * This is the directory containing the exploded terracotta install, that will be copied to give a
-   * single instance working installation
-   * <p>
-   * e.g. : /data/tsamanager/kits/10.5.0/terracotta-10.5.0-SNAPSHOT
-   *
-   * @param installationPath
-   * @return location of the install to be used to create the working install
-   */
-  protected boolean isValidKitInstallationPath(Path installationPath) {
-    if (!Files.isDirectory(installationPath)) {
-      logger.debug("Install is not available.");
-      return false;
-    }
-    return true;
-  }
-
   Path resolveLocalInstallerPath() {
     logger.debug("Resolving the local installer name");
     Version version = distribution.getVersion();

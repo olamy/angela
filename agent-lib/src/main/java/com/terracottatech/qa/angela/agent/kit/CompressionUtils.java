@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class CompressionUtils {
   private static final Logger logger = LoggerFactory.getLogger(CompressionUtils.class);
 
@@ -73,7 +75,7 @@ public class CompressionUtils {
         if (!Files.isDirectory(parentPath)) {
           Files.createDirectories(parentPath);
         }
-        Files.copy(archiveIs, pathEntryOutput);
+        Files.copy(archiveIs, pathEntryOutput, REPLACE_EXISTING);
       }
     }
   }
