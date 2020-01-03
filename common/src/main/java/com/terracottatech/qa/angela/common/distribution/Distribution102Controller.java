@@ -1,9 +1,6 @@
 package com.terracottatech.qa.angela.common.distribution;
 
-import com.terracottatech.qa.angela.common.net.DisruptionProvider;
-import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
-import com.terracottatech.qa.angela.common.net.Disruptor;
-import com.terracottatech.qa.angela.common.net.GroupMember;
+import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
 import com.terracottatech.qa.angela.common.provider.TcConfigProvider;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
@@ -35,7 +32,6 @@ import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,8 +39,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -65,8 +59,6 @@ import static java.util.regex.Pattern.compile;
  */
 public class Distribution102Controller extends DistributionController {
   private final static Logger logger = LoggerFactory.getLogger(Distribution102Controller.class);
-  private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
-  private final Map<ServerSymbolicName, Map<ServerSymbolicName, Disruptor>> disruptionLinks = new ConcurrentHashMap<>();
   private final boolean tsaFullLogging = Boolean.parseBoolean(TSA_FULL_LOGGING.getValue());
   private final boolean tmsFullLogging = Boolean.parseBoolean(TMS_FULL_LOGGING.getValue());
 
@@ -79,38 +71,12 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void disrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
-    if (!netDisruptionEnabled) {
-      throw new IllegalArgumentException("Topology not enabled for network disruption");
-    }
-    Map<ServerSymbolicName, Disruptor> disruptorMapPerSever = disruptionLinks.get(serverSymbolicName);
-    for (TerracottaServer server : targets) {
-      disruptorMapPerSever.get(server.getServerSymbolicName()).disrupt();
-    }
-  }
-
-  @Override
-  public void undisrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
-    if (!netDisruptionEnabled) {
-      throw new IllegalArgumentException("Topology not enabled for network disruption");
-    }
-    Map<ServerSymbolicName, Disruptor> disruptorMapPerSever = disruptionLinks.get(serverSymbolicName);
-    for (TerracottaServer target : targets) {
-      disruptorMapPerSever.get(target.getServerSymbolicName()).undisrupt();
-    }
-  }
-
-  @Override
-  public void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled) {
-    if (netDisruptionEnabled) {
-      Map<ServerSymbolicName, Disruptor> disruptorMapPerSever = disruptionLinks.get(serverSymbolicName);
-      disruptorMapPerSever.values().forEach(DISRUPTION_PROVIDER::removeLink);
-    }
-  }
-
-  @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation,
-                                                                            Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
+                                                                            File installLocation,
+                                                                            Topology topology,
+                                                                            Map<String, Integer> proxiedPorts,
+                                                                            TerracottaCommandLineEnvironment tcEnv,
+                                                                            List<String> startUpArgs) {
     Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
@@ -131,7 +97,7 @@ public class Distribution102Controller extends DistributionController {
     );
 
     WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology, installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology, proxiedPorts, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -191,19 +157,27 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void configureTsaLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configureTsaLicense(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     Map<String, String> env = buildEnv(tcEnv);
 
     File tmpConfigDir = new File(location, "tmp-tc-configs");
     if (!tmpConfigDir.mkdir() && !tmpConfigDir.isDirectory()) {
       throw new RuntimeException("Error creating temporary cluster tool TC config folder : " + tmpConfigDir);
     }
-
+    ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
+    TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+    List<TcConfig> tcConfigs = tcConfigProvider.getTcConfigs();
+    List<TcConfig> modifiedConfigs = new ArrayList<>();
     for (TcConfig tcConfig : tcConfigs) {
-      tcConfig.writeTcConfigFile(tmpConfigDir);
+      TcConfig modifiedConfig = TcConfig.copy(tcConfig);
+      if(!proxyTsaPorts.isEmpty()) {
+        modifiedConfig.updateServerTsaPort(proxyTsaPorts);
+      }
+      modifiedConfig.writeTcConfigFile(tmpConfigDir);
+      modifiedConfigs.add(modifiedConfig);
     }
 
-    List<String> commands = configureTsaLicenseCommand(location, licensePath, tcConfigs, clusterName, securityRootDirectory, verbose);
+    List<String> commands = configureTsaLicenseCommand(location, licensePath, modifiedConfigs, clusterName, securityRootDirectory, verbose);
 
     logger.debug("Licensing commands: {}", commands);
     logger.debug("Licensing command line environment: {}", tcEnv);
@@ -277,7 +251,11 @@ public class Distribution102Controller extends DistributionController {
    *
    * @return List of String representing the start command and its parameters
    */
-  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName, Topology topology, File installLocation, List<String> startUpArgs) {
+  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName,
+                                        Topology topology,
+                                        Map<String, Integer> proxiedPorts,
+                                        File installLocation,
+                                        List<String> startUpArgs) {
     List<String> options = new ArrayList<>();
     // start command
     options.add(getTsaCreateExecutable(installLocation));
@@ -296,8 +274,7 @@ public class Distribution102Controller extends DistributionController {
       securityRootDirectory = secureTcConfig.securityRootDirectoryFor(serverSymbolicName);
     }
     TcConfig modifiedConfig = TcConfig.copy(configurationProvider.findTcConfig(serverSymbolicName));
-    constructNetDisruptionLinks(modifiedConfig, serverSymbolicName, topology.isNetDisruptionEnabled());
-    configurationProvider.setUpInstallation(modifiedConfig, serverSymbolicName, installLocation, securityRootDirectory);
+    configurationProvider.setUpInstallation(modifiedConfig, serverSymbolicName, proxiedPorts, installLocation, securityRootDirectory);
 
     // add -f if applicable
     if (modifiedConfig.getPath() != null) {
@@ -314,23 +291,6 @@ public class Distribution102Controller extends DistributionController {
     logger.debug("Create TSA command = {}", sb.toString());
 
     return options;
-  }
-
-  private void constructNetDisruptionLinks(TcConfig tcConfig, ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled) {
-    if (netDisruptionEnabled) {
-      List<GroupMember> members = tcConfig.retrieveGroupMembers(serverSymbolicName.getSymbolicName(), DISRUPTION_PROVIDER
-          .isProxyBased());
-      GroupMember thisMember = members.get(0);
-      Map<ServerSymbolicName, Disruptor> disruptorLink = new HashMap<>();
-      for (int i = 1; i < members.size(); ++i) {
-        GroupMember otherMember = members.get(i);
-        final InetSocketAddress src = new InetSocketAddress(thisMember.getHost(), otherMember.isProxiedMember() ? otherMember
-            .getProxyPort() : thisMember.getGroupPort());
-        final InetSocketAddress dest = new InetSocketAddress(otherMember.getHost(), otherMember.getGroupPort());
-        disruptorLink.put(new ServerSymbolicName(otherMember.getServerName()), DISRUPTION_PROVIDER.createLink(src, dest));
-      }
-      disruptionLinks.put(serverSymbolicName, disruptorLink);
-    }
   }
 
   private String getTsaCreateExecutable(File installLocation) {

@@ -87,13 +87,12 @@ public abstract class DistributionController {
     }
   }
 
-  public abstract void disrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled);
-
-  public abstract void undisrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled);
-
-  public abstract void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled);
-
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
+                                                                                     File installLocation,
+                                                                                     Topology topology,
+                                                                                     Map<String, Integer> proxiedPorts,
+                                                                                     TerracottaCommandLineEnvironment tcEnv,
+                                                                                     List<String> startUpArgs);
 
   public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
 
@@ -101,7 +100,7 @@ public abstract class DistributionController {
 
   public abstract void stopTsa(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void configureTsaLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
+  public abstract void configureTsaLicense(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 
   public abstract ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
 

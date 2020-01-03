@@ -2,7 +2,6 @@ package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.OS;
@@ -44,22 +43,12 @@ public class Distribution107Controller extends DistributionController {
   }
 
   @Override
-  public void disrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
-    //TODO: TDB-4770
-  }
-
-  @Override
-  public void undisrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
-    //TODO: TDB-4770
-  }
-
-  @Override
-  public void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled) {
-    //TODO: TDB-4770
-  }
-
-  @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
+                                                                            File installLocation,
+                                                                            Topology topology,
+                                                                            Map<String, Integer> proxiedPorts,
+                                                                            TerracottaCommandLineEnvironment tcEnv,
+                                                                            List<String> startUpArgs) {
     Map<String, String> env = buildEnv(tcEnv);
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicInteger javaPid = new AtomicInteger(-1);
@@ -170,7 +159,7 @@ public class Distribution107Controller extends DistributionController {
   }
 
   @Override
-  public void configureTsaLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configureTsaLicense(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     throw new UnsupportedOperationException("Dynamic config don't use this flow for licensing");
   }
 

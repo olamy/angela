@@ -18,7 +18,7 @@ import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
 import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
@@ -307,7 +307,7 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
-  public void configureTsaLicense(InstanceId instanceId, TerracottaServer terracottaServer, List<TcConfig> tcConfigs,
+  public void configureTsaLicense(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts,
                                   String clusterName, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv,
                                   boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
@@ -315,7 +315,7 @@ public class AgentController {
     if (clusterName == null) {
       clusterName = instanceId.toString();
     }
-    serverInstance.configureTsaLicense(clusterName, licensePath, tcConfigs, securityRootDirectory, tcEnv, verbose);
+    serverInstance.configureTsaLicense(clusterName, licensePath, topology, proxyTsaPorts, securityRootDirectory, tcEnv, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, String... arguments) {

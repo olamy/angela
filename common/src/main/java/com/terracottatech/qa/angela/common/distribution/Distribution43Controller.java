@@ -62,23 +62,12 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void disrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
-    throw new UnsupportedOperationException("Network Disruption not supported in 4.x");
-  }
-
-  @Override
-  public void undisrupt(ServerSymbolicName serverSymbolicName, Collection<TerracottaServer> targets, boolean netDisruptionEnabled) {
-    throw new UnsupportedOperationException("Network Disruption not supported in 4.x");
-  }
-
-  @Override
-  public void removeDisruptionLinks(ServerSymbolicName serverSymbolicName, boolean netDisruptionEnabled) {
-    throw new UnsupportedOperationException("Network Disruption not supported in 4.x");
-  }
-
-  @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology,
-                                                                            TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
+  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
+                                                                            File installLocation,
+                                                                            Topology topology,
+                                                                            Map<String, Integer> proxiedPorts,
+                                                                            TerracottaCommandLineEnvironment tcEnv,
+                                                                            List<String> startUpArgs) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -108,7 +97,7 @@ public class Distribution43Controller extends DistributionController {
     });
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology.getConfigurationProvider(), installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology.getConfigurationProvider(), proxiedPorts, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -253,7 +242,7 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void configureTsaLicense(String clusterName, File location, String licensePath, List<TcConfig> tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configureTsaLicense(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     logger.info("There is no licensing step in 4.x");
   }
 
@@ -272,7 +261,11 @@ public class Distribution43Controller extends DistributionController {
    *
    * @return List of Strings representing the start command and its parameters
    */
-  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName, ConfigurationProvider configurationProvider, File installLocation, List<String> startUpArgs) {
+  private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName,
+                                        ConfigurationProvider configurationProvider,
+                                        Map<String, Integer> proxiedPorts,
+                                        File installLocation,
+                                        List<String> startUpArgs) {
     List<String> options = new ArrayList<>();
     // start command
     options.add(getStartCmd(installLocation));
@@ -285,7 +278,7 @@ public class Distribution43Controller extends DistributionController {
 
     TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
     TcConfig tcConfig = TcConfig.copy(tcConfigProvider.findTcConfig(serverSymbolicName));
-    tcConfigProvider.setUpInstallation(tcConfig, serverSymbolicName, installLocation, null);
+    tcConfigProvider.setUpInstallation(tcConfig, serverSymbolicName, proxiedPorts, installLocation, null);
     // add -f if applicable
     if (tcConfig.getPath() != null) {
       //workaround to have unique platform restart directory for active & passives

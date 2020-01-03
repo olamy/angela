@@ -329,6 +329,10 @@ public abstract class TcConfigHolder {
 
   public abstract List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy);
 
+  public abstract void updateServerGroupPort(Map<String, Integer> proxiedPorts);
+
+  public abstract void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts);
+
   public abstract Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy);
 
   public void substituteToken(String token, String value) {

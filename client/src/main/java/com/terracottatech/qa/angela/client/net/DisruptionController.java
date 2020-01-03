@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela.client.net;
 
+import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
+import com.terracottatech.qa.angela.common.provider.TcConfigProvider;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,21 +188,40 @@ public class DisruptionController implements AutoCloseable {
   }
 
 
-  public List<TcConfig> updateTsaPortsWithProxy(List<TcConfig> configs) {
+//  public List<TcConfig> updateTsaPortsWithProxy(List<TcConfig> configs) {
+//    if (DISRUPTION_PROVIDER.isProxyBased()) {
+//      List<TcConfig> proxiedTcConfigs = new ArrayList<>();
+//      for (TcConfig config : configs) {
+//        TcConfig copy = TcConfig.copy(config);
+//        proxiedTcConfigs.add(copy);
+//        proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
+//      }
+//      //create disruptor up front for cluster tool configuration
+//      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
+//      existingDisruptors.add(newDisruptor);
+//      return proxiedTcConfigs;
+//    } else {
+//      return configs;
+//    }
+//  }
+
+  public Map<ServerSymbolicName, Integer> updateTsaPortsWithProxy(Topology topology) {
+    Map<ServerSymbolicName, Integer> proxyMap = new HashMap<>();
     if (DISRUPTION_PROVIDER.isProxyBased()) {
-      List<TcConfig> proxiedTcConfigs = new ArrayList<>();
-      for (TcConfig config : configs) {
-        TcConfig copy = TcConfig.copy(config);
-        proxiedTcConfigs.add(copy);
-        proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
+      ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
+      if (configurationProvider instanceof TcConfigProvider) {
+        TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+        List<TcConfig> configs = tcConfigProvider.getTcConfigs();
+        for (TcConfig config : configs) {
+          TcConfig copy = TcConfig.copy(config);
+          proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
+          proxyMap.putAll(proxyTsaPorts);
+        }
       }
-      //create disruptor up front for cluster tool configuration
       ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
-      return proxiedTcConfigs;
-    } else {
-      return configs;
     }
+    return proxyMap;
   }
 
   public Map<ServerSymbolicName, Integer> getProxyTsaPorts() {

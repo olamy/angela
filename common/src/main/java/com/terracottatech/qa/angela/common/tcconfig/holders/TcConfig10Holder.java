@@ -183,6 +183,40 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
+  public void updateServerGroupPort(Map<String, Integer> proxiedPorts) {
+    modifyXml((tcConfigXml, xPath) -> {
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+
+      for (int i = 0; i < serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
+        String name = nameNode.getTextContent();
+        if (proxiedPorts.containsKey(name)) {
+          Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
+          tsaGroupPortNode.setTextContent(String.valueOf(proxiedPorts.get(name)));
+        }
+      }
+    });
+  }
+
+  @Override
+  public void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
+    modifyXml((tcConfigXml, xPath) -> {
+      NodeList serversList = getServersList(tcConfigXml, xPath);
+
+      for (int i = 0; i < serversList.getLength(); i++) {
+        Node server = serversList.item(i);
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
+        String name = nameNode.getTextContent();
+        if (proxiedPorts.containsKey(new ServerSymbolicName(name))) {
+          Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
+          tsaPortNode.setTextContent(String.valueOf(proxiedPorts.get(new ServerSymbolicName(name))));
+        }
+      }
+    });
+  }
+
+  @Override
   public void addOffheap(String resourceName, String size, String unit) {
     modifyXml((tcConfigXml, xPath) -> {
       int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
