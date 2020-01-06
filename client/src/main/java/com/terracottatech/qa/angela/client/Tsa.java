@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -278,21 +279,19 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
-    if (configurationProvider instanceof TcConfigProvider) {
-      TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
-
-      List<TcConfig> tcConfigs = topology.isNetDisruptionEnabled() ?
-          disruptionController.updateTsaPortsWithProxy(tcConfigProvider.getTcConfigs()) :
-          tcConfigProvider.getTcConfigs();
+    final Map<ServerSymbolicName, Integer> proxyTsaPorts;
+    if (topology.isNetDisruptionEnabled()) {
+      proxyTsaPorts = disruptionController.updateTsaPortsWithProxy(topology);
+    } else {
+      proxyTsaPorts = new HashMap<>();
+    }
 
       TerracottaServer terracottaServer = topology.getConfigurationProvider().getServers().get(0);
       logger.info("Licensing cluster from {}", terracottaServer.getHostname());
       executeRemotely(ignite, terracottaServer.getHostname(), () -> {
         TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(CLUSTER_TOOL);
-        Agent.controller.configureTsaLicense(instanceId, terracottaServer, tcConfigs, tsaConfigurationContext.getClusterName(), securityRootDirectory, cliEnv, verbose);
+        Agent.controller.configureTsaLicense(instanceId, terracottaServer, topology, proxyTsaPorts, tsaConfigurationContext.getClusterName(), securityRootDirectory, cliEnv, verbose);
       });
-    }
     return this;
   }
 

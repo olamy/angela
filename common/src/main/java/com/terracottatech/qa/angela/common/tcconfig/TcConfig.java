@@ -149,6 +149,14 @@ public class TcConfig {
     return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy);
   }
 
+  public void updateServerGroupPort(Map<String, Integer> proxiedPorts) {
+    tcConfigHolder.updateServerGroupPort(proxiedPorts);
+  }
+
+  public void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
+    tcConfigHolder.updateServerTsaPort(proxiedPorts);
+  }
+
   public Map<ServerSymbolicName, Integer> retrieveTsaPorts(boolean updateForProxy) {
     return tcConfigHolder.retrieveTsaPorts(updateForProxy);
   }

@@ -7,6 +7,10 @@ import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.net.DisruptionProvider;
+import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
+import com.terracottatech.qa.angela.common.net.Disruptor;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +22,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +37,9 @@ import java.util.function.Predicate;
  */
 public class TerracottaServerInstance implements Closeable {
   private final static Logger logger = LoggerFactory.getLogger(TerracottaServerInstance.class);
+  private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
+  private final Map<ServerSymbolicName, Disruptor> disruptionLinks = new ConcurrentHashMap<>();
+  private final Map<String, Integer> proxiedPorts = new HashMap<>();
   private final TerracottaServer terracottaServer;
   private final DistributionController distributionController;
   private final File installLocation;
@@ -51,6 +61,13 @@ public class TerracottaServerInstance implements Closeable {
     this.licenseFileLocation = license == null ? null : new File(installLocation, license.getFilename());
     this.netDisruptionEnabled = topology.isNetDisruptionEnabled();
     this.topology = topology;
+    constructLinks();
+  }
+
+  private void constructLinks() {
+    if (netDisruptionEnabled) {
+      topology.getConfigurationProvider().createLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts);
+    }
   }
 
   public Distribution getDistribution() {
@@ -58,15 +75,25 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public void create(TerracottaCommandLineEnvironment env, List<String> startUpArgs) {
-    this.terracottaServerInstanceProcess = this.distributionController.createTsa(terracottaServer, installLocation, topology, env, startUpArgs);
+    this.terracottaServerInstanceProcess = this.distributionController.createTsa(terracottaServer, installLocation, topology, proxiedPorts, env, startUpArgs);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
-    this.distributionController.disrupt(terracottaServer.getServerSymbolicName(), targets, netDisruptionEnabled);
+    if (!netDisruptionEnabled) {
+      throw new IllegalArgumentException("Topology not enabled for network disruption");
+    }
+    for (TerracottaServer server : targets) {
+      disruptionLinks.get(server.getServerSymbolicName()).disrupt();
+    }
   }
 
   public void undisrupt(Collection<TerracottaServer> targets) {
-    this.distributionController.undisrupt(terracottaServer.getServerSymbolicName(), targets, netDisruptionEnabled);
+    if (!netDisruptionEnabled) {
+      throw new IllegalArgumentException("Topology not enabled for network disruption");
+    }
+    for (TerracottaServer target : targets) {
+      disruptionLinks.get(target.getServerSymbolicName()).undisrupt();
+    }
   }
 
   public void stop(TerracottaCommandLineEnvironment tcEnv) {
@@ -78,8 +105,8 @@ public class TerracottaServerInstance implements Closeable {
     removeDisruptionLinks();
   }
 
-  public void configureTsaLicense(String clusterName, String licensePath, List<TcConfig>tcConfigs, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
-    this.distributionController.configureTsaLicense(clusterName, installLocation, licensePath, tcConfigs, securityRootDirectory, env, verbose);
+  public void configureTsaLicense(String clusterName, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
+    this.distributionController.configureTsaLicense(clusterName, installLocation, licensePath, topology, proxyTsaPorts, securityRootDirectory, env, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {
@@ -167,7 +194,7 @@ public class TerracottaServerInstance implements Closeable {
 
   private void removeDisruptionLinks() {
     if (netDisruptionEnabled) {
-      distributionController.removeDisruptionLinks(terracottaServer.getServerSymbolicName(), netDisruptionEnabled);
+      disruptionLinks.values().forEach(DISRUPTION_PROVIDER::removeLink);
     }
   }
 }

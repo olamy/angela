@@ -66,6 +66,16 @@ public class TcConfig9Holder extends TcConfigHolder {
   }
 
   @Override
+  public void updateServerGroupPort(Map<String, Integer> proxiedPorts) {
+    throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
+  public void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
+    throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
   public void addOffheap(String resourceName, String size, String unit) {
     throw new UnsupportedOperationException();
   }

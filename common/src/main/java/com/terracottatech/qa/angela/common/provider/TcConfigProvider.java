@@ -1,17 +1,22 @@
 package com.terracottatech.qa.angela.common.provider;
 
+import com.terracottatech.qa.angela.common.net.DisruptionProvider;
+import com.terracottatech.qa.angela.common.net.Disruptor;
+import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -122,6 +127,7 @@ public class TcConfigProvider implements ConfigurationProvider {
 
   public void setUpInstallation(TcConfig tcConfig,
                                 ServerSymbolicName serverSymbolicName,
+                                Map<String, Integer> proxiedPorts,
                                 File installLocation,
                                 SecurityRootDirectory securityRootDirectory) {
     int stripeId = findStripeIdOf(serverSymbolicName);
@@ -129,6 +135,9 @@ public class TcConfigProvider implements ConfigurationProvider {
     String modifiedTcConfigName = tcConfig.getTcConfigName()
         .substring(0, tcConfig.getTcConfigName()
             .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
+    if(!proxiedPorts.isEmpty()) {
+      tcConfig.updateServerGroupPort(proxiedPorts);
+    }
     tcConfig.updateLogsLocation(installLocation, stripeId);
     setupSecurityDirectories(securityRootDirectory, stripeId, installLocation, serverSymbolicName, tcConfig);
     // all config mutations must happen before this line as the file gets written to disk here
@@ -162,5 +171,26 @@ public class TcConfigProvider implements ConfigurationProvider {
 
   public List<TcConfig> getTcConfigs() {
     return tcConfigs;
+  }
+
+  @Override
+  public void createLinks(TerracottaServer terracottaServer,
+                          DisruptionProvider disruptionProvider,
+                          Map<ServerSymbolicName, Disruptor> disruptionLinks,
+                          Map<String, Integer> proxiedPorts) {
+    // Create network disruption links
+    TcConfig tcConfig = findTcConfig(terracottaServer.getServerSymbolicName());
+    TcConfig modifiedConfig = TcConfig.copy(tcConfig);
+    List<GroupMember> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider
+        .isProxyBased());
+    GroupMember thisMember = members.get(0);
+    for (int i = 1; i < members.size(); ++i) {
+      GroupMember otherMember = members.get(i);
+      final InetSocketAddress src = new InetSocketAddress(thisMember.getHost(), otherMember.isProxiedMember() ? otherMember
+          .getProxyPort() : thisMember.getGroupPort());
+      final InetSocketAddress dest = new InetSocketAddress(otherMember.getHost(), otherMember.getGroupPort());
+      disruptionLinks.put(new ServerSymbolicName(otherMember.getServerName()), disruptionProvider.createLink(src, dest));
+      proxiedPorts.put(otherMember.getServerName(), src.getPort());
+    }
   }
 }

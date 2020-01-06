@@ -54,6 +54,16 @@ public class TcConfig8Holder extends TcConfigHolder {
   }
 
   @Override
+  public void updateServerGroupPort(Map<String, Integer> proxiedPorts) {
+    throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
+  public void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
+    throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  @Override
   public List<GroupMember> retrieveGroupMembers(String serverName, boolean updateProxy) {
     throw new UnsupportedOperationException("Unimplemented");
   }
