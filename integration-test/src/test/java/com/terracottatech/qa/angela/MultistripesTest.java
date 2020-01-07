@@ -121,7 +121,7 @@ public class MultistripesTest {
           .startAll()
           .licenseAll();
 
-      TerracottaServer server = configContext.tsa().getTopology().findServer(0, 0);
+      TerracottaServer server = configContext.tsa().getTopology().getServer(0, 0);
 
       tsa.stop(server);
       tsa.browse(server, "dataroot/Server1-1").downloadTo(new File("target/dataroot"));

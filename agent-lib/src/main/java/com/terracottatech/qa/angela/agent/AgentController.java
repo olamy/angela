@@ -307,15 +307,15 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
-  public void configureTsaLicense(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts,
-                                  String clusterName, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv,
-                                  boolean verbose) {
+  public void configure(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName,
+                        Integer> proxyTsaPorts, String clusterName, SecurityRootDirectory securityRootDirectory,
+                        TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     String licensePath = getTsaLicensePath(instanceId, terracottaServer);
     if (clusterName == null) {
       clusterName = instanceId.toString();
     }
-    serverInstance.configureTsaLicense(clusterName, licensePath, topology, proxyTsaPorts, securityRootDirectory, tcEnv, verbose);
+    serverInstance.configure(clusterName, licensePath, topology, proxyTsaPorts, securityRootDirectory, tcEnv, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
@@ -411,7 +411,7 @@ public class AgentController {
           break;
         }
 
-        FileMetadata fileMetadata = (FileMetadata)read;
+        FileMetadata fileMetadata = (FileMetadata) read;
         logger.debug("downloading " + fileMetadata);
         if (!fileMetadata.isDirectory()) {
           long readFileLength = 0L;
