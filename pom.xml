@@ -202,7 +202,7 @@
           <configuration>
             <argLine>-Xmx1024m</argLine>
             <systemProperties>
-              <kitsDir>${project.build.directory}/angela</kitsDir>
+              <angela.rootDir>${project.build.directory}/angela</angela.rootDir>
             </systemProperties>
           </configuration>
         </plugin>

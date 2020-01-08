@@ -37,9 +37,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
-import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
+import static com.terracottatech.qa.angela.common.AngelaProperties.ROOT_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
 import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_USERNAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.SSH_USERNAME_KEY_PATH;
@@ -148,7 +148,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Session.Command cmd = session.exec(remoteJavaHome + "/bin/java " +
           "-D" + NODE_NAME.getPropertyName() + "=" + targetServerName + " " +
           "-D" + DIRECT_JOIN.getPropertyName() + "=" + joinHosts + " " +
-          "-D" + KITS_DIR.getPropertyName() + "=" + baseDir.toString() + " " +
+          "-D" + ROOT_DIR.getPropertyName() + "=" + baseDir.toString() + " " +
           "-D" + PORT_RANGE.getPropertyName() + "=" + PORT_RANGE.getValue() + " " +
           "-jar " + jarsDir.resolve(agentJarFile.getName()).toString());
 
