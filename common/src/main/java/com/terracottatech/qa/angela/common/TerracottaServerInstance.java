@@ -5,7 +5,6 @@ import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
@@ -66,7 +65,7 @@ public class TerracottaServerInstance implements Closeable {
 
   private void constructLinks() {
     if (netDisruptionEnabled) {
-      topology.getConfigurationProvider().createLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts);
+      topology.getConfigurationManager().createDisruptionLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts);
     }
   }
 
@@ -105,8 +104,8 @@ public class TerracottaServerInstance implements Closeable {
     removeDisruptionLinks();
   }
 
-  public void configureTsaLicense(String clusterName, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
-    this.distributionController.configureTsaLicense(clusterName, installLocation, licensePath, topology, proxyTsaPorts, securityRootDirectory, env, verbose);
+  public void configure(String clusterName, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
+    this.distributionController.configure(clusterName, installLocation, licensePath, topology, proxyTsaPorts, securityRootDirectory, env, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {

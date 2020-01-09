@@ -6,8 +6,8 @@ import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
-import com.terracottatech.qa.angela.common.provider.TcConfigProvider;
+import com.terracottatech.qa.angela.common.provider.ConfigurationManager;
+import com.terracottatech.qa.angela.common.provider.TcConfigManager;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -97,7 +97,7 @@ public class Distribution43Controller extends DistributionController {
     });
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology.getConfigurationProvider(), proxiedPorts, installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology.getConfigurationManager(), proxiedPorts, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -242,7 +242,7 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void configureTsaLicense(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     logger.info("There is no licensing step in 4.x");
   }
 
@@ -262,7 +262,7 @@ public class Distribution43Controller extends DistributionController {
    * @return List of Strings representing the start command and its parameters
    */
   private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName,
-                                        ConfigurationProvider configurationProvider,
+                                        ConfigurationManager configurationManager,
                                         Map<String, Integer> proxiedPorts,
                                         File installLocation,
                                         List<String> startUpArgs) {
@@ -276,7 +276,7 @@ public class Distribution43Controller extends DistributionController {
       options.add(serverSymbolicName.getSymbolicName());
     }
 
-    TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+    TcConfigManager tcConfigProvider = (TcConfigManager) configurationManager;
     TcConfig tcConfig = TcConfig.copy(tcConfigProvider.findTcConfig(serverSymbolicName));
     tcConfigProvider.setUpInstallation(tcConfig, serverSymbolicName, proxiedPorts, installLocation, null);
     // add -f if applicable

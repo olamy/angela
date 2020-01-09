@@ -29,6 +29,10 @@ public final class ServerSymbolicName {
     this.symbolicName = symbolicName;
   }
 
+  public static ServerSymbolicName symbolicName(String name) {
+    return new ServerSymbolicName(name);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

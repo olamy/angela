@@ -20,13 +20,10 @@ import java.util.concurrent.Callable;
 import static com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
 import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
-import static com.terracottatech.qa.angela.common.dynamic_cluster.Stripe.stripe;
-import static com.terracottatech.qa.angela.common.provider.DynamicConfigProvider.dynamicCluster;
 import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
 import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
 import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
-import static com.terracottatech.qa.angela.common.tcconfig.TerracottaServer.tcServer;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
 import static com.terracottatech.qa.angela.test.Versions.TERRACOTTA_VERSION;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -135,39 +132,5 @@ public class GettingStarted {
 
     factory.close();
     // end::runClient[]
-  }
-
-  @Test
-  public void configureDynamicCluster() throws Exception {
-    ConfigurationContext configContext = customConfigurationContext()
-        .tsa(tsa -> tsa
-            .topology(
-                new Topology(
-                    distribution(version("10.7.0-SNAPSHOT"), PackageType.KIT, LicenseType.TERRACOTTA),
-                    dynamicCluster("tc-cluster-name",
-                        stripe(
-                            tcServer("server-1", "localhost")
-                                .tsaPort(9410)
-                                .groupPort(9411)
-                                .repository("terracotta1/repository")
-                                .logs("terracotta1/logs")
-                                .metaData("terracotta1/metadata"),
-                            tcServer("server-2", "localhost")
-                                .tsaPort(9510)
-                                .groupPort(9511)
-                                .repository("terracotta2/repository")
-                                .logs("terracotta2/logs")
-                                .metaData("terracotta2/metadata")
-                        )
-                    )
-                )
-            )
-            .license(LICENSE)
-        );
-
-    ClusterFactory factory = new ClusterFactory("GettingStarted::configureDynamicCluster", configContext);
-    Tsa tsa = factory.tsa();
-    tsa.startAll();
-    factory.close();
   }
 }

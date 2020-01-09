@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +128,7 @@ public abstract class TcConfigHolder {
         String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
         TerracottaServer terracottaServer = TerracottaServer
-            .tcServer(symbolicName, hostname)
+            .server(symbolicName, hostname)
             .tsaPort(tsaPort)
             .groupPort(tsaGroupPort)
             .managementPort(managementPort)

@@ -68,7 +68,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testHardwareStatsLogs", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().findServer(0, 0);
+      TerracottaServer server = config.tsa().getTopology().getServer(0, 0);
       tsa.create(server);
       ClusterMonitor monitor = factory.monitor().startOnAll();
 
@@ -151,7 +151,7 @@ public class InstallTest {
           .licenseAll()
           .stopAll();
 
-      TerracottaServer server = tsa.getTsaConfigurationContext().getTopology().findServer(0, 0);
+      TerracottaServer server = tsa.getTsaConfigurationContext().getTopology().getServer(0, 0);
       List<String> names = tsa.browse(server, ".").list().stream()
           .filter(rf -> rf.getName().endsWith("flight_recording.jfr"))
           .map(RemoteFile::getName)
@@ -264,7 +264,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStopStalledServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().findServer(0, 0);
+      TerracottaServer server = config.tsa().getTopology().getServer(0, 0);
       tsa.create(server);
 
       assertThat(tsa.getState(server), is(STARTING));
@@ -286,7 +286,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().findServer(0, 0);
+      TerracottaServer server = config.tsa().getTopology().getServer(0, 0);
       tsa.create(server);
       tsa.start(server);
       assertThat(tsa.getState(server), is(STARTED_AS_ACTIVE));
@@ -305,7 +305,7 @@ public class InstallTest {
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testStartCreatedServer", config)) {
       Tsa tsa = factory.tsa();
 
-      TerracottaServer server = config.tsa().getTopology().findServer(0, 0);
+      TerracottaServer server = config.tsa().getTopology().getServer(0, 0);
       // Server start-up must fail due to unknown argument passed
       tsa.start(server, "--some-unknown-argument");
     }

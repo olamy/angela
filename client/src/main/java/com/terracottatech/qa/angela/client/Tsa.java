@@ -5,11 +5,13 @@ import com.terracottatech.qa.angela.agent.kit.LocalKitManager;
 import com.terracottatech.qa.angela.client.config.TsaConfigurationContext;
 import com.terracottatech.qa.angela.client.filesystem.RemoteFolder;
 import com.terracottatech.qa.angela.client.net.DisruptionController;
+import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
-import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
-import com.terracottatech.qa.angela.common.provider.TcConfigProvider;
+import com.terracottatech.qa.angela.common.provider.ConfigurationManager;
+import com.terracottatech.qa.angela.common.provider.DynamicConfigManager;
+import com.terracottatech.qa.angela.common.provider.TcConfigManager;
 import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
@@ -38,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CLUSTER_TOOL;
+import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CONFIG_TOOL;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.JCMD;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_STOP_PREFIX;
@@ -89,6 +92,14 @@ public class Tsa implements AutoCloseable {
     return new ClusterTool(ignite, instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment(CLUSTER_TOOL));
   }
 
+  public ConfigTool configTool(TerracottaServer terracottaServer) {
+    TerracottaServerState terracottaServerState = getState(terracottaServer);
+    if (terracottaServerState == null) {
+      throw new IllegalStateException("Cannot control config tool: server " + terracottaServer.getServerSymbolicName() + " has not been installed");
+    }
+    return new ConfigTool(ignite, instanceId, terracottaServer, tsaConfigurationContext.getTerracottaCommandLineEnvironment(CONFIG_TOOL));
+  }
+
   public String licensePath(TerracottaServer terracottaServer) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState == null) {
@@ -99,8 +110,8 @@ public class Tsa implements AutoCloseable {
 
   private void installAll() {
     Topology topology = tsaConfigurationContext.getTopology();
-    ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
-    for (TerracottaServer terracottaServer : configurationProvider.getServers()) {
+    ConfigurationManager configurationManager = topology.getConfigurationManager();
+    for (TerracottaServer terracottaServer : configurationManager.getServers()) {
       install(terracottaServer, topology);
     }
   }
@@ -112,7 +123,7 @@ public class Tsa implements AutoCloseable {
   private void installWithKitManager(TerracottaServer terracottaServer, Topology topology, LocalKitManager localKitManager) {
     TerracottaServerState terracottaServerState = getState(terracottaServer);
     if (terracottaServerState != TerracottaServerState.NOT_INSTALLED) {
-      throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
+      throw new IllegalStateException("Cannot install: server " + terracottaServer.getServerSymbolicName() + " in state " + terracottaServerState);
     }
     Distribution distribution = localKitManager.getDistribution();
 
@@ -164,7 +175,7 @@ public class Tsa implements AutoCloseable {
       return;
     }
     if (terracottaServerState != TerracottaServerState.STOPPED) {
-      throw new IllegalStateException("Cannot uninstall: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
+      throw new IllegalStateException("Cannot uninstall: server " + terracottaServer.getServerSymbolicName() + " in state " + terracottaServerState);
     }
 
     logger.info("Uninstalling TC server from {}", terracottaServer.getHostname());
@@ -192,6 +203,7 @@ public class Tsa implements AutoCloseable {
       case STARTING:
       case STARTED_AS_ACTIVE:
       case STARTED_AS_PASSIVE:
+      case STARTED_IN_DIAGNOSTIC_MODE:
         return this;
       case STOPPED:
         logger.info("Creating TC server on {}", terracottaServer.getHostname());
@@ -203,7 +215,7 @@ public class Tsa implements AutoCloseable {
         executeRemotely(ignite, terracottaServer.getHostname(), tsaCreator);
         return this;
     }
-    throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " already in state " + terracottaServerState);
+    throw new IllegalStateException("Cannot create: server " + terracottaServer.getServerSymbolicName() + " in state " + terracottaServerState);
   }
 
   public Tsa startAll(String... startUpArgs) {
@@ -269,11 +281,11 @@ public class Tsa implements AutoCloseable {
   }
 
   public Tsa licenseAll(SecurityRootDirectory securityRootDirectory, boolean verbose) {
-    Topology topology = tsaConfigurationContext.getTopology();
+    ConfigurationManager configurationManager = tsaConfigurationContext.getTopology().getConfigurationManager();
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
-    for (TerracottaServer terracottaServer : topology.getConfigurationProvider().getServers()) {
+    for (TerracottaServer terracottaServer : configurationManager.getServers()) {
       TerracottaServerState terracottaServerState = getState(terracottaServer);
-      if ((terracottaServerState != STARTED_AS_ACTIVE) && (terracottaServerState != STARTED_AS_PASSIVE)) {
+      if (terracottaServerState != STARTED_AS_ACTIVE && terracottaServerState != STARTED_AS_PASSIVE) {
         notStartedServers.add(terracottaServer.getServerSymbolicName());
       }
     }
@@ -281,20 +293,50 @@ public class Tsa implements AutoCloseable {
       throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    final Map<ServerSymbolicName, Integer> proxyTsaPorts;
-    if (topology.isNetDisruptionEnabled()) {
-      proxyTsaPorts = disruptionController.updateTsaPortsWithProxy(topology);
+    if (configurationManager instanceof TcConfigManager) {
+      final Map<ServerSymbolicName, Integer> proxyTsaPorts;
+      if (tsaConfigurationContext.getTopology().isNetDisruptionEnabled()) {
+        proxyTsaPorts = disruptionController.updateTsaPortsWithProxy(tsaConfigurationContext.getTopology());
+      } else {
+        proxyTsaPorts = new HashMap<>();
+      }
+
+      TerracottaServer terracottaServer = tsaConfigurationContext.getTopology().getConfigurationManager().getServers().get(0);
+      logger.info("Configuring cluster from {}", terracottaServer.getHostname());
+      executeRemotely(ignite, terracottaServer.getHostname(), () -> {
+        TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(CLUSTER_TOOL);
+        Agent.controller.configure(instanceId, terracottaServer, tsaConfigurationContext.getTopology(), proxyTsaPorts, tsaConfigurationContext.getClusterName(), securityRootDirectory, cliEnv, verbose);
+      });
+      return this;
     } else {
-      proxyTsaPorts = new HashMap<>();
+      throw new IllegalStateException();
+    }
+  }
+
+  public Tsa activateAll() {
+    ConfigurationManager configurationManager = tsaConfigurationContext.getTopology().getConfigurationManager();
+    Set<ServerSymbolicName> notStartedServers = new HashSet<>();
+    for (TerracottaServer terracottaServer : configurationManager.getServers()) {
+      TerracottaServerState terracottaServerState = getState(terracottaServer);
+      if (terracottaServerState != STARTED_IN_DIAGNOSTIC_MODE) {
+        notStartedServers.add(terracottaServer.getServerSymbolicName());
+      }
+    }
+    if (!notStartedServers.isEmpty()) {
+      throw new IllegalStateException("The following Terracotta servers are not started : " + notStartedServers);
     }
 
-    TerracottaServer terracottaServer = topology.getConfigurationProvider().getServers().get(0);
-    logger.info("Licensing cluster from {}", terracottaServer.getHostname());
-    executeRemotely(ignite, terracottaServer.getHostname(), () -> {
-      TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(CLUSTER_TOOL);
-      Agent.controller.configureTsaLicense(instanceId, terracottaServer, topology, proxyTsaPorts, tsaConfigurationContext.getClusterName(), securityRootDirectory, cliEnv, verbose);
-    });
-    return this;
+    if (configurationManager instanceof DynamicConfigManager) {
+      TerracottaServer terracottaServer = configurationManager.getServers().get(0);
+      logger.info("Activating cluster from {}", terracottaServer.getHostname());
+      executeRemotely(ignite, terracottaServer.getHostname(), () -> {
+        TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(CONFIG_TOOL);
+        Agent.controller.configure(instanceId, terracottaServer, tsaConfigurationContext.getTopology(), null, tsaConfigurationContext.getClusterName(), null, cliEnv, false);
+      });
+      return this;
+    } else {
+      throw new IllegalStateException();
+    }
   }
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
@@ -305,6 +347,7 @@ public class Tsa implements AutoCloseable {
     Collection<TerracottaServer> allRunningServers = new ArrayList<>();
     allRunningServers.addAll(getActives());
     allRunningServers.addAll(getPassives());
+    allRunningServers.addAll(getDiagnosticModeSevers());
     return allRunningServers;
   }
 
@@ -352,6 +395,28 @@ public class Tsa implements AutoCloseable {
     }
   }
 
+  public Collection<TerracottaServer> getDiagnosticModeSevers() {
+    Collection<TerracottaServer> result = new ArrayList<>();
+    for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers()) {
+      if (getState(terracottaServer) == STARTED_IN_DIAGNOSTIC_MODE) {
+        result.add(terracottaServer);
+      }
+    }
+    return result;
+  }
+
+  public TerracottaServer getDiagnosticModeServer() {
+    Collection<TerracottaServer> servers = getDiagnosticModeSevers();
+    switch (servers.size()) {
+      case 0:
+        return null;
+      case 1:
+        return servers.iterator().next();
+      default:
+        throw new IllegalStateException("There is more than one diagnostic mode server, found " + servers.size());
+    }
+  }
+
   public URI uri() {
     if (disruptionController == null) {
       throw new IllegalStateException("uri cannot be built from a client lambda - please call uri() from the test code instead");
@@ -389,9 +454,9 @@ public class Tsa implements AutoCloseable {
     List<Exception> exceptions = new ArrayList<>();
 
     Topology topology = tsaConfigurationContext.getTopology();
-    ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
-    if (configurationProvider instanceof TcConfigProvider) {
-      TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+    ConfigurationManager configurationManager = topology.getConfigurationManager();
+    if (configurationManager instanceof TcConfigManager) {
+      TcConfigManager tcConfigProvider = (TcConfigManager) configurationManager;
       List<TcConfig> tcConfigs = tcConfigProvider.getTcConfigs();
       for (TcConfig tcConfig : tcConfigs) {
         Collection<String> dataDirectories = tcConfig.getDataDirectories().values();
@@ -420,9 +485,9 @@ public class Tsa implements AutoCloseable {
     List<Exception> exceptions = new ArrayList<>();
 
     Topology topology = tsaConfigurationContext.getTopology();
-    ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
-    if (configurationProvider instanceof TcConfigProvider) {
-      TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+    ConfigurationManager configurationManager = topology.getConfigurationManager();
+    if (configurationManager instanceof TcConfigManager) {
+      TcConfigManager tcConfigProvider = (TcConfigManager) configurationManager;
       List<TcConfig> tcConfigs = tcConfigProvider.getTcConfigs();
       for (TcConfig tcConfig : tcConfigs) {
         Map<String, String> dataDirectories = tcConfig.getDataDirectories();
@@ -445,6 +510,219 @@ public class Tsa implements AutoCloseable {
       exceptions.forEach(re::addSuppressed);
       throw re;
     }
+  }
+
+  public List<ConfigToolExecutionResult> attachStripe(TerracottaServer... newServers) {
+    if (newServers == null || newServers.length == 0) {
+      throw new IllegalArgumentException("Servers list should be non-null and non-empty");
+    }
+
+    for (TerracottaServer server : newServers) {
+      install(server, tsaConfigurationContext.getTopology());
+      start(server);
+    }
+    tsaConfigurationContext.getTopology().addStripe(newServers);
+
+    List<ConfigToolExecutionResult> results = new ArrayList<>();
+    if (newServers.length > 1) {
+      List<String> command = new ArrayList<>();
+      command.add("attach");
+      command.add("-t");
+      command.add("node");
+      command.add("-d");
+      command.add(newServers[0].getHostname() + ":" + newServers[0].getTsaPort());
+      for (int i = 1; i < newServers.length; i++) {
+        command.add("-s");
+        command.add(newServers[i].getHostname() + ":" + newServers[i].getTsaPort());
+      }
+      ConfigToolExecutionResult result = configTool(newServers[0]).executeCommand(command.toArray(new String[0]));
+      if (result.getExitStatus() != 0) {
+        throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+      }
+      results.add(result);
+    }
+
+    List<String> command = new ArrayList<>();
+    command.add("attach");
+    command.add("-t");
+    command.add("stripe");
+
+    List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
+    TerracottaServer existingServer = stripes.get(0).get(0);
+    command.add("-d");
+    command.add(existingServer.getHostname() + ":" + stripes.get(0).get(0).getTsaPort());
+    for (TerracottaServer newServer : newServers) {
+      command.add("-s");
+      command.add(newServer.getHostname() + ":" + newServer.getTsaPort());
+    }
+
+    ConfigToolExecutionResult result = configTool(existingServer).executeCommand(command.toArray(new String[0]));
+    if (result.getExitStatus() != 0) {
+      throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+    }
+    results.add(result);
+    return results;
+  }
+
+  public ConfigToolExecutionResult detachStripe(int stripeIndex) {
+    List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
+    if (stripeIndex < -1 || stripeIndex >= stripes.size()) {
+      throw new IllegalArgumentException("stripeIndex should be a non-negative integer less than stripe count");
+    }
+
+    if (stripes.size() == 1) {
+      throw new IllegalArgumentException("Cannot delete the only stripe from cluster");
+    }
+
+    List<String> command = new ArrayList<>();
+    command.add("detach");
+    command.add("-t");
+    command.add("stripe");
+
+    List<TerracottaServer> toDetachStripe = stripes.remove(stripeIndex);
+    TerracottaServer destination = stripes.get(0).get(0);
+    command.add("-d");
+    command.add(destination.getHostname() + ":" + stripes.get(0).get(0).getTsaPort());
+
+    command.add("-s");
+    command.add(toDetachStripe.get(0).getHostname() + ":" + toDetachStripe.get(0).getTsaPort());
+
+    ConfigToolExecutionResult result = configTool(destination).executeCommand(command.toArray(new String[0]));
+    if (result.getExitStatus() != 0) {
+      throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+    }
+
+    for (TerracottaServer detachServer : toDetachStripe) {
+      stop(detachServer);
+    }
+    tsaConfigurationContext.getTopology().removeStripe(stripeIndex);
+    return result;
+  }
+
+  public ConfigToolExecutionResult attachNodes(int stripeIndex, TerracottaServer... newServers) {
+    List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
+    if (stripeIndex < -1 || stripeIndex >= stripes.size()) {
+      throw new IllegalArgumentException("stripeIndex should be a non-negative integer less than stripe count");
+    }
+
+    if (newServers == null || newServers.length == 0) {
+      throw new IllegalArgumentException("Servers list should be non-null and non-empty");
+    }
+
+    for (TerracottaServer newServer : newServers) {
+      install(newServer, tsaConfigurationContext.getTopology());
+      start(newServer);
+      tsaConfigurationContext.getTopology().addServer(stripeIndex, newServer);
+    }
+
+    List<String> command = new ArrayList<>();
+    command.add("attach");
+    command.add("-t");
+    command.add("node");
+
+    TerracottaServer existingServer = stripes.get(stripeIndex).get(0);
+    command.add("-d");
+    command.add(existingServer.getHostname() + ":" + stripes.get(stripeIndex).get(0).getTsaPort());
+
+    for (TerracottaServer newServer : newServers) {
+      command.add("-s");
+      command.add(newServer.getHostname() + ":" + newServer.getTsaPort());
+    }
+
+    ConfigToolExecutionResult result = configTool(existingServer).executeCommand(command.toArray(new String[0]));
+    if (result.getExitStatus() != 0) {
+      throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+    }
+    return result;
+  }
+
+  public ConfigToolExecutionResult detachNode(int stripeIndex, int serverIndex) {
+    List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
+    if (stripeIndex < -1 || stripeIndex >= stripes.size()) {
+      throw new IllegalArgumentException("stripeIndex should be a non-negative integer less than stripe count");
+    }
+
+    List<TerracottaServer> servers = stripes.remove(stripeIndex);
+    if (serverIndex < -1 || serverIndex >= servers.size()) {
+      throw new IllegalArgumentException("serverIndex should be a non-negative integer less than server count");
+    }
+
+    TerracottaServer toDetach = servers.remove(serverIndex);
+    if (servers.size() == 0 && stripes.size() == 0) {
+      throw new IllegalArgumentException("Cannot delete the only server from the cluster");
+    }
+
+    TerracottaServer destination;
+    if (stripes.size() != 0) {
+      destination = stripes.get(0).get(0);
+    } else {
+      destination = servers.get(0);
+    }
+
+    List<String> command = new ArrayList<>();
+    command.add("detach");
+    command.add("-t");
+    command.add("node");
+    command.add("-d");
+    command.add(destination.getHostname() + ":" + destination.getTsaPort());
+    command.add("-s");
+    command.add(toDetach.getHostname() + ":" + toDetach.getTsaPort());
+
+    ConfigToolExecutionResult result = configTool(destination).executeCommand(command.toArray(new String[0]));
+    if (result.getExitStatus() != 0) {
+      throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+    }
+
+    stop(toDetach);
+    tsaConfigurationContext.getTopology().removeServer(stripeIndex, serverIndex);
+    return result;
+  }
+
+  public Tsa attachAll() {
+    List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
+
+    // Attach all servers in a stripe to form individual stripes
+    for (List<TerracottaServer> stripe : stripes) {
+      if (stripe.size() > 1) {
+        List<String> command = new ArrayList<>();
+        command.add("attach");
+        command.add("-t");
+        command.add("node");
+        command.add("-d");
+        command.add(stripe.get(0).getHostname() + ":" + stripe.get(0).getTsaPort());
+        for (int i = 1; i < stripe.size(); i++) {
+          command.add("-s");
+          command.add(stripe.get(i).getHostname() + ":" + stripe.get(i).getTsaPort());
+        }
+        ConfigToolExecutionResult result = configTool(stripe.get(0)).executeCommand(command.toArray(new String[0]));
+        if (result.getExitStatus() != 0) {
+          throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+        }
+      }
+    }
+
+    if (stripes.size() > 1) {
+      // Attach all stripes together to form the cluster
+      List<String> command = new ArrayList<>();
+      command.add("attach");
+      command.add("-t");
+      command.add("stripe");
+      command.add("-d");
+      command.add(stripes.get(0).get(0).getHostname() + ":" + stripes.get(0).get(0).getTsaPort());
+
+      for (int i = 1; i < stripes.size(); i++) {
+        List<TerracottaServer> stripe = stripes.get(i);
+        command.add("-s");
+        command.add(stripe.get(0).getHostname() + ":" + stripe.get(0).getTsaPort());
+      }
+
+      ConfigToolExecutionResult result = configTool(stripes.get(0).get(0)).executeCommand(command.toArray(new String[0]));
+      if (result.getExitStatus() != 0) {
+        throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+      }
+    }
+
+    return this;
   }
 
   @Override

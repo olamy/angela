@@ -21,15 +21,15 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class TcConfigProvider implements ConfigurationProvider {
+public class TcConfigManager implements ConfigurationManager {
   private final List<TcConfig> tcConfigs;
 
-  private TcConfigProvider(List<TcConfig> tcConfigs) {
+  private TcConfigManager(List<TcConfig> tcConfigs) {
     this.tcConfigs = new ArrayList<>(tcConfigs);
   }
 
-  public static TcConfigProvider withTcConfig(List<TcConfig> tcConfigs, boolean netDisruptionEnabled) {
-    TcConfigProvider tcConfigProvider = new TcConfigProvider(tcConfigs);
+  public static TcConfigManager withTcConfig(List<TcConfig> tcConfigs, boolean netDisruptionEnabled) {
+    TcConfigManager tcConfigProvider = new TcConfigManager(tcConfigs);
     checkConfigsHaveNoSymbolicNameDuplicate(tcConfigProvider.tcConfigs);
     if (netDisruptionEnabled) {
       for (TcConfig cfg : tcConfigProvider.tcConfigs) {
@@ -62,6 +62,35 @@ public class TcConfigProvider implements ConfigurationProvider {
   }
 
   @Override
+  public void addStripe(TerracottaServer... newServers) {
+    throw new UnsupportedOperationException("Addition of stripe not allowed at runtime");
+  }
+
+  @Override
+  public void removeStripe(int stripeIndex) {
+    throw new UnsupportedOperationException("Removal of stripe not allowed at runtime");
+  }
+
+  @Override
+  public List<List<TerracottaServer>> getStripes() {
+    List<List<TerracottaServer>> stripes = new ArrayList<>();
+    for (TcConfig tcConfig : this.tcConfigs) {
+      stripes.add(tcConfig.getServers());
+    }
+    return stripes;
+  }
+
+  @Override
+  public void addServer(int stripeId, TerracottaServer newServer) {
+    throw new UnsupportedOperationException("Addition of server not allowed at runtime");
+  }
+
+  @Override
+  public void removeServer(int stripeIndex, int serverIndex) {
+    throw new UnsupportedOperationException("Removal of server not allowed at runtime");
+  }
+
+  @Override
   public List<TerracottaServer> getServers() {
     List<TerracottaServer> servers = new ArrayList<>();
     for (TcConfig tcConfig : this.tcConfigs) {
@@ -71,7 +100,7 @@ public class TcConfigProvider implements ConfigurationProvider {
   }
 
   @Override
-  public TerracottaServer findServer(ServerSymbolicName serverSymbolicName) {
+  public TerracottaServer getServer(ServerSymbolicName serverSymbolicName) {
     for (TcConfig tcConfig : tcConfigs) {
       List<TerracottaServer> servers = tcConfig.getServers();
       for (TerracottaServer server : servers) {
@@ -84,7 +113,7 @@ public class TcConfigProvider implements ConfigurationProvider {
   }
 
   @Override
-  public TerracottaServer findServer(int stripeId, int serverIndex) {
+  public TerracottaServer getServer(int stripeId, int serverIndex) {
     if (stripeId >= tcConfigs.size()) {
       throw new IllegalArgumentException("No such stripe #" + stripeId + " (there are: " + tcConfigs.size() + ")");
     }
@@ -96,7 +125,7 @@ public class TcConfigProvider implements ConfigurationProvider {
   }
 
   @Override
-  public int findStripeIdOf(ServerSymbolicName serverSymbolicName) {
+  public int getStripeIndexOf(ServerSymbolicName serverSymbolicName) {
     for (int i = 0; i < tcConfigs.size(); i++) {
       TcConfig tcConfig = tcConfigs.get(i);
       for (TerracottaServer server : tcConfig.getServers()) {
@@ -130,12 +159,10 @@ public class TcConfigProvider implements ConfigurationProvider {
                                 Map<String, Integer> proxiedPorts,
                                 File installLocation,
                                 SecurityRootDirectory securityRootDirectory) {
-    int stripeId = findStripeIdOf(serverSymbolicName);
+    int stripeId = getStripeIndexOf(serverSymbolicName);
     tcConfig.substituteToken(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
-    String modifiedTcConfigName = tcConfig.getTcConfigName()
-        .substring(0, tcConfig.getTcConfigName()
-            .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
-    if(!proxiedPorts.isEmpty()) {
+    String modifiedTcConfigName = tcConfig.getTcConfigName().substring(0, tcConfig.getTcConfigName().length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
+    if (!proxiedPorts.isEmpty()) {
       tcConfig.updateServerGroupPort(proxiedPorts);
     }
     tcConfig.updateLogsLocation(installLocation, stripeId);
@@ -174,11 +201,10 @@ public class TcConfigProvider implements ConfigurationProvider {
   }
 
   @Override
-  public void createLinks(TerracottaServer terracottaServer,
-                          DisruptionProvider disruptionProvider,
-                          Map<ServerSymbolicName, Disruptor> disruptionLinks,
-                          Map<String, Integer> proxiedPorts) {
-    // Create network disruption links
+  public void createDisruptionLinks(TerracottaServer terracottaServer,
+                                    DisruptionProvider disruptionProvider,
+                                    Map<ServerSymbolicName, Disruptor> disruptionLinks,
+                                    Map<String, Integer> proxiedPorts) {
     TcConfig tcConfig = findTcConfig(terracottaServer.getServerSymbolicName());
     TcConfig modifiedConfig = TcConfig.copy(tcConfig);
     List<GroupMember> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider

@@ -1,19 +1,18 @@
 package com.terracottatech.qa.angela.client.net;
 
-import com.terracottatech.qa.angela.common.provider.ConfigurationProvider;
-import com.terracottatech.qa.angela.common.provider.TcConfigProvider;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
+import com.terracottatech.qa.angela.common.provider.ConfigurationManager;
+import com.terracottatech.qa.angela.common.provider.TcConfigManager;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,10 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- *
- *
- */
 public class DisruptionController implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(DisruptionController.class);
   private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
@@ -100,7 +95,7 @@ public class DisruptionController implements AutoCloseable {
       }
     }
 
-    LOGGER.debug("new disruptor for {}", (Object)splitClusters);
+    LOGGER.debug("new disruptor for {}", (Object) splitClusters);
     //compute servers to be linked for disruption based on input split clusters
     final Map<ServerSymbolicName, Collection<ServerSymbolicName>> linkedServers = new HashMap<>();
     for (int i = 0; i < splitClusters.length; ++i) {
@@ -124,7 +119,7 @@ public class DisruptionController implements AutoCloseable {
       Collection<ServerSymbolicName> newConnected = entry.getValue();
       for (Disruptor disruption : existingDisruptors) {
         if (disruption instanceof ServerToServerDisruptor) {
-          ServerToServerDisruptor serverToServerDisruptor = (ServerToServerDisruptor)disruption;
+          ServerToServerDisruptor serverToServerDisruptor = (ServerToServerDisruptor) disruption;
           Collection<ServerSymbolicName> alreadyConnected = serverToServerDisruptor.getLinkedServers().get(server);
           if (alreadyConnected != null && !Collections.disjoint(alreadyConnected, newConnected)) {
             alreadyLinkedServers.add(server);
@@ -159,16 +154,14 @@ public class DisruptionController implements AutoCloseable {
     if (closed) {
       throw new IllegalStateException("already closed");
     }
-    if (!topology.isNetDisruptionEnabled()) {
-      throw new IllegalArgumentException("Topology not enabled for network disruption");
-    }
+
     LOGGER.debug("creating new client to servers disruption");
     Optional<Disruptor> disruptor = existingDisruptors.stream()
         .filter(d -> d instanceof ClientToServerDisruptor)
         .findAny();
     if (DISRUPTION_PROVIDER.isProxyBased() && disruptor.isPresent()) {
       //make sure single disruptor serves all clients
-      return (ClientToServerDisruptor)disruptor.get();
+      return (ClientToServerDisruptor) disruptor.get();
     } else {
       ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
@@ -187,30 +180,12 @@ public class DisruptionController implements AutoCloseable {
     closed = true;
   }
 
-
-//  public List<TcConfig> updateTsaPortsWithProxy(List<TcConfig> configs) {
-//    if (DISRUPTION_PROVIDER.isProxyBased()) {
-//      List<TcConfig> proxiedTcConfigs = new ArrayList<>();
-//      for (TcConfig config : configs) {
-//        TcConfig copy = TcConfig.copy(config);
-//        proxiedTcConfigs.add(copy);
-//        proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
-//      }
-//      //create disruptor up front for cluster tool configuration
-//      ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
-//      existingDisruptors.add(newDisruptor);
-//      return proxiedTcConfigs;
-//    } else {
-//      return configs;
-//    }
-//  }
-
   public Map<ServerSymbolicName, Integer> updateTsaPortsWithProxy(Topology topology) {
     Map<ServerSymbolicName, Integer> proxyMap = new HashMap<>();
     if (DISRUPTION_PROVIDER.isProxyBased()) {
-      ConfigurationProvider configurationProvider = topology.getConfigurationProvider();
-      if (configurationProvider instanceof TcConfigProvider) {
-        TcConfigProvider tcConfigProvider = (TcConfigProvider) configurationProvider;
+      ConfigurationManager configurationProvider = topology.getConfigurationManager();
+      if (configurationProvider instanceof TcConfigManager) {
+        TcConfigManager tcConfigProvider = (TcConfigManager) configurationProvider;
         List<TcConfig> configs = tcConfigProvider.getTcConfigs();
         for (TcConfig config : configs) {
           TcConfig copy = TcConfig.copy(config);
