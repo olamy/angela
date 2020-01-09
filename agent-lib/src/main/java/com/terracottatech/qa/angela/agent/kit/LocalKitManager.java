@@ -66,14 +66,14 @@ public class LocalKitManager extends KitManager {
         throw new IllegalArgumentException("Local snapshot archive found to be older than " + STALE_SNAPSHOT_LIMIT + " milliseconds");
       }
 
-      if (!isValidKitInstallationPath(this.kitInstallationPath)) {
-        logger.debug("Local install not available");
+      if (!Files.isDirectory(this.kitInstallationPath)) {
+        logger.info("Local install not available at: {}", this.kitInstallationPath);
         if (offline) {
           throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
               " the kit compressed package is not available. Please run in online mode with an internet connection.");
         }
-        createLocalInstallFromInstaller(license, localInstallerPath);
       }
+      createLocalInstallFromInstaller(license, localInstallerPath);
     }
     if (this.kitInstallationPath != null) {
       initClientJarsMap();

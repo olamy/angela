@@ -15,6 +15,7 @@
  */
 package com.terracottatech.qa.angela.agent;
 
+import com.terracottatech.qa.angela.common.AngelaProperties;
 import com.terracottatech.qa.angela.common.util.AngelaVersion;
 import com.terracottatech.qa.angela.common.util.IgniteCommonHelper;
 import com.terracottatech.qa.angela.common.util.IpUtils;
@@ -43,9 +44,9 @@ import java.util.Map;
 
 import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
 import static com.terracottatech.qa.angela.common.AngelaProperties.IGNITE_LOGGING;
-import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
+import static com.terracottatech.qa.angela.common.AngelaProperties.getEitherOf;
 import static com.terracottatech.qa.angela.common.util.DirectoryUtils.createAndValidateDir;
 
 /**
@@ -66,7 +67,7 @@ public class Agent {
     System.setProperty("logback.configurationFile", "angela-logback.xml");
     logger = LoggerFactory.getLogger(Agent.class);
 
-    ROOT_DIR = Paths.get(KITS_DIR.getValue());
+    ROOT_DIR = Paths.get(getEitherOf(AngelaProperties.ROOT_DIR, AngelaProperties.KITS_DIR));
     if (!ROOT_DIR.isAbsolute()) {
       throw new IllegalArgumentException("Expected ROOT_DIR to be an absolute path, got: " + ROOT_DIR);
     }

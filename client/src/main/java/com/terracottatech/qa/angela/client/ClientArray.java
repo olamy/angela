@@ -23,8 +23,10 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
+import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
 import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
+import static com.terracottatech.qa.angela.common.AngelaProperties.getEitherOf;
 
 /**
  * @author Aurelien Broszniowski
@@ -59,7 +61,7 @@ public class ClientArray implements AutoCloseable {
     boolean offline = Boolean.parseBoolean(System.getProperty("offline", "false"));
 
     logger.info("Setting up locally the extracted install to be deployed remotely");
-    String kitInstallationPath = KIT_INSTALLATION_PATH.getValue();
+    String kitInstallationPath = getEitherOf(KIT_INSTALLATION_DIR, KIT_INSTALLATION_PATH);
     localKitManager.setupLocalInstall(clientArrayConfigurationContext.getLicense(), kitInstallationPath, offline);
 
     try {

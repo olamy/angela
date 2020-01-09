@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.terracottatech.qa.angela.common.AngelaProperties.DIRECT_JOIN;
-import static com.terracottatech.qa.angela.common.AngelaProperties.KITS_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
+import static com.terracottatech.qa.angela.common.AngelaProperties.ROOT_DIR;
 
 /**
  * @author Aurelien Broszniowski
@@ -94,7 +94,7 @@ public class RemoteClientManager {
       cmdLine.add("-D" + PORT_RANGE.getPropertyName() + "=" + PORT_RANGE.getValue());
       cmdLine.add("-D" + DIRECT_JOIN.getPropertyName() + "=" + String.join(",", joinedNodes));
       cmdLine.add("-D" + NODE_NAME.getPropertyName() + "=" + instanceId);
-      cmdLine.add("-D" + KITS_DIR.getPropertyName() + "=" + Agent.ROOT_DIR);
+      cmdLine.add("-D" + ROOT_DIR.getPropertyName() + "=" + Agent.ROOT_DIR);
       cmdLine.add(Agent.class.getName());
 
       logger.info("Spawning client {}", cmdLine);

@@ -5,7 +5,7 @@
 
 - *ROOT_DIR:* Root directory for angela used to store files on the node by Angela
 
-        Specify via `kitsDir` system property -- default `/data/angela`.
+        Specify via `angela.rootDir` system property -- default `/data/angela`.
 
 - *KRATOS_KITS_DIR*: Directory acting as cache for the downloaded Kratos kits.
 
