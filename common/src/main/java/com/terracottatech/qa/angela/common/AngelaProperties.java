@@ -77,7 +77,7 @@ public enum AngelaProperties {
     if (value == null) {
       value = deprecated.getSpecifiedValue();
       if (value != null) {
-        logger.warn("Deprecated property '{}' specified. Use '{}' instead to be future-ready", deprecated, recommended);
+        logger.warn("Deprecated property '{}' specified. Use '{}' instead to be future-ready", deprecated.propertyName, recommended.propertyName);
       }
     }
 
