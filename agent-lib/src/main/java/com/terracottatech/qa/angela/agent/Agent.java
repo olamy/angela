@@ -22,6 +22,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -180,6 +181,8 @@ public class Agent {
 
     @Override
     public void close() {
+      System.out.println("In Node::close. Printing stacktrace");
+      Arrays.stream(Thread.currentThread().getStackTrace()).forEach(System.out::println);
       controller = null;
       if (ignite != null) {
         ignite.close();
