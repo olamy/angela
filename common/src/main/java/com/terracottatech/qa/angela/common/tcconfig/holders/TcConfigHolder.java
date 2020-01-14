@@ -130,7 +130,7 @@ public abstract class TcConfigHolder {
         TerracottaServer terracottaServer = TerracottaServer
             .server(symbolicName, hostname)
             .tsaPort(tsaPort)
-            .groupPort(tsaGroupPort)
+            .tsaGroupPort(tsaGroupPort)
             .managementPort(managementPort)
             .jmxPort(jmxPort);
         servers.add(terracottaServer);

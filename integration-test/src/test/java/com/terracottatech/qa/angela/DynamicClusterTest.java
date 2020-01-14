@@ -36,13 +36,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata"),
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -74,7 +74,7 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata")
@@ -94,7 +94,7 @@ public class DynamicClusterTest {
 
       tsa.attachNodes(0, server("server-2", "localhost")
           .tsaPort(9510)
-          .groupPort(9511)
+          .tsaGroupPort(9511)
           .configRepo("terracotta2/repository")
           .logs("terracotta2/logs")
           .metaData("terracotta2/metadata"));
@@ -115,13 +115,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata"),
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -141,7 +141,7 @@ public class DynamicClusterTest {
 
       tsa.attachNodes(0, server("server-3", "localhost")
           .tsaPort(9610)
-          .groupPort(9611)
+          .tsaGroupPort(9611)
           .configRepo("terracotta3/repository")
           .logs("terracotta3/logs")
           .metaData("terracotta3/metadata"));
@@ -162,7 +162,7 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata")
@@ -182,7 +182,7 @@ public class DynamicClusterTest {
 
       tsa.attachStripe(server("server-2", "localhost")
           .tsaPort(9510)
-          .groupPort(9511)
+          .tsaGroupPort(9511)
           .configRepo("terracotta2/repository")
           .logs("terracotta2/logs")
           .metaData("terracotta2/metadata"));
@@ -204,7 +204,7 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata")
@@ -212,7 +212,7 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -233,7 +233,7 @@ public class DynamicClusterTest {
 
       tsa.attachStripe(server("server-3", "localhost")
           .tsaPort(9610)
-          .groupPort(9611)
+          .tsaGroupPort(9611)
           .configRepo("terracotta3/repository")
           .logs("terracotta3/logs")
           .metaData("terracotta3/metadata"));
@@ -255,13 +255,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata"),
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -293,13 +293,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata"),
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -307,13 +307,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-3", "localhost")
                                 .tsaPort(9610)
-                                .groupPort(9611)
+                                .tsaGroupPort(9611)
                                 .configRepo("terracotta3/repository")
                                 .logs("terracotta3/logs")
                                 .metaData("terracotta3/metadata"),
                             server("server-4", "localhost")
                                 .tsaPort(9710)
-                                .groupPort(9711)
+                                .tsaGroupPort(9711)
                                 .configRepo("terracotta4/repository")
                                 .logs("terracotta4/logs")
                                 .metaData("terracotta4/metadata")
@@ -346,13 +346,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata"),
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -390,7 +390,7 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata")
@@ -398,7 +398,7 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")
@@ -437,13 +437,13 @@ public class DynamicClusterTest {
                         stripe(
                             server("server-1", "localhost")
                                 .tsaPort(9410)
-                                .groupPort(9411)
+                                .tsaGroupPort(9411)
                                 .configRepo("terracotta1/repository")
                                 .logs("terracotta1/logs")
                                 .metaData("terracotta1/metadata"),
                             server("server-2", "localhost")
                                 .tsaPort(9510)
-                                .groupPort(9511)
+                                .tsaGroupPort(9511)
                                 .configRepo("terracotta2/repository")
                                 .logs("terracotta2/logs")
                                 .metaData("terracotta2/metadata")

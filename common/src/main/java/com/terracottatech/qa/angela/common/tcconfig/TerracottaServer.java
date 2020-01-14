@@ -15,6 +15,8 @@ public class TerracottaServer {
   private volatile int tsaGroupPort;
   private volatile int managementPort;
   private volatile int jmxPort;
+  private volatile String bindAddress;
+  private volatile String groupBindAddress;
   private volatile String configRepo;
   private volatile String configFile;
   private volatile String logs;
@@ -36,8 +38,8 @@ public class TerracottaServer {
     return this;
   }
 
-  public TerracottaServer groupPort(int groupPort) {
-    this.tsaGroupPort = groupPort;
+  public TerracottaServer tsaGroupPort(int tsaGroupPort) {
+    this.tsaGroupPort = tsaGroupPort;
     return this;
   }
 
@@ -48,6 +50,16 @@ public class TerracottaServer {
 
   public TerracottaServer jmxPort(int jmxPort) {
     this.jmxPort = jmxPort;
+    return this;
+  }
+
+  public TerracottaServer bindAddress(String bindAddress) {
+    this.bindAddress = bindAddress;
+    return this;
+  }
+
+  public TerracottaServer groupBindAddress(String groupBindAddress) {
+    this.groupBindAddress = groupBindAddress;
     return this;
   }
 
@@ -105,6 +117,14 @@ public class TerracottaServer {
     return jmxPort;
   }
 
+  public String getBindAddress() {
+    return bindAddress;
+  }
+
+  public String getGroupBindAddress() {
+    return groupBindAddress;
+  }
+
   public String getConfigRepo() {
     return configRepo;
   }
@@ -148,6 +168,8 @@ public class TerracottaServer {
         jmxPort == that.jmxPort &&
         Objects.equals(serverSymbolicName, that.serverSymbolicName) &&
         Objects.equals(hostName, that.hostName) &&
+        Objects.equals(bindAddress, that.bindAddress) &&
+        Objects.equals(groupBindAddress, that.groupBindAddress) &&
         Objects.equals(configRepo, that.configRepo) &&
         Objects.equals(configFile, that.configFile) &&
         Objects.equals(logs, that.logs) &&
@@ -159,6 +181,6 @@ public class TerracottaServer {
   @Override
   public int hashCode() {
     return Objects.hash(serverSymbolicName, hostName, tsaPort, tsaGroupPort, managementPort, jmxPort, configRepo,
-        configFile, logs, metaData, offheap, dataDir);
+        bindAddress, groupBindAddress, configFile, logs, metaData, offheap, dataDir);
   }
 }

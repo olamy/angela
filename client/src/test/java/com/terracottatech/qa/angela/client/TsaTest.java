@@ -37,12 +37,12 @@ public class TsaTest {
     List<TerracottaServer> terracottaServerList = new ArrayList<>();
     terracottaServerList.add(TerracottaServer.server("1", "hostname1")
         .tsaPort(9510)
-        .groupPort(9610)
+        .tsaGroupPort(9610)
         .managementPort(9810)
         .jmxPort(9910));
     terracottaServerList.add(TerracottaServer.server("2", "hostname2")
         .tsaPort(9511)
-        .groupPort(9611)
+        .tsaGroupPort(9611)
         .managementPort(9811)
         .jmxPort(9911));
     when(tcConfig.getServers()).thenReturn(terracottaServerList);
@@ -63,12 +63,12 @@ public class TsaTest {
     List<TerracottaServer> terracottaServerList = new ArrayList<>();
     terracottaServerList.add(TerracottaServer.server("1", "hostname1")
         .tsaPort(9510)
-        .groupPort(9610)
+        .tsaGroupPort(9610)
         .managementPort(9810)
         .jmxPort(9910));
     terracottaServerList.add(TerracottaServer.server("2", "hostname2")
         .tsaPort(9511)
-        .groupPort(9611)
+        .tsaGroupPort(9611)
         .managementPort(9811)
         .jmxPort(9911));
 
