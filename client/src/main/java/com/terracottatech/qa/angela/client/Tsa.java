@@ -54,6 +54,7 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_IN_DIAGNOSTIC_MODE;
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
+import static com.terracottatech.qa.angela.common.util.RetryUtils.waitFor;
 import static java.util.EnumSet.of;
 
 /**
@@ -314,7 +315,9 @@ public class Tsa implements AutoCloseable {
   }
 
   public Tsa activateAll() {
-    ConfigurationManager configurationManager = tsaConfigurationContext.getTopology().getConfigurationManager();
+    Topology topology = tsaConfigurationContext.getTopology();
+    List<List<TerracottaServer>> stripes = topology.getStripes();
+    ConfigurationManager configurationManager = topology.getConfigurationManager();
     Set<ServerSymbolicName> notStartedServers = new HashSet<>();
     for (TerracottaServer terracottaServer : configurationManager.getServers()) {
       TerracottaServerState terracottaServerState = getState(terracottaServer);
@@ -331,8 +334,30 @@ public class Tsa implements AutoCloseable {
       logger.info("Activating cluster from {}", terracottaServer.getHostname());
       executeRemotely(ignite, terracottaServer.getHostname(), () -> {
         TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(CONFIG_TOOL);
-        Agent.controller.configure(instanceId, terracottaServer, tsaConfigurationContext.getTopology(), null, tsaConfigurationContext.getClusterName(), null, cliEnv, false);
+        Agent.controller.configure(instanceId, terracottaServer, topology, null, tsaConfigurationContext.getClusterName(), null, cliEnv, false);
       });
+
+      final int maxRetryCount = 5;
+      final int maxWaitTimeMillis = 5000;
+      if (!waitFor(() -> getActives().size() == stripes.size(), maxRetryCount, maxWaitTimeMillis)) {
+        throw new RuntimeException(
+            String.format(
+                "Tried for %d times (%dms), but all stripes did not get actives",
+                maxRetryCount,
+                maxWaitTimeMillis
+            )
+        );
+      }
+
+      if (!waitFor(() -> getPassives().size() == topology.getServers().size() - getActives().size(), maxRetryCount, maxWaitTimeMillis)) {
+        throw new RuntimeException(
+            String.format(
+                "Tried for %d times (%dms), but all stripes did not get the expected number of passives",
+                maxRetryCount,
+                maxWaitTimeMillis
+            )
+        );
+      }
       return this;
     } else {
       throw new IllegalStateException();
