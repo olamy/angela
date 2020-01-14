@@ -276,6 +276,16 @@ public class Distribution107Controller extends DistributionController {
       options.add(String.valueOf(server.getTsaGroupPort()));
     }
 
+    if (server.getBindAddress() != null) {
+      options.add("-a");
+      options.add(server.getBindAddress());
+    }
+
+    if (server.getGroupBindAddress() != null) {
+      options.add("-A");
+      options.add(server.getGroupBindAddress());
+    }
+
     if (server.getConfigRepo() != null) {
       options.add("-r");
       options.add(server.getConfigRepo());
