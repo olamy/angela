@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -57,7 +59,7 @@ public class ClusterFactory implements AutoCloseable {
   private final ConfigurationContext configurationContext;
 
   private Ignite ignite;
-  private Agent.Node localhostAgent;
+  private Agent.Node localAgent;
   private transient RemoteAgentLauncher remoteAgentLauncher;
   private InstanceId monitorInstanceId;
 
@@ -74,26 +76,19 @@ public class ClusterFactory implements AutoCloseable {
       throw new IllegalArgumentException("Cannot initialize with 0 server");
     }
 
-    boolean foundLocalhost = false;
-    boolean allLocalhost = true;
-    for (String targetServerName : targetServerNames) {
-      if ("localhost".equals(targetServerName)) {
-        foundLocalhost = true;
-      } else {
-        allLocalhost = false;
-      }
-    }
-    if (foundLocalhost && !allLocalhost) {
-      throw new IllegalArgumentException("Cannot mix localhost and non-localhost servers : " + targetServerNames);
+    boolean foundLocal = isAnyLocal(targetServerNames);
+    boolean allLocal = areAllLocal(targetServerNames);
+    if (foundLocal && !allLocal) {
+      throw new IllegalArgumentException("Cannot mix local and non-local servers : " + targetServerNames);
     }
 
-    if (!foundLocalhost && nodeToInstanceId.containsKey("localhost")) {
-      throw new IllegalArgumentException("localhost agent started, connection to remote agents '" + targetServerNames + "' is not possible");
+    if (!foundLocal && isAnyLocal(nodeToInstanceId.keySet())) {
+      throw new IllegalArgumentException("local agent started, connection to remote agents '" + targetServerNames + "' is not possible");
     }
 
-    if (foundLocalhost) {
-      if (nodeToInstanceId.size() > 1 || (nodeToInstanceId.size() == 1 && !nodeToInstanceId.containsKey("localhost"))) {
-        throw new IllegalArgumentException("remote agents '" + nodeToInstanceId.keySet() + "' already started, connecting to localhost is not possible");
+    if (foundLocal) {
+      if (nodeToInstanceId.size() > 1 || (nodeToInstanceId.size() == 1 && !isAnyLocal(nodeToInstanceId.keySet()))) {
+        throw new IllegalArgumentException("remote agents '" + nodeToInstanceId.keySet() + "' already started, connecting to local is not possible");
       }
     }
 
@@ -102,12 +97,15 @@ public class ClusterFactory implements AutoCloseable {
       if (targetServerName == null) {
         throw new IllegalArgumentException("Cannot initialize with a null server name");
       }
-      if (!targetServerName.equals("localhost")) {
+
+      if (!isLocal(targetServerName)) {
         Set<String> nodesToJoin = new HashSet<>();
         nodesToJoin.addAll(nodeToInstanceId.keySet());
         nodesToJoin.addAll(targetServerNames);
+        LOGGER.info("Target server name: {} is not local. Using remoting agent for connection to: {}", targetServerName, nodesToJoin);
         remoteAgentLauncher.remoteStartAgentOn(targetServerName, nodesToJoin);
       }
+
       nodeToInstanceId.compute(targetServerName, (s, instanceIds) -> {
         if (instanceIds == null) {
           return Collections.singleton(instanceId);
@@ -119,9 +117,9 @@ public class ClusterFactory implements AutoCloseable {
     }
 
     if (ignite == null) {
-      if (isLocalhostOnly(targetServerNames)) {
-        LOGGER.info("spawning localhost agent");
-        localhostAgent = new Agent.Node("localhost", Collections.emptyList());
+      if (allLocal) {
+        LOGGER.info("spawning local agent");
+        localAgent = new Agent.Node(targetServerNames.iterator().next(), Collections.emptyList());
       }
 
       TcpDiscoverySpi spi = new TcpDiscoverySpi();
@@ -153,13 +151,32 @@ public class ClusterFactory implements AutoCloseable {
     return instanceId;
   }
 
-  private static boolean isLocalhostOnly(Collection<String> targetServerNames) {
+  private static boolean isLocal(String targetServerName) {
+    InetAddress address;
+    try {
+      address = InetAddress.getByName(targetServerName);
+    } catch (UnknownHostException e) {
+      throw new RuntimeException(e);
+    }
+    return address.isLoopbackAddress() || address.isLinkLocalAddress();
+  }
+
+  private static boolean areAllLocal(Collection<String> targetServerNames) {
     for (String targetServerName : targetServerNames) {
-      if (!targetServerName.equals("localhost")) {
+      if (!isLocal(targetServerName)) {
         return false;
       }
     }
     return true;
+  }
+
+  private static boolean isAnyLocal(Collection<String> targetServerNames) {
+    for (String targetServerName : targetServerNames) {
+      if (isLocal(targetServerName)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public Cluster cluster() {
@@ -248,14 +265,14 @@ public class ClusterFactory implements AutoCloseable {
     }
     remoteAgentLauncher = null;
 
-    if (localhostAgent != null) {
+    if (localAgent != null) {
       try {
-        LOGGER.info("shutting down localhost agent");
-        localhostAgent.close();
+        LOGGER.info("shutting down local agent");
+        localAgent.close();
       } catch (Exception e) {
         exceptions.add(e);
       }
-      localhostAgent = null;
+      localAgent = null;
     }
 
     if (!exceptions.isEmpty()) {
