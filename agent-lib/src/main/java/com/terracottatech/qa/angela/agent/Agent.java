@@ -33,6 +33,7 @@ import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
 import static com.terracottatech.qa.angela.common.AngelaProperties.getEitherOf;
 import static com.terracottatech.qa.angela.common.util.DirectoryUtils.createAndValidateDir;
+import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 
 /**
  * @author Ludovic Orban
@@ -142,7 +143,12 @@ public class Agent {
         String[] hostIp = hostIpStr.split("/");
         nodesToJoinHostnames.add(hostIp[0]);
         if (hostIp.length > 1) {
-          hostnameToIpMapping.put(hostIp[0].split(":")[0], hostIp[1]);
+          int lastColon = hostIp[0].lastIndexOf(":");
+          if (lastColon == -1) {
+            hostnameToIpMapping.put(hostIp[0], hostIp[1]);
+          } else {
+            hostnameToIpMapping.put(hostIp[0].substring(0, lastColon), hostIp[1]);
+          }
         }
       });
 
@@ -174,7 +180,7 @@ public class Agent {
         throw new RuntimeException("Error starting agent " + nodeName, e);
       }
 
-      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(nodeName + ":40000") : nodesToJoin);
+      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(encloseInBracketsIfIpv6(nodeName) + ":40000") : nodesToJoin);
       logger.info("Registered node '" + nodeName + "'");
     }
 

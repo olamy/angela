@@ -20,6 +20,7 @@ import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLAT
 import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
 import static com.terracottatech.qa.angela.common.AngelaProperties.SKIP_UNINSTALL;
 import static com.terracottatech.qa.angela.common.AngelaProperties.getEitherOf;
+import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 
 public class Tms implements AutoCloseable {
 
@@ -60,7 +61,7 @@ public class Tms implements AutoCloseable {
                  || BROWSER_SECURITY.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
       );
     }
-    return (isHttps ? "https://" : "http://") + tmsConfigurationContext.getHostname() + ":9480";
+    return (isHttps ? "https://" : "http://") + encloseInBracketsIfIpv6(tmsConfigurationContext.getHostname()) + ":9480";
   }
 
   public TmsHttpClient httpClient() {

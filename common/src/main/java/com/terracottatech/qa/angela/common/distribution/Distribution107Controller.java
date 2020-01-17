@@ -41,6 +41,7 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
 import static com.terracottatech.qa.angela.common.util.ExternalLoggers.tsaLogger;
+import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 import static java.io.File.separator;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
@@ -179,7 +180,7 @@ public class Distribution107Controller extends DistributionController {
   public void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName,
                         Integer> proxyTsaPorts, SecurityRootDirectory srd, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServer server = topology.getServers().get(0);
-    invokeConfigTool(location, tcEnv, "activate", "-n", clusterName, "-l", licensePath, "-s", server.getHostname() + ":" + server.getTsaPort());
+    invokeConfigTool(location, tcEnv, "activate", "-n", clusterName, "-l", licensePath, "-s", server.getHostPort());
   }
 
   @Override
@@ -216,7 +217,7 @@ public class Distribution107Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
+        .map(s -> encloseInBracketsIfIpv6(s.getHostname()) + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
         .collect(Collectors.joining(",", "terracotta://", "")));
   }
 

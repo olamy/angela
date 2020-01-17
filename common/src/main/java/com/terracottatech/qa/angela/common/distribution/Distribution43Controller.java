@@ -43,6 +43,10 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTED_
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidHost;
+import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv4;
+import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv6;
+import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 import static java.util.regex.Pattern.compile;
 
 /**
@@ -224,10 +228,11 @@ public class Distribution43Controller extends DistributionController {
     List<String> options = new ArrayList<>();
     options.add(getStopCmd(installLocation));
 
-    // add -n if applicable
-    if (!(serverSymbolicName.getSymbolicName().contains(":") || (serverSymbolicName.getSymbolicName().isEmpty()))) {
+    String symbolicName = serverSymbolicName.getSymbolicName();
+    if (isValidHost(symbolicName) || isValidIPv4(symbolicName) || isValidIPv6(symbolicName) || symbolicName.isEmpty()) {
+      // add -n if applicable
       options.add("-n");
-      options.add(serverSymbolicName.getSymbolicName());
+      options.add(symbolicName);
     }
 
     return options;
@@ -270,10 +275,11 @@ public class Distribution43Controller extends DistributionController {
     // start command
     options.add(getStartCmd(installLocation));
 
-    // add -n if applicable
-    if (!(serverSymbolicName.getSymbolicName().contains(":") || (serverSymbolicName.getSymbolicName().isEmpty()))) {
+    String symbolicName = serverSymbolicName.getSymbolicName();
+    if (isValidHost(symbolicName) || isValidIPv4(symbolicName) || isValidIPv6(symbolicName) || symbolicName.isEmpty()) {
+      // add -n if applicable
       options.add("-n");
-      options.add(serverSymbolicName.getSymbolicName());
+      options.add(symbolicName);
     }
 
     TcConfigManager tcConfigProvider = (TcConfigManager) configurationManager;
@@ -335,7 +341,7 @@ public class Distribution43Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
+        .map(s -> encloseInBracketsIfIpv6(s.getHostname()) + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
         .collect(Collectors.joining(",", "", "")));
   }
 

@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.agent.Agent.IGNITE_DIR;
 import static com.terracottatech.qa.angela.common.AngelaProperties.IGNITE_LOGGING;
+import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 
 public class ClusterFactory implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
@@ -125,7 +126,7 @@ public class ClusterFactory implements AutoCloseable {
       TcpDiscoverySpi spi = new TcpDiscoverySpi();
       TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
       ipFinder.setAddresses(targetServerNames.stream()
-          .map(targetServerName -> targetServerName + ":40000")
+          .map(targetServerName -> encloseInBracketsIfIpv6(targetServerName) + ":40000")
           .collect(Collectors.toList()));
       spi.setJoinTimeout(10000);
       spi.setIpFinder(ipFinder);

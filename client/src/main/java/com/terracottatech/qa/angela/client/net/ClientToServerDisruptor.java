@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
+
 /**
  * Disruptor to control traffic between client and servers. This needs to
  * be created before initializing client(DatasetManager & CacheManager) and use
@@ -126,7 +128,7 @@ public class ClientToServerDisruptor implements Disruptor {
   private String getHostPortList(Collection<ServerSymbolicName> servers) {
     return servers.stream()
         .map(endPoints::get)
-        .map(s -> s.getHostName() + ":" + s.getPort())
+        .map(s -> encloseInBracketsIfIpv6(s).getHostName() + ":" + s.getPort())
         .collect(Collectors.joining(","));
   }
 
