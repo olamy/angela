@@ -314,6 +314,10 @@ public class Tsa implements AutoCloseable {
     }
   }
 
+  public Map<ServerSymbolicName, Integer> updateToProxiedPorts() {
+    return disruptionController.updateTsaPortsWithProxy(tsaConfigurationContext.getTopology());
+  }
+
   public Tsa activateAll() {
     Topology topology = tsaConfigurationContext.getTopology();
     List<List<TerracottaServer>> stripes = topology.getStripes();
@@ -366,6 +370,10 @@ public class Tsa implements AutoCloseable {
 
   public TerracottaServerState getState(TerracottaServer terracottaServer) {
     return executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.getTsaState(instanceId, terracottaServer));
+  }
+
+  public Map<String, Integer> getProxyGroupPortsForServer(TerracottaServer terracottaServer) {
+    return executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.getProxyGroupPortsForServer(instanceId, terracottaServer));
   }
 
   public Collection<TerracottaServer> getStarted() {

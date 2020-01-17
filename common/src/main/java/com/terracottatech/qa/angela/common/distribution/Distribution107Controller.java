@@ -312,6 +312,11 @@ public class Distribution107Controller extends DistributionController {
       options.add(server.getLogs());
     }
 
+    if (server.getFailoverPriority() != null) {
+      options.add("-y");
+      options.add(server.getFailoverPriority());
+    }
+
     LOGGER.info("Server startup options: {}", options);
     return options;
   }

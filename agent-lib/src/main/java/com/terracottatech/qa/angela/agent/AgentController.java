@@ -288,6 +288,17 @@ public class AgentController {
     return serverInstance.getTerracottaServerState();
   }
 
+  public Map<String, Integer> getProxyGroupPortsForServer(InstanceId instanceId, TerracottaServer terracottaServer) {
+    TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+    if (terracottaInstall == null) {
+      return Collections.EMPTY_MAP;
+    }
+    TerracottaServerInstance serverInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
+    if (serverInstance == null) {
+      return Collections.EMPTY_MAP;
+    }
+    return serverInstance.getProxiedPorts();
+  }
 
   public void disrupt(InstanceId instanceId, TerracottaServer src, TerracottaServer target) {
     disrupt(instanceId, src, Collections.singleton(target));

@@ -3,7 +3,9 @@ package com.terracottatech.qa.angela.client.net;
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
+import com.terracottatech.qa.angela.common.net.PortChooser;
 import com.terracottatech.qa.angela.common.provider.ConfigurationManager;
+import com.terracottatech.qa.angela.common.provider.DynamicConfigManager;
 import com.terracottatech.qa.angela.common.provider.TcConfigManager;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -192,6 +194,14 @@ public class DisruptionController implements AutoCloseable {
           proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
           proxyMap.putAll(proxyTsaPorts);
         }
+      } else {
+        PortChooser PORT_CHOOSER = new PortChooser();
+        DynamicConfigManager dynamicConfigManager = (DynamicConfigManager) configurationProvider;
+        for (TerracottaServer terracottaServer : dynamicConfigManager.getServers()) {
+          int tsaRandomPort = PORT_CHOOSER.chooseRandomPort();
+          proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), tsaRandomPort);
+        }
+        proxyMap.putAll(proxyTsaPorts);
       }
       ClientToServerDisruptor newDisruptor = new ClientToServerDisruptor(topology, existingDisruptors::remove, proxyTsaPorts);
       existingDisruptors.add(newDisruptor);
