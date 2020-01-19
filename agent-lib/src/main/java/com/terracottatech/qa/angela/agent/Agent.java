@@ -124,7 +124,11 @@ public class Agent {
       userAttributes.put("angela.version", AngelaVersion.getAngelaVersion());
       userAttributes.put("nodename", nodeName);
       cfg.setUserAttributes(userAttributes);
-      cfg.setIgniteInstanceName(nodeName);
+      if (!nodesToJoin.isEmpty()) {
+        cfg.setIgniteInstanceName(nodeName);
+      } else {
+        cfg.setIgniteInstanceName("localhost");
+      }
       boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING.getValue());
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setPeerClassLoadingEnabled(true);
