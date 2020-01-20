@@ -7,7 +7,7 @@
   <parent>
     <artifactId>angela</artifactId>
     <groupId>com.terracottatech.qa</groupId>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>3.0.4-SNAPSHOT</version>
   </parent>
 
   <artifactId>docs</artifactId>
