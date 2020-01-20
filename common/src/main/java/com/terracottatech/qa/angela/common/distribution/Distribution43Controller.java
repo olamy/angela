@@ -15,6 +15,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.ExternalLoggers;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
@@ -46,7 +47,6 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidHost;
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv4;
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv6;
-import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 import static java.util.regex.Pattern.compile;
 
 /**
@@ -341,7 +341,7 @@ public class Distribution43Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> encloseInBracketsIfIpv6(s.getHostname()) + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
+        .map(s -> new HostPort(s.getHostname(), proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort())).getHostPort())
         .collect(Collectors.joining(",", "", "")));
   }
 

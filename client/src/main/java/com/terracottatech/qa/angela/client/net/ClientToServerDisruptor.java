@@ -1,8 +1,5 @@
 package com.terracottatech.qa.angela.client.net;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
@@ -10,6 +7,9 @@ import com.terracottatech.qa.angela.common.net.DisruptorState;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
+import com.terracottatech.qa.angela.common.util.HostPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -19,8 +19,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 
 /**
  * Disruptor to control traffic between client and servers. This needs to
@@ -128,7 +126,7 @@ public class ClientToServerDisruptor implements Disruptor {
   private String getHostPortList(Collection<ServerSymbolicName> servers) {
     return servers.stream()
         .map(endPoints::get)
-        .map(s -> encloseInBracketsIfIpv6(s).getHostName() + ":" + s.getPort())
+        .map(s -> new HostPort(s.getHostName(), s.getPort()).getHostPort())
         .collect(Collectors.joining(","));
   }
 

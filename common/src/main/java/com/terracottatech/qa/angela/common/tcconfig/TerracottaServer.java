@@ -1,8 +1,8 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
-import java.util.Objects;
+import com.terracottatech.qa.angela.common.util.HostPort;
 
-import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
+import java.util.Objects;
 
 /**
  * Logical definition of a Terracotta server instance
@@ -108,7 +108,7 @@ public class TerracottaServer {
   }
 
   public String getHostPort() {
-    return encloseInBracketsIfIpv6(hostName) + ":" + tsaPort;
+    return new HostPort(hostName, tsaPort).getHostPort();
   }
 
   public int getTsaGroupPort() {

@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.agent;
 
 import com.terracottatech.qa.angela.common.AngelaProperties;
 import com.terracottatech.qa.angela.common.util.AngelaVersion;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import com.terracottatech.qa.angela.common.util.IgniteCommonHelper;
 import com.terracottatech.qa.angela.common.util.IpUtils;
 import org.apache.ignite.Ignite;
@@ -33,7 +34,6 @@ import static com.terracottatech.qa.angela.common.AngelaProperties.NODE_NAME;
 import static com.terracottatech.qa.angela.common.AngelaProperties.PORT_RANGE;
 import static com.terracottatech.qa.angela.common.AngelaProperties.getEitherOf;
 import static com.terracottatech.qa.angela.common.util.DirectoryUtils.createAndValidateDir;
-import static com.terracottatech.qa.angela.common.util.IpUtils.encloseInBracketsIfIpv6;
 
 /**
  * @author Ludovic Orban
@@ -184,7 +184,7 @@ public class Agent {
         throw new RuntimeException("Error starting agent " + nodeName, e);
       }
 
-      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(encloseInBracketsIfIpv6(nodeName) + ":40000") : nodesToJoin);
+      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(new HostPort(nodeName, 40000).getHostPort()) : nodesToJoin);
       logger.info("Registered node '" + nodeName + "'");
     }
 
