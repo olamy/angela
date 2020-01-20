@@ -18,6 +18,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.ExternalLoggers;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import com.terracottatech.qa.angela.common.util.OS;
 import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
@@ -50,6 +51,9 @@ import static com.terracottatech.qa.angela.common.TerracottaServerState.STARTING
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.topology.PackageType.KIT;
 import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidHost;
+import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv4;
+import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv6;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
 
@@ -95,7 +99,7 @@ public class Distribution102Controller extends DistributionController {
             .getServerSymbolicName().getSymbolicName(), mr.group())
     );
 
-    WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
+    WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology, proxiedPorts, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
@@ -259,10 +263,11 @@ public class Distribution102Controller extends DistributionController {
     // start command
     options.add(getTsaCreateExecutable(installLocation));
 
-    // add -n if applicable
-    if (!(serverSymbolicName.getSymbolicName().contains(":") || (serverSymbolicName.getSymbolicName().isEmpty()))) {
+    String symbolicName = serverSymbolicName.getSymbolicName();
+    if (isValidHost(symbolicName) || isValidIPv4(symbolicName) || isValidIPv6(symbolicName) || symbolicName.isEmpty()) {
+      // add -n if applicable
       options.add("-n");
-      options.add(serverSymbolicName.getSymbolicName());
+      options.add(symbolicName);
     }
 
     TcConfigManager configurationProvider = (TcConfigManager) topology.getConfigurationManager();
@@ -319,7 +324,8 @@ public class Distribution102Controller extends DistributionController {
     ).andTriggerOn(
         tmsFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group())
     );
-    WatchedProcess watchedProcess = new WatchedProcess<>(new ProcessExecutor()
+
+    WatchedProcess<TerracottaManagementServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTmsCommand(installLocation))
         .directory(installLocation)
         .environment(env)
@@ -388,7 +394,7 @@ public class Distribution102Controller extends DistributionController {
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
         .stream()
-        .map(s -> s.getHostname() + ":" + proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort()))
+        .map(s -> new HostPort(s.getHostname(), proxyTsaPorts.getOrDefault(s.getServerSymbolicName(), s.getTsaPort())).getHostPort())
         .collect(Collectors.joining(",", "terracotta://", "")));
   }
 

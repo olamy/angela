@@ -2,6 +2,7 @@ package com.terracottatech.qa.angela.agent;
 
 import com.terracottatech.qa.angela.common.AngelaProperties;
 import com.terracottatech.qa.angela.common.util.AngelaVersion;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import com.terracottatech.qa.angela.common.util.IgniteCommonHelper;
 import com.terracottatech.qa.angela.common.util.IpUtils;
 import org.apache.ignite.Ignite;
@@ -123,7 +124,11 @@ public class Agent {
       userAttributes.put("angela.version", AngelaVersion.getAngelaVersion());
       userAttributes.put("nodename", nodeName);
       cfg.setUserAttributes(userAttributes);
-      cfg.setIgniteInstanceName(nodeName);
+      if (!nodesToJoin.isEmpty()) {
+        cfg.setIgniteInstanceName(nodeName);
+      } else {
+        cfg.setIgniteInstanceName("localhost");
+      }
       boolean enableLogging = Boolean.getBoolean(IGNITE_LOGGING.getValue());
       cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
       cfg.setPeerClassLoadingEnabled(true);
@@ -142,7 +147,12 @@ public class Agent {
         String[] hostIp = hostIpStr.split("/");
         nodesToJoinHostnames.add(hostIp[0]);
         if (hostIp.length > 1) {
-          hostnameToIpMapping.put(hostIp[0].split(":")[0], hostIp[1]);
+          int lastColon = hostIp[0].lastIndexOf(":");
+          if (lastColon == -1) {
+            hostnameToIpMapping.put(hostIp[0], hostIp[1]);
+          } else {
+            hostnameToIpMapping.put(hostIp[0].substring(0, lastColon), hostIp[1]);
+          }
         }
       });
 
@@ -174,7 +184,7 @@ public class Agent {
         throw new RuntimeException("Error starting agent " + nodeName, e);
       }
 
-      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(nodeName + ":40000") : nodesToJoin);
+      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(new HostPort(nodeName, 40000).getHostPort()) : nodesToJoin);
       logger.info("Registered node '" + nodeName + "'");
     }
 

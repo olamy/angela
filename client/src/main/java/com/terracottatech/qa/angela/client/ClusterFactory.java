@@ -12,6 +12,7 @@ import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
 import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
 import com.terracottatech.qa.angela.common.util.DirectoryUtils;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -125,7 +126,7 @@ public class ClusterFactory implements AutoCloseable {
       TcpDiscoverySpi spi = new TcpDiscoverySpi();
       TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
       ipFinder.setAddresses(targetServerNames.stream()
-          .map(targetServerName -> targetServerName + ":40000")
+          .map(targetServerName -> new HostPort(targetServerName, 40000).getHostPort())
           .collect(Collectors.toList()));
       spi.setJoinTimeout(10000);
       spi.setIpFinder(ipFinder);

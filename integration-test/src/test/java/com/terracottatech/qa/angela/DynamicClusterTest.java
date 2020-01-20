@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela;
 import com.terracottatech.qa.angela.client.ClusterFactory;
 import com.terracottatech.qa.angela.client.Tsa;
 import com.terracottatech.qa.angela.client.config.ConfigurationContext;
+import com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -22,7 +23,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class DynamicClusterTest {
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("kitsDir", "/Users/saag/angela");
+    System.setProperty("angela.rootDir", "/Users/saag/angela");
   }
 
   @Test
@@ -459,6 +460,49 @@ public class DynamicClusterTest {
       tsa.startAll().attachAll().activateAll();
 
       assertThat(tsa.getDiagnosticModeSevers().size(), is(0));
+      assertThat(tsa.getActives().size(), is(1));
+      assertThat(tsa.getPassives().size(), is(1));
+    }
+  }
+
+  @Test
+  public void testIpv6() throws Exception {
+    CustomConfigurationContext context = customConfigurationContext()
+        .tsa(tsa -> tsa
+            .topology(
+                new Topology(
+                    distribution(version("10.7.0-SNAPSHOT"), KIT, TERRACOTTA),
+                    dynamicCluster(
+                        stripe(
+                            server("node-1", "::1")
+                                .bindAddress("::")
+                                .groupBindAddress("::")
+                                .tsaPort(9410)
+                                .tsaGroupPort(9411)
+                                .logs("terracotta1/logs")
+                                .configRepo("terracotta1/repo")
+                                .metaData("terracotta1/metadata"),
+                            server("node-2", "::1")
+                                .bindAddress("::")
+                                .groupBindAddress("::")
+                                .tsaPort(9510)
+                                .tsaGroupPort(9511)
+                                .logs("terracotta2/logs")
+                                .configRepo("terracotta2/repo")
+                                .metaData("terracotta2/metadata")
+                        )
+                    )
+                )
+            )
+            .license(TERRACOTTA.defaultLicense())
+        );
+    try (ClusterFactory factory = new ClusterFactory("DynamicClusterTest::testIpv6", context)) {
+      Tsa tsa = factory.tsa();
+      tsa.startAll();
+      assertThat(tsa.getDiagnosticModeSevers().size(), is(2));
+
+      tsa.attachAll();
+      tsa.activateAll();
       assertThat(tsa.getActives().size(), is(1));
       assertThat(tsa.getPassives().size(), is(1));
     }

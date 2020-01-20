@@ -1,6 +1,7 @@
 package com.terracottatech.qa.angela.client.remote.agent;
 
 import com.terracottatech.qa.angela.agent.Agent;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.util.AngelaVersions;
 import com.terracottatech.qa.angela.common.util.IpUtils;
@@ -138,7 +139,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       LOGGER.info("starting agent");
       String joinHosts = nodesToJoin.stream().map(node -> {
         String resolvedIPAddr = IpUtils.getHostAddress(node);
-        String str = node + ":40000";
+        String str = new HostPort(node, 40000).getHostPort();
         if (!node.equals(resolvedIPAddr)) {
           str += "/" + resolvedIPAddr;
         }

@@ -1,5 +1,7 @@
 package com.terracottatech.qa.angela.common.tcconfig;
 
+import com.terracottatech.qa.angela.common.util.HostPort;
+
 import java.util.Objects;
 
 /**
@@ -103,6 +105,10 @@ public class TerracottaServer {
 
   public int getTsaPort() {
     return tsaPort;
+  }
+
+  public String getHostPort() {
+    return new HostPort(hostName, tsaPort).getHostPort();
   }
 
   public int getTsaGroupPort() {

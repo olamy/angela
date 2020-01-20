@@ -12,6 +12,7 @@ import com.terracottatech.qa.angela.common.tcconfig.License;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsClientSecurityConfig;
 import com.terracottatech.qa.angela.common.tms.security.config.TmsServerSecurityConfig;
 import com.terracottatech.qa.angela.common.topology.InstanceId;
+import com.terracottatech.qa.angela.common.util.HostPort;
 import org.apache.ignite.Ignite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +57,11 @@ public class Tms implements AutoCloseable {
     TmsServerSecurityConfig tmsServerSecurityConfig = tmsConfigurationContext.getSecurityConfig();
     if (tmsServerSecurityConfig != null) {
       isHttps = ("true".equals(tmsServerSecurityConfig.getTmsSecurityHttpsEnabled())
-                 || FULL.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
-                 || BROWSER_SECURITY.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
+          || FULL.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
+          || BROWSER_SECURITY.equals(tmsServerSecurityConfig.getDeprecatedSecurityLevel())
       );
     }
-    return (isHttps ? "https://" : "http://") + tmsConfigurationContext.getHostname() + ":9480";
+    return (isHttps ? "https://" : "http://") + new HostPort(tmsConfigurationContext.getHostname(), 9480).getHostPort();
   }
 
   public TmsHttpClient httpClient() {

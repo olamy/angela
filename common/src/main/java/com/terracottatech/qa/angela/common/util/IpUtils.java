@@ -8,7 +8,7 @@ public class IpUtils {
     try {
       return InetAddress.getLocalHost().getHostName();
     } catch (UnknownHostException e) {
-      throw new IllegalStateException(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -16,7 +16,7 @@ public class IpUtils {
     try {
       return InetAddress.getByName(host).getHostAddress();
     } catch (UnknownHostException e) {
-      throw new IllegalStateException(e);
+      throw new RuntimeException(e);
     }
   }
 }
