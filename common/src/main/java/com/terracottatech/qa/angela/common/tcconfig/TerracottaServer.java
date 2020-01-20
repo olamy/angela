@@ -25,6 +25,7 @@ public class TerracottaServer {
   private volatile String metaData;
   private volatile String dataDir;
   private volatile String offheap;
+  private volatile String failoverPriority;
 
   private TerracottaServer(String serverSymbolicName, String hostName) {
     this.serverSymbolicName = new ServerSymbolicName(serverSymbolicName);
@@ -95,6 +96,11 @@ public class TerracottaServer {
     return this;
   }
 
+  public TerracottaServer failoverPriority(String failoverPriority) {
+    this.failoverPriority = failoverPriority;
+    return this;
+  }
+
   public ServerSymbolicName getServerSymbolicName() {
     return serverSymbolicName;
   }
@@ -155,6 +161,10 @@ public class TerracottaServer {
     return logs;
   }
 
+  public String getFailoverPriority() {
+    return failoverPriority;
+  }
+
   @Override
   public String toString() {
     return "TerracottaServer{" +
@@ -181,12 +191,13 @@ public class TerracottaServer {
         Objects.equals(logs, that.logs) &&
         Objects.equals(metaData, that.metaData) &&
         Objects.equals(offheap, that.offheap) &&
-        Objects.equals(dataDir, that.dataDir);
+        Objects.equals(dataDir, that.dataDir) &&
+        Objects.equals(failoverPriority, that.failoverPriority);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(serverSymbolicName, hostName, tsaPort, tsaGroupPort, managementPort, jmxPort, configRepo,
-        bindAddress, groupBindAddress, configFile, logs, metaData, offheap, dataDir);
+        bindAddress, groupBindAddress, configFile, logs, metaData, offheap, dataDir, failoverPriority);
   }
 }

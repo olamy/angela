@@ -69,6 +69,10 @@ public class TerracottaServerInstance implements Closeable {
     }
   }
 
+  public Map<String, Integer> getProxiedPorts() {
+    return proxiedPorts;
+  }
+
   public Distribution getDistribution() {
     return distribution;
   }
