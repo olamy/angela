@@ -3,14 +3,12 @@ package com.terracottatech.qa.angela.agent.kit;
 import com.terracottatech.qa.angela.KitResolver;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.util.DirectoryUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.concurrent.TimeUnit;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
@@ -29,8 +26,6 @@ import static java.util.stream.Collectors.toList;
  */
 public class LocalKitManager extends KitManager {
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
-  private static final long STALE_SNAPSHOT_LIMIT = TimeUnit.DAYS.toMillis(1);
-
   private final Map<String, File> clientJars = new HashMap<>();
   private final KitResolver kitResolver;
 
@@ -72,22 +67,19 @@ public class LocalKitManager extends KitManager {
     } else if (rootInstallationPath != null) {
       Path localInstallerPath = rootInstallationPath.resolve(
           kitResolver.resolveLocalInstallerPath(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType()));
-      logger.info("Using local kit from: {}", localInstallerPath);
+      logger.info("Local kit found at: {}", localInstallerPath);
       if (!isValidLocalInstallerFilePath(offline, localInstallerPath)) {
+        logger.info("Local kit at: {} found to be invalid. Downloading a fresh installer", localInstallerPath);
         kitResolver.downloadLocalInstaller(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType(), localInstallerPath);
       }
 
       this.kitInstallationPath = kitResolver.resolveKitInstallationPath(distribution.getVersion(), distribution.getPackageType(), localInstallerPath, rootInstallationPath);
 
-      if (isArchiveStale(offline, this.kitInstallationPath, localInstallerPath)) {
-        throw new IllegalArgumentException("Local snapshot archive found to be older than " + STALE_SNAPSHOT_LIMIT + " milliseconds");
-      }
-
       if (!Files.isDirectory(this.kitInstallationPath)) {
         logger.info("Local install not available at: {}", this.kitInstallationPath);
         if (offline) {
           throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
-                                             " the kit compressed package is not available. Please run in online mode with an internet connection.");
+              " the kit compressed package is not available. Please run in online mode with an internet connection.");
         }
         kitResolver.createLocalInstallFromInstaller(distribution.getVersion(), distribution.getPackageType(), license, localInstallerPath, rootInstallationPath);
       }
@@ -154,24 +146,5 @@ public class LocalKitManager extends KitManager {
       logger.error("Error loading the JAR manifest of " + file, ioe);
       return null;
     }
-  }
-
-  private boolean isArchiveStale(boolean offline, Path installationPath, Path archiveFilePath) {
-    // If we have a snapshot that is older than STALE_SNAPSHOT_LIMIT, we reload it
-    // Use the archive because blah-blah to check the modified time, because the timestamp on the inflated directory
-    // corresponds to the creation of the archive, and not to its download
-    long timeSinceLastModified;
-    try {
-      timeSinceLastModified = System.currentTimeMillis() - Files.getLastModifiedTime(archiveFilePath).toMillis();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    if (!offline && distribution.getVersion().isSnapshot() && timeSinceLastModified > STALE_SNAPSHOT_LIMIT) {
-      logger.info("Mode is online, and version is a snapshot older than: {} milliseconds. Reinstalling it.", STALE_SNAPSHOT_LIMIT);
-      DirectoryUtils.deleteQuietly(installationPath);
-      return true;
-    }
-    return false;
   }
 }

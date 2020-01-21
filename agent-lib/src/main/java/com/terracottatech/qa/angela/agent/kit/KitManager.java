@@ -28,6 +28,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
  */
 public abstract class KitManager {
   private static final Logger logger = LoggerFactory.getLogger(KitManager.class);
+  private static final long STALE_SNAPSHOT_LIMIT_HOURS = TimeUnit.DAYS.toHours(1);
 
   protected final Distribution distribution;
   final Path rootInstallationPath;  // the work directory where installs are stored for caching
@@ -62,16 +63,16 @@ public abstract class KitManager {
       return false;
     }
 
-    // if we have a snapshot that is older than 24h, we reload it
-    long timeSinceModified;
+    long timeSinceLastModified;
     try {
-      timeSinceModified = System.currentTimeMillis() - Files.getLastModifiedTime(localInstallerFile).toMillis();
+      // Use the archive to check the modified time, because the timestamp on the inflated directory corresponds to the creation of the archive, and not to its download
+      timeSinceLastModified = System.currentTimeMillis() - Files.getLastModifiedTime(localInstallerFile).toMillis();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
 
-    if (!offline && distribution.getVersion().isSnapshot() && Math.abs(timeSinceModified) > TimeUnit.DAYS.toMillis(1)) {
-      logger.debug("Our version is a snapshot, is older than 24h and we are not offline so we are deleting it to produce a reload.");
+    if (!offline && distribution.getVersion().isSnapshot() && timeSinceLastModified > STALE_SNAPSHOT_LIMIT_HOURS * 60 * 60 * 1000) {
+      logger.info("Mode is online, distribution is snapshot, and {} is older than {} hours", localInstallerFile.getFileName(), STALE_SNAPSHOT_LIMIT_HOURS);
       DirectoryUtils.deleteQuietly(localInstallerFile.getParent());
       return false;
     }
