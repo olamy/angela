@@ -28,6 +28,7 @@ import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig
 import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
 import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
 import static com.terracottatech.qa.angela.common.topology.Version.version;
+import static com.terracottatech.qa.angela.test.Versions.EHCACHE_OS_SNAPSHOT_VERSION;
 import static com.terracottatech.qa.angela.test.Versions.EHCACHE_OS_VERSION;
 import static junit.framework.TestCase.assertEquals;
 
@@ -55,8 +56,8 @@ public class EhcacheOsTest {
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version("3.8-SNAPSHOT"), PackageType.KIT, LicenseType.EHCACHE_OS),
-                    tcConfig(version("3.8-SNAPSHOT"), TC_CONFIG_OS)
+                    distribution(version(EHCACHE_OS_SNAPSHOT_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    tcConfig(version(EHCACHE_OS_SNAPSHOT_VERSION), TC_CONFIG_OS)
                 )
             )
         );

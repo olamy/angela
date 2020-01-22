@@ -8,6 +8,7 @@ public class Versions {
 
   public static final String TERRACOTTA_VERSION;
   public static final String EHCACHE_OS_VERSION;
+  public static final String EHCACHE_OS_SNAPSHOT_VERSION;
   public static final String TERRACOTTA_VERSION_4X;
 
   static {
@@ -18,6 +19,7 @@ public class Versions {
       }
       TERRACOTTA_VERSION = versionsProps.getProperty("terracotta.version");
       EHCACHE_OS_VERSION = versionsProps.getProperty("ehcache-os.version");
+      EHCACHE_OS_SNAPSHOT_VERSION = versionsProps.getProperty("ehcache-os-snapshot.version");
       TERRACOTTA_VERSION_4X = versionsProps.getProperty("terracotta-4x.version");
     } catch (IOException ioe) {
       throw new RuntimeException("Cannot find versions.properties in classpath");
