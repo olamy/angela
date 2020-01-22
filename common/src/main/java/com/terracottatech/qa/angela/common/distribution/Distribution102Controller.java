@@ -54,6 +54,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidHost;
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv4;
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv6;
+import static java.io.File.separator;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
 
@@ -136,10 +137,10 @@ public class Distribution102Controller extends DistributionController {
   public ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
     List<String> command = new ArrayList<>();
     command.add(installLocation
-        + File.separator + "tools"
-        + File.separator + "cluster-tool"
-        + File.separator + "bin"
-        + File.separator + "cluster-tool" + OS.INSTANCE.getShellExtension());
+        + separator + "tools"
+        + separator + "cluster-tool"
+        + separator + "bin"
+        + separator + "cluster-tool" + OS.INSTANCE.getShellExtension());
     command.addAll(Arrays.asList(arguments));
 
     try {
@@ -239,12 +240,11 @@ public class Distribution102Controller extends DistributionController {
   }
 
   private String getConfigureTsaExecutable(File location) {
+    String execPath = "tools" + separator + "cluster-tool" + separator + "bin" + separator + "cluster-tool" + OS.INSTANCE.getShellExtension();
     if (distribution.getPackageType() == KIT) {
-      return location.getAbsolutePath() + File.separator + "tools" + File.separator + "cluster-tool" + File.separator +
-          "bin" + File.separator + "cluster-tool" + OS.INSTANCE.getShellExtension();
+      return location.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return location.getAbsolutePath() + File.separator + "TerracottaDB" + File.separator + "tools" + File.separator +
-          "cluster-tool" + File.separator + "bin" + File.separator + "cluster-tool" + OS.INSTANCE.getShellExtension();
+      return location.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define TSA licensing Command for distribution: " + distribution);
   }
@@ -298,13 +298,11 @@ public class Distribution102Controller extends DistributionController {
   }
 
   private String getTsaCreateExecutable(File installLocation) {
+    String execPath = "server" + separator + "bin" + separator + "start-tc-server" + OS.INSTANCE.getShellExtension();
     if (distribution.getPackageType() == KIT) {
-      return installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
-          OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
-          + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
-          OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define Terracotta server Start Command for distribution: " + distribution);
   }
@@ -379,13 +377,11 @@ public class Distribution102Controller extends DistributionController {
   }
 
   private String getStartTmsExecutable(File installLocation) {
+    String execPath = "tools" + separator + "management" + separator + "bin" + separator + "start" + OS.INSTANCE.getShellExtension();
     if (distribution.getPackageType() == KIT) {
-      return installLocation.getAbsolutePath() + File.separator + "tools" + File.separator + "management" +
-          File.separator + "bin" + File.separator + "start" + OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
-          + File.separator + "tools" + File.separator + "management" + File.separator + "bin" +
-          File.separator + "start" + OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define TMS Start Command for distribution: " + distribution);
   }
@@ -403,13 +399,18 @@ public class Distribution102Controller extends DistributionController {
     if (distribution.getPackageType() == KIT) {
       return "client";
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return "common" + File.separator + "lib";
+      return "common" + separator + "lib";
     }
     throw new UnsupportedOperationException();
   }
 
   @Override
   public String pluginJarsRootFolderName(Distribution distribution) {
-    return "server" + File.separator + "plugins" + File.separator + "lib";
+    return "server" + separator + "plugins" + separator + "lib";
+  }
+
+  @Override
+  public String terracottaInstallationRoot() {
+    return "TerracottaDB";
   }
 }

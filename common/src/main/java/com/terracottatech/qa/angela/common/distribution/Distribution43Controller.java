@@ -47,6 +47,7 @@ import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTA
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidHost;
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv4;
 import static com.terracottatech.qa.angela.common.util.HostAndIpValidator.isValidIPv6;
+import static java.io.File.separator;
 import static java.util.regex.Pattern.compile;
 
 /**
@@ -239,9 +240,11 @@ public class Distribution43Controller extends DistributionController {
   }
 
   private String getStopCmd(File installLocation) {
+    String execPath = "server" + separator + "bin" + separator + "stop-tc-server" + OS.INSTANCE.getShellExtension();
     if (distribution.getPackageType() == KIT) {
-      return installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" +
-             File.separator + "stop-tc-server" + OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + execPath;
+    } else if (distribution.getPackageType() == SAG_INSTALLER) {
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define Terracotta server Stop Command for distribution: " + distribution);
   }
@@ -315,13 +318,11 @@ public class Distribution43Controller extends DistributionController {
   }
 
   private String getStartCmd(File installLocation) {
+    String execPath = "server" + separator + "bin" + separator + "start-tc-server" + OS.INSTANCE.getShellExtension();
     if (distribution.getPackageType() == KIT) {
-      return installLocation.getAbsolutePath() + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
-             OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return installLocation.getAbsolutePath() + File.separator + "TerracottaDB"
-             + File.separator + "server" + File.separator + "bin" + File.separator + "start-tc-server" +
-             OS.INSTANCE.getShellExtension();
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define Terracotta server Start Command for distribution: " + distribution);
   }
@@ -350,7 +351,7 @@ public class Distribution43Controller extends DistributionController {
     if (distribution.getPackageType() == KIT) {
       return "apis";
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return "common" + File.separator + "lib";
+      return "common" + separator + "lib";
     }
     throw new UnsupportedOperationException();
   }
@@ -358,5 +359,10 @@ public class Distribution43Controller extends DistributionController {
   @Override
   public String pluginJarsRootFolderName(Distribution distribution) {
     throw new UnsupportedOperationException("4.x does not support plugins");
+  }
+
+  @Override
+  public String terracottaInstallationRoot() {
+    return "Terracotta";
   }
 }

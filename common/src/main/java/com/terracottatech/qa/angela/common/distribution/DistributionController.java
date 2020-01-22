@@ -111,4 +111,6 @@ public abstract class DistributionController {
   public abstract String clientJarsRootFolderName(Distribution distribution);
 
   public abstract String pluginJarsRootFolderName(Distribution distribution);
+
+  public abstract String terracottaInstallationRoot();
 }
