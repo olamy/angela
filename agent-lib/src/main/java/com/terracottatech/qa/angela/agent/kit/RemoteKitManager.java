@@ -11,11 +11,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static com.terracottatech.qa.angela.common.topology.PackageType.SAG_INSTALLER;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Download the kit tarball from Kratos
@@ -33,6 +37,55 @@ public class RemoteKitManager extends KitManager {
     this.workingKitInstallationPath = Agent.WORK_DIR.resolve(instanceId.toString());
   }
 
+  public File installKit(License license) {
+    Path workingInstallPath = workingKitInstallationPath.resolve(distribution.getVersion().toString());
+    Path workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(license, kitInstallationPath, workingInstallPath);
+    logger.info("Working install is located in {}", workingCopyFromLocalInstall);
+    return workingCopyFromLocalInstall.toFile();
+  }
+
+  private Path createWorkingCopyFromLocalInstall(License license, Path localInstall, Path workingInstallBasePath) {
+    try {
+      logger.info("Copying {} to {}", localInstall.toAbsolutePath(), workingInstallBasePath);
+      Files.createDirectories(workingInstallBasePath);
+      DirectoryUtils.copyDirectory(localInstall, workingInstallBasePath);
+      if (license != null) {
+        license.writeToFile(workingInstallBasePath.toFile());
+      }
+
+      cleanupPermissions(workingInstallBasePath);
+      return workingInstallBasePath;
+    } catch (IOException e) {
+      throw new RuntimeException("Can not create working install", e);
+    }
+  }
+
+  // TODO : duplicate
+  private void cleanupPermissions(Path dest) {
+    if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+      return;
+    }
+
+    try (Stream<Path> walk = Files.walk(dest)) {
+      walk.filter(Files::isRegularFile)
+          .filter(path -> {
+            String name = path.getFileName().toString();
+            return name.endsWith(".sh") || name.endsWith("tms.jar");
+          })
+          .forEach(path -> {
+            try {
+              Set<PosixFilePermission> perms = new HashSet<>(Files.getPosixFilePermissions(path));
+              perms.addAll(EnumSet.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
+              Files.setPosixFilePermissions(path, perms);
+            } catch (IOException ioe) {
+              throw new UncheckedIOException(ioe);
+            }
+          });
+    } catch (IOException ioe) {
+      throw new UncheckedIOException(ioe);
+    }
+  }
+
   public Path getWorkingKitInstallationPath() {
     return workingKitInstallationPath;
   }
@@ -44,37 +97,6 @@ public class RemoteKitManager extends KitManager {
       return false;
     }
     return true;
-  }
-
-  public File installKit(License license) {
-    Path workingCopyFromLocalInstall = createWorkingCopyFromLocalInstall(license, kitInstallationPath);
-    logger.info("Working install is located in {}", workingCopyFromLocalInstall);
-    return workingCopyFromLocalInstall.toFile();
-  }
-
-  private Path createWorkingCopyFromLocalInstall(License license, Path localInstall) {
-    try {
-      Path workingInstallPath = workingKitInstallationPath.resolve(distribution.getVersion().toString());
-      logger.debug("Copying {} to {}", localInstall.toAbsolutePath(), workingInstallPath);
-      Files.createDirectories(workingInstallPath);
-      DirectoryUtils.copyDirectory(localInstall, workingInstallPath);
-      if (license != null) {
-        license.writeToFile(workingInstallPath.toFile());
-      }
-
-      //install extra server jars
-      if (System.getProperty("extraServerJars") != null && !System.getProperty("extraServerJars").contains("${")) {
-        for (String path : System.getProperty("extraServerJars").split(File.pathSeparator)) {
-          String serverLib = (distribution.getPackageType() == SAG_INSTALLER ? "TerracottaDB" + File.separator : "")
-                             + "server" + File.separator + "plugins" + File.separator + "lib";
-          Files.copy(Paths.get(path), workingInstallPath.resolve(localInstall.getFileName()).resolve(serverLib));
-        }
-      }
-      compressionUtils.cleanupPermissions(workingInstallPath);
-      return workingInstallPath;
-    } catch (IOException e) {
-      throw new RuntimeException("Can not create working install", e);
-    }
   }
 
   public void deleteInstall(File installLocation) throws IOException {

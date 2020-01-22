@@ -20,7 +20,7 @@
 
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
-      <artifactId>angela-client</artifactId>
+      <artifactId>angela-ee-client</artifactId>
     </dependency>
 
     <dependency>

@@ -18,6 +18,7 @@
   <properties>
     <!-- Terracotta dependencies -->
     <ehcache-os.version>3.8.1</ehcache-os.version>
+    <ehcache-os-snapshot.version>3.8-SNAPSHOT</ehcache-os-snapshot.version>
     <terracotta.version>10.5.0.0.193</terracotta.version>
     <terracotta-4x.version>4.3.8.0.56</terracotta-4x.version>
 
@@ -41,13 +42,15 @@
 
   <modules>
     <module>common</module>
-    <module>client</module>
+    <module>client-internal</module>
     <module>agent-lib</module>
     <module>agent</module>
-    <module>integration-test</module>
     <module>docs</module>
     <module>test-utils</module>
+    <module>angela-os-client</module>
+    <module>angela-ee-client</module>
     <module>integration-test-os</module>
+    <module>integration-test-ee</module>
   </modules>
 
   <dependencyManagement>
@@ -59,7 +62,7 @@
       </dependency>
       <dependency>
         <groupId>com.terracottatech.qa</groupId>
-        <artifactId>angela-client</artifactId>
+        <artifactId>angela-client-internal</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -70,6 +73,16 @@
       <dependency>
         <groupId>com.terracottatech.qa</groupId>
         <artifactId>angela-test-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.terracottatech.qa</groupId>
+        <artifactId>angela-os-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.terracottatech.qa</groupId>
+        <artifactId>angela-ee-client</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -141,7 +154,7 @@
         <exclusions>
           <exclusion>
             <groupId>org.zeroturnaround</groupId>
-            <artifactId>zt-exec:1.7</artifactId>
+            <artifactId>zt-exec</artifactId>
           </exclusion>
           <exclusion>
             <groupId>org.apache.commons</groupId>

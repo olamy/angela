@@ -10,23 +10,20 @@
     <version>3.0.4-SNAPSHOT</version>
   </parent>
 
-  <artifactId>integration-test-os</artifactId>
+  <artifactId>angela-client-internal</artifactId>
 
   <dependencies>
     <dependency>
-      <groupId>org.ehcache</groupId>
-      <artifactId>ehcache-clustered</artifactId>
-      <version>${ehcache-os.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
-      <artifactId>angela-os-client</artifactId>
-      <scope>test</scope>
+      <artifactId>angela-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.terracottatech.qa</groupId>
+      <artifactId>angela-agent-lib</artifactId>
     </dependency>
     <dependency>
       <groupId>com.terracottatech.qa</groupId>
@@ -34,8 +31,26 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>json-path</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.hierynomus</groupId>
+      <artifactId>sshj</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
