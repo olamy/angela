@@ -110,6 +110,22 @@ public class Version implements Comparable<Version> {
     return snapshot;
   }
 
+  // return the version limited to 3 digits, e.g. 4.3.7 instead of 4.3.7.1.2
+  public String getShortVersion() {
+    StringBuilder sb = new StringBuilder();
+    if (major != -1) {
+      sb.append(getMajor());
+      if (minor != -1) {
+        sb.append(".").append(getMinor());
+        if (revision != -1) {
+          sb.append(".").append(getRevision());
+        }
+      }
+    }
+    return sb.toString();
+  }
+
+
   public String getVersion(boolean showSnapshot) {
     StringBuilder sb = new StringBuilder();
     if (major != -1) {
@@ -142,13 +158,13 @@ public class Version implements Comparable<Version> {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    Version version = (Version) o;
+    Version version = (Version)o;
     return major == version.major &&
-        minor == version.minor &&
-        revision == version.revision &&
-        build_major == version.build_major &&
-        build_minor == version.build_minor &&
-        snapshot == version.snapshot;
+           minor == version.minor &&
+           revision == version.revision &&
+           build_major == version.build_major &&
+           build_minor == version.build_minor &&
+           snapshot == version.snapshot;
   }
 
   @Override
