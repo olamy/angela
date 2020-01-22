@@ -86,7 +86,7 @@ public class OS {
     DARWIN.put(18, "Mojave");
     DARWIN.put(19, "Catalina");
 
-    UNIX.addAll(Arrays.asList("Linux", "SunOS", "FreeBSD"));
+    UNIX.addAll(Arrays.asList("Linux", "SunOS", "FreeBSD", "AIX"));
 
     INSTANCE = new OS();
   }
@@ -109,10 +109,6 @@ public class OS {
         osInfo = initMacOsInfo(name, version, arch);
       } else if (name.startsWith("Darwin")) {
         osInfo = initDarwinOsInfo(name, version, arch);
-      }
-      // AIX
-      else if (name.equals("AIX")) {
-        osInfo = new OsInfo(name, version, arch, name);
       }
       // Try to detect other POSIX compliant platforms, now the fun begins
       else {
@@ -144,6 +140,16 @@ public class OS {
 
   public String getPlatformName() {
     return osInfo.getPlatformName();
+  }
+
+  @Override
+  public String toString() {
+    return "OS{" +
+           "Name = " + osInfo.getName() + ", " +
+           "Architecture = " + osInfo.getArch() + ", " +
+           "Platform = " + osInfo.getPlatformName() + ", " +
+           "Version = " + osInfo.getVersion() +
+           '}';
   }
 
   private OsInfo initMacOsInfo(final String name, final String version, final String arch) {

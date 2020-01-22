@@ -47,7 +47,7 @@ public class DirectoryUtils {
       deleteDirectory(path);
       return true;
     } catch (Exception e) {
-      logger.error("Deletion of directory: " + path + " failed", e);
+      logger.debug("Deletion of directory: " + path + " failed", e);
       return false;
     }
   }

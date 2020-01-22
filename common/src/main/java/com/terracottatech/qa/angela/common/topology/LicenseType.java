@@ -2,6 +2,8 @@ package com.terracottatech.qa.angela.common.topology;
 
 import com.terracottatech.qa.angela.common.tcconfig.License;
 
+import java.net.URL;
+
 /**
  * @author Aurelien Broszniowski
  */
@@ -10,19 +12,20 @@ public enum LicenseType {
   EHCACHE_OS(null, null),
 
   // 4.x:
-  GO("bigmemory-go", new License(LicenseType.class.getResource("/licenses/terracotta/4/terracotta-license.key"))),
-  MAX("bigmemory-max", new License(LicenseType.class.getResource("/licenses/terracotta/4/terracotta-license.key"))),
+  GO("bigmemory-go", "/licenses/terracotta-license.key"),
+
+  MAX("bigmemory-max", "/licenses/terracotta-license.key"),
 
   // 10.x:
-  TERRACOTTA("terracotta-db", new License(LicenseType.class.getResource("/licenses/terracotta/10/Terracotta101.xml"))),
+  TERRACOTTA("terracotta-db", "/licenses/Terracotta101.xml"),
   ;
 
   private final String kratosTag;
-  private final License defaultLicense;
+  private final String defaultLicenseResourceName;
 
-  LicenseType(String kratosTag, License defaultLicense) {
+  LicenseType(String kratosTag, String defaultLicenseResourceName) {
     this.kratosTag = kratosTag;
-    this.defaultLicense = defaultLicense;
+    this.defaultLicenseResourceName = defaultLicenseResourceName;
   }
 
   public boolean isOpenSource() {
@@ -34,6 +37,11 @@ public enum LicenseType {
   }
 
   public License defaultLicense() {
-    return defaultLicense;
+    final URL licenseResource = LicenseType.class.getResource(defaultLicenseResourceName);
+    if (licenseResource == null) {
+      return null;
+    } else {
+      return new License(licenseResource);
+    }
   }
 }

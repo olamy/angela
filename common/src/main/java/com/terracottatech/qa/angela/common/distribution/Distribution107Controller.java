@@ -326,7 +326,7 @@ public class Distribution107Controller extends DistributionController {
     if (distribution.getPackageType() == KIT) {
       return installLocation.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return installLocation.getAbsolutePath() + separator + "TerracottaDB" + separator + execPath;
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define Terracotta server Start Command for distribution: " + distribution);
   }
@@ -343,8 +343,13 @@ public class Distribution107Controller extends DistributionController {
     if (distribution.getPackageType() == KIT) {
       return installLocation.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return installLocation.getAbsolutePath() + separator + "TerracottaDB" + separator + execPath;
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
     }
     throw new IllegalStateException("Can not define TMS Start Command for distribution: " + distribution);
+  }
+
+  @Override
+  public String terracottaInstallationRoot() {
+    return "TerracottaDB";
   }
 }
