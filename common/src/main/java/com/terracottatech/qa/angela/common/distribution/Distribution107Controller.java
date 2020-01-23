@@ -75,7 +75,7 @@ public class Distribution107Controller extends DistributionController {
             compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
             mr -> stateRef.set(STARTED_AS_PASSIVE))
         .andTriggerOn(
-            compile("^.*\\QStopping server\\E.*$"),
+            compile("^.*\\QL2 exiting\\E.*$"),
             mr -> stateRef.set(STOPPED))
         .andTriggerOn(
             compile("^.*PID is (\\d+).*$"),

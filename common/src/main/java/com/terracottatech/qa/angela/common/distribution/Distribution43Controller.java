@@ -72,22 +72,28 @@ public class Distribution43Controller extends DistributionController {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
-    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream.triggerOn(
-        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> {
-          if (stateRef.get() == STOPPED) {
-            tempStateRef.set(STARTED_AS_ACTIVE);
-          } else {
-            stateRef.set(STARTED_AS_ACTIVE);
-          }
-        }
-    ).andTriggerOn(
-        compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"), mr -> tempStateRef.set(STARTED_AS_PASSIVE)
-    ).andTriggerOn(
-        compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
-    ).andTriggerOn(
-        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer
-            .getServerSymbolicName().getSymbolicName(), mr.group())
-    );
+    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream
+        .triggerOn(
+            compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"),
+            mr -> {
+              if (stateRef.get() == STOPPED) {
+                tempStateRef.set(STARTED_AS_ACTIVE);
+              } else {
+                stateRef.set(STARTED_AS_ACTIVE);
+              }
+            })
+        .andTriggerOn(
+            compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
+            mr -> tempStateRef.set(STARTED_AS_PASSIVE))
+        .andTriggerOn(
+            compile("^.*\\QManagement server started\\E.*$"),
+            mr -> stateRef.set(tempStateRef.get()))
+        .andTriggerOn(
+            compile("^.*\\QServer exiting\\E.*$"),
+            mr -> stateRef.set(STOPPED))
+        .andTriggerOn(
+            tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
+            mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group()));
 
     // add an identifiable ID to the JVM's system properties
     String serverUuid = UUID.randomUUID().toString();
