@@ -191,35 +191,18 @@ public class Distribution43Controller extends DistributionController {
     try {
       logger.debug("Calling stop command for server {}", serverSymbolicName);
       executor.start();
-
-      for (int i = 0; i < 100; i++) {
-        if (terracottaServerInstanceProcess.getState() == STOPPED) {
-          return;
-        }
-        Thread.sleep(100);
-      }
-
     } catch (Exception e) {
-      throw new RuntimeException("Can not stop Terracotta server process " + serverSymbolicName, e);
+      logger.error("Could not stop Terracotta server " + serverSymbolicName + " by invoking stop script", e);
     }
 
     logger.debug("Destroying TC server process for {}", serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
-
-        for (int i = 0; i < 100; i++) {
-          if (terracottaServerInstanceProcess.getState() == STOPPED) {
-            return;
-          }
-          Thread.sleep(100);
-        }
       } catch (Exception e) {
-        logger.error("Could not destroy process {}", pid, e);
+        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
       }
     }
-
-    throw new RuntimeException("Terracotta server [" + serverSymbolicName + "] could not be stopped.");
   }
 
   /**

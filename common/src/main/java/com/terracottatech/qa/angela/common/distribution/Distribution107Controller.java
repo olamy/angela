@@ -172,7 +172,7 @@ public class Distribution107Controller extends DistributionController {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
       } catch (Exception e) {
-        LOGGER.error("Could not destroy TC server process with PID '{}'", pid, e);
+        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
       }
     }
   }

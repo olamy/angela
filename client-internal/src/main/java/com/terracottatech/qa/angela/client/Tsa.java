@@ -801,7 +801,7 @@ public class Tsa implements AutoCloseable {
     try {
       stopAll();
     } catch (Exception e) {
-      logger.error("Error when trying to stop servers : {}", e.getMessage());
+      logger.error("Error when trying to stop servers", e);
       // ignore, not installed
     }
     if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
