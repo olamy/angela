@@ -2,7 +2,6 @@ package com.terracottatech.qa.angela.common.provider;
 
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.Disruptor;
-import com.terracottatech.qa.angela.common.net.GroupMember;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
@@ -18,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,7 +30,6 @@ public class TcConfigManager implements ConfigurationManager {
 
   public static TcConfigManager withTcConfig(List<TcConfig> tcConfigs, boolean netDisruptionEnabled) {
     TcConfigManager tcConfigProvider = new TcConfigManager(tcConfigs);
-    checkConfigsHaveNoSymbolicNameDuplicate(tcConfigProvider.tcConfigs);
     if (netDisruptionEnabled) {
       for (TcConfig cfg : tcConfigProvider.tcConfigs) {
         cfg.createOrUpdateTcProperty("topology.validate", "false");
@@ -38,20 +37,6 @@ public class TcConfigManager implements ConfigurationManager {
       }
     }
     return tcConfigProvider;
-  }
-
-  private static void checkConfigsHaveNoSymbolicNameDuplicate(List<TcConfig> tcConfigs) {
-    Set<ServerSymbolicName> names = new HashSet<>();
-    for (TcConfig tcConfig : tcConfigs) {
-      tcConfig.getServers().forEach(server -> {
-        ServerSymbolicName serverSymbolicName = server.getServerSymbolicName();
-        if (names.contains(serverSymbolicName)) {
-          throw new IllegalArgumentException("Duplicate name found in TC configs : " + server);
-        } else {
-          names.add(serverSymbolicName);
-        }
-      });
-    }
   }
 
   public static List<TcConfig> mergeTcConfigs(final TcConfig tcConfig, final TcConfig[] tcConfigs) {
@@ -100,11 +85,11 @@ public class TcConfigManager implements ConfigurationManager {
   }
 
   @Override
-  public TerracottaServer getServer(ServerSymbolicName serverSymbolicName) {
+  public TerracottaServer getServer(UUID serverId) {
     for (TcConfig tcConfig : tcConfigs) {
       List<TerracottaServer> servers = tcConfig.getServers();
       for (TerracottaServer server : servers) {
-        if (server.getServerSymbolicName().equals(serverSymbolicName)) {
+        if (server.getId().equals(serverId)) {
           return server;
         }
       }
@@ -125,11 +110,11 @@ public class TcConfigManager implements ConfigurationManager {
   }
 
   @Override
-  public int getStripeIndexOf(ServerSymbolicName serverSymbolicName) {
+  public int getStripeIndexOf(UUID serverId) {
     for (int i = 0; i < tcConfigs.size(); i++) {
       TcConfig tcConfig = tcConfigs.get(i);
       for (TerracottaServer server : tcConfig.getServers()) {
-        if (server.getServerSymbolicName().equals(serverSymbolicName)) {
+        if (server.getId().equals(serverId)) {
           return i;
         }
       }
@@ -137,16 +122,15 @@ public class TcConfigManager implements ConfigurationManager {
     return -1;
   }
 
-  public TcConfig findTcConfig(ServerSymbolicName serverSymbolicName) {
-    for (int i = 0; i < tcConfigs.size(); ++i) {
-      TcConfig tcConfig = tcConfigs.get(i);
+  public TcConfig findTcConfig(UUID serverId) {
+    for (TcConfig tcConfig : tcConfigs) {
       for (TerracottaServer server : tcConfig.getServers()) {
-        if (server.getServerSymbolicName().equals(serverSymbolicName)) {
+        if (server.getId().equals(serverId)) {
           return tcConfig;
         }
       }
     }
-    throw new IllegalArgumentException("Invalid serverSymbolicName " + serverSymbolicName + " topology don't contain any such server");
+    throw new IllegalArgumentException("Topology doesn't contain any server with id: " + serverId);
   }
 
   @Override
@@ -156,10 +140,11 @@ public class TcConfigManager implements ConfigurationManager {
 
   public void setUpInstallation(TcConfig tcConfig,
                                 ServerSymbolicName serverSymbolicName,
-                                Map<String, Integer> proxiedPorts,
+                                UUID serverId,
+                                Map<ServerSymbolicName, Integer> proxiedPorts,
                                 File installLocation,
                                 SecurityRootDirectory securityRootDirectory) {
-    int stripeId = getStripeIndexOf(serverSymbolicName);
+    int stripeId = getStripeIndexOf(serverId);
     tcConfig.substituteToken(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
     String modifiedTcConfigName = tcConfig.getTcConfigName().substring(0, tcConfig.getTcConfigName().length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
     if (!proxiedPorts.isEmpty()) {
@@ -204,19 +189,18 @@ public class TcConfigManager implements ConfigurationManager {
   public void createDisruptionLinks(TerracottaServer terracottaServer,
                                     DisruptionProvider disruptionProvider,
                                     Map<ServerSymbolicName, Disruptor> disruptionLinks,
-                                    Map<String, Integer> proxiedPorts) {
-    TcConfig tcConfig = findTcConfig(terracottaServer.getServerSymbolicName());
+                                    Map<ServerSymbolicName, Integer> proxiedPorts) {
+    TcConfig tcConfig = findTcConfig(terracottaServer.getId());
     TcConfig modifiedConfig = TcConfig.copy(tcConfig);
-    List<GroupMember> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider
-        .isProxyBased());
-    GroupMember thisMember = members.get(0);
+    List<TerracottaServer> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider.isProxyBased());
+    TerracottaServer thisMember = members.get(0);
     for (int i = 1; i < members.size(); ++i) {
-      GroupMember otherMember = members.get(i);
-      final InetSocketAddress src = new InetSocketAddress(thisMember.getHost(), otherMember.isProxiedMember() ? otherMember
-          .getProxyPort() : thisMember.getGroupPort());
-      final InetSocketAddress dest = new InetSocketAddress(otherMember.getHost(), otherMember.getGroupPort());
-      disruptionLinks.put(new ServerSymbolicName(otherMember.getServerName()), disruptionProvider.createLink(src, dest));
-      proxiedPorts.put(otherMember.getServerName(), src.getPort());
+      TerracottaServer otherMember = members.get(i);
+      final InetSocketAddress src = new InetSocketAddress(thisMember.getHostname(), otherMember.getProxyPort() > 0 ? otherMember
+          .getProxyPort() : thisMember.getTsaGroupPort());
+      final InetSocketAddress dest = new InetSocketAddress(otherMember.getHostname(), otherMember.getTsaGroupPort());
+      disruptionLinks.put(otherMember.getServerSymbolicName(), disruptionProvider.createLink(src, dest));
+      proxiedPorts.put(otherMember.getServerSymbolicName(), src.getPort());
     }
   }
 }

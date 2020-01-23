@@ -7,12 +7,12 @@ import com.terracottatech.qa.angela.agent.kit.TerracottaInstall;
 import com.terracottatech.qa.angela.agent.kit.TmsInstall;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
-import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
+import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.metrics.HardwareMetric;
 import com.terracottatech.qa.angela.common.metrics.MonitoringCommand;
@@ -288,14 +288,14 @@ public class AgentController {
     return serverInstance.getTerracottaServerState();
   }
 
-  public Map<String, Integer> getProxyGroupPortsForServer(InstanceId instanceId, TerracottaServer terracottaServer) {
+  public Map<ServerSymbolicName, Integer> getProxyGroupPortsForServer(InstanceId instanceId, TerracottaServer terracottaServer) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall == null) {
-      return Collections.EMPTY_MAP;
+      return Collections.emptyMap();
     }
     TerracottaServerInstance serverInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
     if (serverInstance == null) {
-      return Collections.EMPTY_MAP;
+      return Collections.emptyMap();
     }
     return serverInstance.getProxiedPorts();
   }
@@ -318,9 +318,8 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
-  public void configure(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName,
-                        Integer> proxyTsaPorts, String clusterName, SecurityRootDirectory securityRootDirectory,
-                        TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
+  public void configure(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts,
+                        String clusterName, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     String licensePath = getTsaLicensePath(instanceId, terracottaServer);
     if (clusterName == null) {

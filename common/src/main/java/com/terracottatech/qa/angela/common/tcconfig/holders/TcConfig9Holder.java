@@ -1,20 +1,18 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
-
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.File;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Terracotta config for Terracotta 4.1+
@@ -37,7 +35,7 @@ public class TcConfig9Holder extends TcConfigHolder {
 
   @Override
   protected NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException {
-    return (NodeList)xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
+    return (NodeList) xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
   }
 
   @Override
@@ -56,7 +54,7 @@ public class TcConfig9Holder extends TcConfigHolder {
   }
 
   @Override
-  public List<GroupMember> retrieveGroupMembers(String serverName, boolean updateProxy) {
+  public List<TerracottaServer> retrieveGroupMembers(String serverName, boolean updateProxy) {
     throw new UnsupportedOperationException("Unimplemented");
   }
 
@@ -66,7 +64,7 @@ public class TcConfig9Holder extends TcConfigHolder {
   }
 
   @Override
-  public void updateServerGroupPort(Map<String, Integer> proxiedPorts) {
+  public void updateServerGroupPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
     throw new UnsupportedOperationException("Unimplemented");
   }
 

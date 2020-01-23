@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class DynamicConfigManager implements ConfigurationManager {
   private final List<Stripe> stripes;
@@ -29,10 +30,10 @@ public class DynamicConfigManager implements ConfigurationManager {
   }
 
   @Override
-  public int getStripeIndexOf(ServerSymbolicName serverSymbolicName) {
+  public int getStripeIndexOf(UUID serverId) {
     for (int i = 0; i < stripes.size(); i++) {
       for (TerracottaServer server : stripes.get(i).getServers()) {
-        if (server.getServerSymbolicName().equals(serverSymbolicName)) {
+        if (server.getId().equals(serverId)) {
           return i;
         }
       }
@@ -101,10 +102,10 @@ public class DynamicConfigManager implements ConfigurationManager {
   }
 
   @Override
-  public TerracottaServer getServer(ServerSymbolicName serverSymbolicName) {
+  public TerracottaServer getServer(UUID serverId) {
     for (Stripe stripe : stripes) {
       for (TerracottaServer terracottaServer : stripe.getServers()) {
-        if (terracottaServer.getServerSymbolicName().equals(serverSymbolicName)) {
+        if (terracottaServer.getId().equals(serverId)) {
           return terracottaServer;
         }
       }
@@ -136,17 +137,17 @@ public class DynamicConfigManager implements ConfigurationManager {
   public void createDisruptionLinks(TerracottaServer terracottaServer,
                                     DisruptionProvider disruptionProvider,
                                     Map<ServerSymbolicName, Disruptor> disruptionLinks,
-                                    Map<String, Integer> proxiedPorts) {
-    PortChooser PORT_CHOOSER = new PortChooser();
-    int stripeIndex = getStripeIndexOf(terracottaServer.getServerSymbolicName());
+                                    Map<ServerSymbolicName, Integer> proxiedPorts) {
+    PortChooser portChooser = new PortChooser();
+    int stripeIndex = getStripeIndexOf(terracottaServer.getId());
     List<TerracottaServer> allServersInStripe = stripes.get(stripeIndex).getServers();
-    for (TerracottaServer terracottaServer1 : allServersInStripe) {
-      if (!terracottaServer1.getServerSymbolicName().equals(terracottaServer.getServerSymbolicName())) {
-        int tsaRandomGroupPort = PORT_CHOOSER.chooseRandomPort();
+    for (TerracottaServer server : allServersInStripe) {
+      if (!server.getServerSymbolicName().equals(terracottaServer.getServerSymbolicName())) {
+        int tsaRandomGroupPort = portChooser.chooseRandomPort();
         final InetSocketAddress src = new InetSocketAddress(terracottaServer.getHostname(), tsaRandomGroupPort);
-        final InetSocketAddress dest = new InetSocketAddress(terracottaServer1.getHostname(), terracottaServer1.getTsaGroupPort());
-        disruptionLinks.put(terracottaServer1.getServerSymbolicName(), disruptionProvider.createLink(src, dest));
-        proxiedPorts.put(terracottaServer1.getServerSymbolicName().getSymbolicName(), src.getPort());
+        final InetSocketAddress dest = new InetSocketAddress(server.getHostname(), server.getTsaGroupPort());
+        disruptionLinks.put(server.getServerSymbolicName(), disruptionProvider.createLink(src, dest));
+        proxiedPorts.put(server.getServerSymbolicName(), src.getPort());
       }
     }
   }

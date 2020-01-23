@@ -8,13 +8,14 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public interface ConfigurationManager {
   void addStripe(TerracottaServer... newServers);
 
   void removeStripe(int stripeIndex);
 
-  int getStripeIndexOf(ServerSymbolicName serverSymbolicName);
+  int getStripeIndexOf(UUID serverId);
 
   List<List<TerracottaServer>> getStripes();
 
@@ -24,12 +25,12 @@ public interface ConfigurationManager {
 
   TerracottaServer getServer(int stripeIndex, int serverIndex);
 
-  TerracottaServer getServer(ServerSymbolicName serverSymbolicName);
+  TerracottaServer getServer(UUID serverId);
 
   List<TerracottaServer> getServers();
 
   Collection<String> getServersHostnames();
 
   void createDisruptionLinks(TerracottaServer terracottaServer, DisruptionProvider disruptionProvider,
-                             Map<ServerSymbolicName, Disruptor> disruptionLinks, Map<String, Integer> proxiedPorts);
+                             Map<ServerSymbolicName, Disruptor> disruptionLinks, Map<ServerSymbolicName, Integer> proxiedPorts);
 }

@@ -1,5 +1,8 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -9,22 +12,6 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
-
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -37,6 +24,18 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This holds the contents of the Tc Config
@@ -51,6 +50,7 @@ public abstract class TcConfigHolder {
   protected volatile String tcConfigContent;        // tc config content
   private volatile String installedTcConfigPath;
   private final List<String> logsPathList = new ArrayList<String>();
+  private List<TerracottaServer> servers = new ArrayList<>();
 
   public TcConfigHolder() {
   }
@@ -89,54 +89,57 @@ public abstract class TcConfigHolder {
   protected abstract NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException;
 
   public List<TerracottaServer> getServers() {
-    List<TerracottaServer> servers = new ArrayList<>();
+    if (this.servers.size() == 0) {
+      List<TerracottaServer> servers = new ArrayList<>();
 
-    // read servers list from XML
-    try {
-      XPath xPath = XPathFactory.newInstance().newXPath();
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+      // read servers list from XML
+      try {
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
 
-      NodeList serversList = getServersList(tcConfigXml, xPath);
-      for (int i = 0; i < serversList.getLength(); i++) {
-        Node server = serversList.item(i);
+        NodeList serversList = getServersList(tcConfigXml, xPath);
+        for (int i = 0; i < serversList.getLength(); i++) {
+          Node server = serversList.item(i);
 
-        Node hostNode = (Node)xPath.evaluate("@host", server, XPathConstants.NODE);
-        String hostname =
-            hostNode == null || hostNode.getTextContent().equals("%i") || hostNode.getTextContent()
-                .equals("%h") ? "localhost" : hostNode.getTextContent();
+          Node hostNode = (Node) xPath.evaluate("@host", server, XPathConstants.NODE);
+          String hostname =
+              hostNode == null || hostNode.getTextContent().equals("%i") || hostNode.getTextContent()
+                  .equals("%h") ? "localhost" : hostNode.getTextContent();
 
-        Node nameNode = (Node)xPath.evaluate("@name", server, XPathConstants.NODE);
+          Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
 
-        //TODO : create client and send command to get free port -> can't connect ? agent exception!
-        // add into xml the port!!
-        // log it!!!
-        // remove below updatePorts method
+          //TODO : create client and send command to get free port -> can't connect ? agent exception!
+          // add into xml the port!!
+          // log it!!!
+          // remove below updatePorts method
 
-        Node tsaPortNode = (Node)xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
-        int tsaPort = tsaPortNode == null ? defaultTsaPort() : Integer.parseInt(tsaPortNode.getTextContent());
+          Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
+          int tsaPort = tsaPortNode == null ? defaultTsaPort() : Integer.parseInt(tsaPortNode.getTextContent());
 
-        Node jmxPortNode = (Node)xPath.evaluate("*[name()='jmx-port']", server, XPathConstants.NODE);
-        int jmxPort = jmxPortNode == null ? defaultJmxPort() : Integer.parseInt(jmxPortNode.getTextContent());
+          Node jmxPortNode = (Node) xPath.evaluate("*[name()='jmx-port']", server, XPathConstants.NODE);
+          int jmxPort = jmxPortNode == null ? defaultJmxPort() : Integer.parseInt(jmxPortNode.getTextContent());
 
-        Node tsaGroupPortNode = (Node)xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
-        int tsaGroupPort = tsaGroupPortNode == null ? defaultTsaGroupPort() : Integer.parseInt(tsaGroupPortNode.getTextContent());
+          Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
+          int tsaGroupPort = tsaGroupPortNode == null ? defaultTsaGroupPort() : Integer.parseInt(tsaGroupPortNode.getTextContent());
 
-        Node managementPortNode = (Node)xPath.evaluate("*[name()='management-port']", server, XPathConstants.NODE);
-        int managementPort = managementPortNode == null ? defaultManagementPort() : Integer.parseInt(managementPortNode.getTextContent());
+          Node managementPortNode = (Node) xPath.evaluate("*[name()='management-port']", server, XPathConstants.NODE);
+          int managementPort = managementPortNode == null ? defaultManagementPort() : Integer.parseInt(managementPortNode.getTextContent());
 
-        String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
+          String symbolicName = nameNode == null ? hostname + ":" + tsaPort : nameNode.getTextContent();
 
-        TerracottaServer terracottaServer = TerracottaServer
-            .server(symbolicName, hostname)
-            .tsaPort(tsaPort)
-            .tsaGroupPort(tsaGroupPort)
-            .managementPort(managementPort)
-            .jmxPort(jmxPort);
-        servers.add(terracottaServer);
+          TerracottaServer terracottaServer = TerracottaServer
+              .server(symbolicName, hostname)
+              .tsaPort(tsaPort)
+              .tsaGroupPort(tsaGroupPort)
+              .managementPort(managementPort)
+              .jmxPort(jmxPort);
+          servers.add(terracottaServer);
+        }
+      } catch (Exception e) {
+        throw new RuntimeException("Cannot parse tc-config xml", e);
       }
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot parse tc-config xml", e);
+      this.servers.addAll(servers);
     }
     return servers;
   }
@@ -171,7 +174,7 @@ public abstract class TcConfigHolder {
       int cnt = 1;
       for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
-        Node logsNode = (Node)xPath.evaluate("*[name()='logs']", server, XPathConstants.NODE);
+        Node logsNode = (Node) xPath.evaluate("*[name()='logs']", server, XPathConstants.NODE);
 
         String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "logs-" + stripeId + "-" + cnt;
         logsPathList.add(logsPath);
@@ -223,7 +226,7 @@ public abstract class TcConfigHolder {
       }
       Node server = serversList.item(serverIndex);
 
-      Node existingPortNode = (Node)xPath.evaluate("*[name()='" + portName + "']", server, XPathConstants.NODE);
+      Node existingPortNode = (Node) xPath.evaluate("*[name()='" + portName + "']", server, XPathConstants.NODE);
       if (existingPortNode != null) {
         server.removeChild(existingPortNode);
       }
@@ -242,7 +245,7 @@ public abstract class TcConfigHolder {
         throw new IllegalArgumentException("Too many stripes (" + stripeIndex + ") or passives (" + serverIndex + ")");
       }
 
-      Node serverElt = (Node)xPath.evaluate("//*[name()='servers']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node serverElt = (Node) xPath.evaluate("//*[name()='servers']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       Element node = tcConfigXml.createElement("server");
       node.setAttribute("host", hostname);
@@ -264,7 +267,7 @@ public abstract class TcConfigHolder {
   public void createOrUpdateTcProperty(String name, String value) {
     modifyXml((tcConfigXml, xPath) -> {
       String indentation = guessIndentation(tcConfigXml);
-      Node tcProperties = (Node)xPath.evaluate("//*[name()='tc-properties']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node tcProperties = (Node) xPath.evaluate("//*[name()='tc-properties']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       boolean createdTcProperties = false;
 
       if (tcProperties == null) {
@@ -284,7 +287,7 @@ public abstract class TcConfigHolder {
         NamedNodeMap attributes = tcProperty.getAttributes();
         Node nameAttribute = attributes != null ? attributes.getNamedItem("name") : null;
         if (nameAttribute != null && nameAttribute.getNodeValue().equals(name)) {
-          existingProperty = (Element)tcProperty;
+          existingProperty = (Element) tcProperty;
           break;
         }
       }
@@ -307,7 +310,7 @@ public abstract class TcConfigHolder {
     Element documentElement = document.getDocumentElement();
     Node item = documentElement.getChildNodes().item(0);
     if (item.getNodeType() == Node.TEXT_NODE) {
-      Text text = (Text)item;
+      Text text = (Text) item;
       return text.getTextContent().replace("\n", "").replace("\r", "");
     }
     return "  ";
@@ -326,9 +329,9 @@ public abstract class TcConfigHolder {
 
   public abstract void updateAuditDirectoryLocation(final File kitDir, final int stripeId);
 
-  public abstract List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy);
+  public abstract List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy);
 
-  public abstract void updateServerGroupPort(Map<String, Integer> proxiedPorts);
+  public abstract void updateServerGroupPort(Map<ServerSymbolicName, Integer> proxiedPorts);
 
   public abstract void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts);
 
@@ -342,7 +345,7 @@ public abstract class TcConfigHolder {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(UTF_8)));
 
       xmlModifier.modify(tcConfigXml, xPath);
 

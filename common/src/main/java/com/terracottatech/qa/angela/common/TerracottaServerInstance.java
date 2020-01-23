@@ -1,31 +1,28 @@
 package com.terracottatech.qa.angela.common;
 
-
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.distribution.DistributionController;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.net.DisruptionProvider;
 import com.terracottatech.qa.angela.common.net.DisruptionProviderFactory;
 import com.terracottatech.qa.angela.common.net.Disruptor;
+import com.terracottatech.qa.angela.common.tcconfig.License;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.zeroturnaround.process.Processes;
 
 import java.io.Closeable;
 import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
@@ -35,10 +32,9 @@ import java.util.function.Predicate;
  * @author Aurelien Broszniowski
  */
 public class TerracottaServerInstance implements Closeable {
-  private final static Logger logger = LoggerFactory.getLogger(TerracottaServerInstance.class);
   private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
   private final Map<ServerSymbolicName, Disruptor> disruptionLinks = new ConcurrentHashMap<>();
-  private final Map<String, Integer> proxiedPorts = new HashMap<>();
+  private final Map<ServerSymbolicName, Integer> proxiedPorts = new HashMap<>();
   private final TerracottaServer terracottaServer;
   private final DistributionController distributionController;
   private final File installLocation;
@@ -69,7 +65,7 @@ public class TerracottaServerInstance implements Closeable {
     }
   }
 
-  public Map<String, Integer> getProxiedPorts() {
+  public Map<ServerSymbolicName, Integer> getProxiedPorts() {
     return proxiedPorts;
   }
 

@@ -57,7 +57,7 @@ public class Distribution107Controller extends DistributionController {
 
   @Override
   public TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation,
-                                                   Topology topology, Map<String, Integer> proxiedPorts,
+                                                   Topology topology, Map<ServerSymbolicName, Integer> proxiedPorts,
                                                    TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     Map<String, String> env = buildEnv(tcEnv);
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);

@@ -4,7 +4,7 @@ import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.provider.ConfigurationManager;
 import com.terracottatech.qa.angela.common.provider.TcConfigManager;
@@ -67,12 +67,8 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
-                                                                            File installLocation,
-                                                                            Topology topology,
-                                                                            Map<String, Integer> proxiedPorts,
-                                                                            TerracottaCommandLineEnvironment tcEnv,
-                                                                            List<String> startUpArgs) {
+  public TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology,
+                                                   Map<ServerSymbolicName, Integer> proxiedPorts, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
@@ -102,7 +98,7 @@ public class Distribution43Controller extends DistributionController {
     });
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology.getConfigurationManager(), proxiedPorts, installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), terracottaServer.getId(), topology.getConfigurationManager(), proxiedPorts, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -110,7 +106,7 @@ public class Distribution43Controller extends DistributionController {
 
     int wrapperPid = watchedProcess.getPid();
     Number javaPid = findWithJcmdJavaPidOf(serverUuid, tcEnv);
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
+    return new TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
   }
 
   private Number findWithJcmdJavaPidOf(String serverUuid, TerracottaCommandLineEnvironment tcEnv) {
@@ -178,7 +174,7 @@ public class Distribution43Controller extends DistributionController {
   }
 
   @Override
-  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     ProcessExecutor executor = new ProcessExecutor()
         .command(stopTsaCommand(serverSymbolicName, installLocation))
         .directory(installLocation)
@@ -270,8 +266,9 @@ public class Distribution43Controller extends DistributionController {
    * @return List of Strings representing the start command and its parameters
    */
   private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName,
+                                        UUID serverId,
                                         ConfigurationManager configurationManager,
-                                        Map<String, Integer> proxiedPorts,
+                                        Map<ServerSymbolicName, Integer> proxiedPorts,
                                         File installLocation,
                                         List<String> startUpArgs) {
     List<String> options = new ArrayList<>();
@@ -286,18 +283,18 @@ public class Distribution43Controller extends DistributionController {
     }
 
     TcConfigManager tcConfigProvider = (TcConfigManager) configurationManager;
-    TcConfig tcConfig = TcConfig.copy(tcConfigProvider.findTcConfig(serverSymbolicName));
-    tcConfigProvider.setUpInstallation(tcConfig, serverSymbolicName, proxiedPorts, installLocation, null);
+    TcConfig tcConfig = TcConfig.copy(tcConfigProvider.findTcConfig(serverId));
+    tcConfigProvider.setUpInstallation(tcConfig, serverSymbolicName, serverId, proxiedPorts, installLocation, null);
     // add -f if applicable
     if (tcConfig.getPath() != null) {
       //workaround to have unique platform restart directory for active & passives
       //TODO this can  be removed when platform persistent has server name in the path
       try {
         String modifiedTcConfigPath = tcConfig.getPath()
-                                          .substring(0, tcConfig.getPath()
-                                                            .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
+            .substring(0, tcConfig.getPath()
+                .length() - 4) + "-" + serverSymbolicName.getSymbolicName() + ".xml";
         String modifiedConfig = FileUtils.readFileToString(new File(tcConfig.getPath())).
-            replaceAll(Pattern.quote("${restart-data}"), String.valueOf("restart-data/" + serverSymbolicName)).
+            replaceAll(Pattern.quote("${restart-data}"), "restart-data/" + serverSymbolicName).
             replaceAll(Pattern.quote("${SERVER_NAME_TEMPLATE}"), serverSymbolicName.getSymbolicName());
         FileUtils.write(new File(modifiedTcConfigPath), modifiedConfig);
         options.add("-f");
