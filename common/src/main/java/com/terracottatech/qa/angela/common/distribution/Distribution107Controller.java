@@ -319,6 +319,11 @@ public class Distribution107Controller extends DistributionController {
       options.add(server.getFailoverPriority());
     }
 
+    if (server.getClientLeaseDuration() != null) {
+      options.add("-i");
+      options.add(server.getClientLeaseDuration());
+    }
+
     LOGGER.info("Server startup options: {}", options);
     return options;
   }
