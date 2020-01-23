@@ -184,7 +184,8 @@ public class TerracottaServerInstance implements Closeable {
     public boolean isAlive() {
       try {
         // if at least one PID is alive, the process is considered alive
-        return Processes.newPidProcess(wrapperPid.intValue()).isAlive() || Processes.newPidProcess(javaPid.intValue()).isAlive();
+        return (wrapperPid != null && Processes.newPidProcess(wrapperPid.intValue()).isAlive()) ||
+            (javaPid != null && Processes.newPidProcess(javaPid.intValue()).isAlive());
       } catch (Exception e) {
         throw new RuntimeException("Error checking liveness of a process instance with PIDs " + wrapperPid + " and " + javaPid, e);
       }

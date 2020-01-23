@@ -83,19 +83,25 @@ public class Distribution102Controller extends DistributionController {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicInteger javaPid = new AtomicInteger(-1);
 
-    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream.triggerOn(
-        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> stateRef.set(STARTED_AS_ACTIVE)
-    ).andTriggerOn(
-        compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"), mr -> stateRef.set(STARTED_AS_PASSIVE)
-    ).andTriggerOn(
-        compile("^.*PID is (\\d+).*$"), mr -> {
-          javaPid.set(parseInt(mr.group(1)));
-          stateRef.compareAndSet(STOPPED, STARTING);
-        }
-    ).andTriggerOn(
-        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer
-            .getServerSymbolicName().getSymbolicName(), mr.group())
-    );
+    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream
+        .triggerOn(
+            compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"),
+            mr -> stateRef.set(STARTED_AS_ACTIVE))
+        .andTriggerOn(
+            compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
+            mr -> stateRef.set(STARTED_AS_PASSIVE))
+        .andTriggerOn(
+            compile("^.*\\QL2 exiting\\E.*$"),
+            mr -> stateRef.set(STOPPED))
+        .andTriggerOn(
+            compile("^.*PID is (\\d+).*$"), mr -> {
+              javaPid.set(parseInt(mr.group(1)));
+              stateRef.compareAndSet(STOPPED, STARTING);
+            })
+        .andTriggerOn(
+            tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
+            mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group())
+        );
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(createTsaCommand(terracottaServer.getServerSymbolicName(), terracottaServer.getId(), topology, proxiedPorts, installLocation, startUpArgs))
@@ -125,7 +131,7 @@ public class Distribution102Controller extends DistributionController {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
       } catch (Exception e) {
-        logger.error("Could not destroy TC server process with PID '{}'", pid, e);
+        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
       }
     }
   }
@@ -183,9 +189,12 @@ public class Distribution102Controller extends DistributionController {
     logger.debug("Licensing commands: {}", commands);
     logger.debug("Licensing command line environment: {}", tcEnv);
 
-    ProcessExecutor executor = new ProcessExecutor().redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger)
-        .asInfo())
-        .command(commands).directory(location).environment(env);
+    ProcessExecutor executor = new ProcessExecutor()
+        .command(commands)
+        .directory(location)
+        .environment(env)
+        .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
+        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo());
 
     ProcessResult processResult;
     try {

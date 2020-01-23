@@ -72,22 +72,28 @@ public class Distribution43Controller extends DistributionController {
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
     AtomicReference<TerracottaServerState> tempStateRef = new AtomicReference<>(STOPPED);
 
-    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream.triggerOn(
-        compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"), mr -> {
-          if (stateRef.get() == STOPPED) {
-            tempStateRef.set(STARTED_AS_ACTIVE);
-          } else {
-            stateRef.set(STARTED_AS_ACTIVE);
-          }
-        }
-    ).andTriggerOn(
-        compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"), mr -> tempStateRef.set(STARTED_AS_PASSIVE)
-    ).andTriggerOn(
-        compile("^.*\\QManagement server started\\E.*$"), mr -> stateRef.set(tempStateRef.get())
-    ).andTriggerOn(
-        tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer
-            .getServerSymbolicName().getSymbolicName(), mr.group())
-    );
+    TriggeringOutputStream serverLogOutputStream = TriggeringOutputStream
+        .triggerOn(
+            compile("^.*\\QTerracotta Server instance has started up as ACTIVE\\E.*$"),
+            mr -> {
+              if (stateRef.get() == STOPPED) {
+                tempStateRef.set(STARTED_AS_ACTIVE);
+              } else {
+                stateRef.set(STARTED_AS_ACTIVE);
+              }
+            })
+        .andTriggerOn(
+            compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
+            mr -> tempStateRef.set(STARTED_AS_PASSIVE))
+        .andTriggerOn(
+            compile("^.*\\QManagement server started\\E.*$"),
+            mr -> stateRef.set(tempStateRef.get()))
+        .andTriggerOn(
+            compile("^.*\\QServer exiting\\E.*$"),
+            mr -> stateRef.set(STOPPED))
+        .andTriggerOn(
+            tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
+            mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group()));
 
     // add an identifiable ID to the JVM's system properties
     String serverUuid = UUID.randomUUID().toString();
@@ -179,41 +185,24 @@ public class Distribution43Controller extends DistributionController {
         .command(stopTsaCommand(serverSymbolicName, installLocation))
         .directory(installLocation)
         .environment(buildEnv(tcEnv))
-        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
-        .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo());
+        .redirectError(Slf4jStream.of(ExternalLoggers.tsaLogger).asInfo())
+        .redirectOutput(Slf4jStream.of(ExternalLoggers.tsaLogger).asInfo());
 
     try {
       logger.debug("Calling stop command for server {}", serverSymbolicName);
       executor.start();
-
-      for (int i = 0; i < 100; i++) {
-        if (terracottaServerInstanceProcess.getState() == STOPPED) {
-          return;
-        }
-        Thread.sleep(100);
-      }
-
     } catch (Exception e) {
-      throw new RuntimeException("Can not stop Terracotta server process " + serverSymbolicName, e);
+      logger.error("Could not stop Terracotta server " + serverSymbolicName + " by invoking stop script", e);
     }
 
     logger.debug("Destroying TC server process for {}", serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
-
-        for (int i = 0; i < 100; i++) {
-          if (terracottaServerInstanceProcess.getState() == STOPPED) {
-            return;
-          }
-          Thread.sleep(100);
-        }
       } catch (Exception e) {
-        logger.error("Could not destroy process {}", pid, e);
+        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
       }
     }
-
-    throw new RuntimeException("Terracotta server [" + serverSymbolicName + "] could not be stopped.");
   }
 
   /**

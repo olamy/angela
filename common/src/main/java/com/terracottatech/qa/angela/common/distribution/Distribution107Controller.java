@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
+import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
 import java.io.File;
 import java.net.URI;
@@ -74,7 +75,7 @@ public class Distribution107Controller extends DistributionController {
             compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
             mr -> stateRef.set(STARTED_AS_PASSIVE))
         .andTriggerOn(
-            compile("^.*\\QStopping server\\E.*$"),
+            compile("^.*\\QL2 exiting\\E.*$"),
             mr -> stateRef.set(STOPPED))
         .andTriggerOn(
             compile("^.*PID is (\\d+).*$"),
@@ -171,7 +172,7 @@ public class Distribution107Controller extends DistributionController {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
       } catch (Exception e) {
-        LOGGER.error("Could not destroy TC server process with PID '{}'", pid, e);
+        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
       }
     }
   }
@@ -185,7 +186,7 @@ public class Distribution107Controller extends DistributionController {
 
   @Override
   public ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments) {
-    throw new UnsupportedOperationException("Dynamic config don't use cluster-tool");
+    throw new UnsupportedOperationException("Dynamic config doesn't use cluster-tool");
   }
 
   @Override
@@ -203,10 +204,11 @@ public class Distribution107Controller extends DistributionController {
       ProcessResult processResult = new ProcessExecutor(command)
           .directory(installLocation)
           .environment(buildEnv(tcEnv))
-          .redirectErrorStream(true)
           .readOutput(true)
+          .redirectErrorStream(true)
+          .redirectErrorAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
+          .redirectOutputAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
           .execute();
-      LOGGER.info("Invoke config tool output: {}{}", System.lineSeparator(), processResult.outputString());
       return new ConfigToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
     } catch (Exception e) {
       throw new RuntimeException(e);
