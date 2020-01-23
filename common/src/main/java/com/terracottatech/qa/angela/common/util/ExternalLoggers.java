@@ -8,6 +8,7 @@ public class ExternalLoggers {
   private static final String PREFIX = "com.terracottatech.qa.angela.external";
 
   public static final Logger clusterToolLogger = LoggerFactory.getLogger(PREFIX + ".cluster-tool");
+  public static final Logger configToolLogger = LoggerFactory.getLogger(PREFIX + ".config-tool");
   public static final Logger clientLogger = LoggerFactory.getLogger(PREFIX + ".client");
   public static final Logger sshLogger = LoggerFactory.getLogger(PREFIX + ".ssh");
   public static final Logger tsaLogger = LoggerFactory.getLogger(PREFIX + ".tsa");

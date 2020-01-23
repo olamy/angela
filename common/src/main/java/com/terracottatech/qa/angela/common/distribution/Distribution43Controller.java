@@ -179,8 +179,8 @@ public class Distribution43Controller extends DistributionController {
         .command(stopTsaCommand(serverSymbolicName, installLocation))
         .directory(installLocation)
         .environment(buildEnv(tcEnv))
-        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
-        .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo());
+        .redirectError(Slf4jStream.of(ExternalLoggers.tsaLogger).asInfo())
+        .redirectOutput(Slf4jStream.of(ExternalLoggers.tsaLogger).asInfo());
 
     try {
       logger.debug("Calling stop command for server {}", serverSymbolicName);

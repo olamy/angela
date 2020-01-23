@@ -183,9 +183,12 @@ public class Distribution102Controller extends DistributionController {
     logger.debug("Licensing commands: {}", commands);
     logger.debug("Licensing command line environment: {}", tcEnv);
 
-    ProcessExecutor executor = new ProcessExecutor().redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger)
-        .asInfo())
-        .command(commands).directory(location).environment(env);
+    ProcessExecutor executor = new ProcessExecutor()
+        .command(commands)
+        .directory(location)
+        .environment(env)
+        .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
+        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo());
 
     ProcessResult processResult;
     try {
