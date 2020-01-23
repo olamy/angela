@@ -166,18 +166,6 @@ public class Distribution107Controller extends DistributionController {
   }
 
   @Override
-  public void stopTsa(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
-    LOGGER.debug("Destroying TC server process for {}", serverSymbolicName);
-    for (Number pid : terracottaServerInstanceProcess.getPids()) {
-      try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
-      } catch (Exception e) {
-        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
-      }
-    }
-  }
-
-  @Override
   public void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName,
       Integer> proxyTsaPorts, SecurityRootDirectory srd, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServer server = topology.getServers().get(0);

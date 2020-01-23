@@ -17,14 +17,12 @@ import com.terracottatech.qa.angela.common.topology.Version;
 import com.terracottatech.qa.angela.common.util.ExternalLoggers;
 import com.terracottatech.qa.angela.common.util.HostPort;
 import com.terracottatech.qa.angela.common.util.OS;
-import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import com.terracottatech.qa.angela.common.util.TriggeringOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
-import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -177,61 +175,6 @@ public class Distribution43Controller extends DistributionController {
       }
     }
     return null;
-  }
-
-  @Override
-  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
-    ProcessExecutor executor = new ProcessExecutor()
-        .command(stopTsaCommand(serverSymbolicName, installLocation))
-        .directory(installLocation)
-        .environment(buildEnv(tcEnv))
-        .redirectError(Slf4jStream.of(ExternalLoggers.tsaLogger).asInfo())
-        .redirectOutput(Slf4jStream.of(ExternalLoggers.tsaLogger).asInfo());
-
-    try {
-      logger.debug("Calling stop command for server {}", serverSymbolicName);
-      executor.start();
-    } catch (Exception e) {
-      logger.error("Could not stop Terracotta server " + serverSymbolicName + " by invoking stop script", e);
-    }
-
-    logger.debug("Destroying TC server process for {}", serverSymbolicName);
-    for (Number pid : terracottaServerInstanceProcess.getPids()) {
-      try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
-      } catch (Exception e) {
-        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
-      }
-    }
-  }
-
-  /**
-   * Construct the Stop Command with the Version, Tc Config file and server name
-   *
-   * @return String[] representing the start command and its parameters
-   */
-  private List<String> stopTsaCommand(ServerSymbolicName serverSymbolicName, File installLocation) {
-    List<String> options = new ArrayList<>();
-    options.add(getStopCmd(installLocation));
-
-    String symbolicName = serverSymbolicName.getSymbolicName();
-    if (isValidHost(symbolicName) || isValidIPv4(symbolicName) || isValidIPv6(symbolicName) || symbolicName.isEmpty()) {
-      // add -n if applicable
-      options.add("-n");
-      options.add(symbolicName);
-    }
-
-    return options;
-  }
-
-  private String getStopCmd(File installLocation) {
-    String execPath = "server" + separator + "bin" + separator + "stop-tc-server" + OS.INSTANCE.getShellExtension();
-    if (distribution.getPackageType() == KIT) {
-      return installLocation.getAbsolutePath() + separator + execPath;
-    } else if (distribution.getPackageType() == SAG_INSTALLER) {
-      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
-    }
-    throw new IllegalStateException("Can not define Terracotta server Stop Command for distribution: " + distribution);
   }
 
   @Override

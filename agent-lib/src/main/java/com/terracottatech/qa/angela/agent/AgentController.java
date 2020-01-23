@@ -261,13 +261,13 @@ public class AgentController {
     serverInstance.create(tcEnv, startUpArgs);
   }
 
-  public void stopTsa(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv) {
+  public void stopTsa(InstanceId instanceId, TerracottaServer terracottaServer) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
     if (terracottaInstall == null) {
       return;
     }
     TerracottaServerInstance serverInstance = terracottaInstall.getTerracottaServerInstance(terracottaServer);
-    serverInstance.stop(tcEnv);
+    serverInstance.stop();
   }
 
   public void waitForTsaInState(InstanceId instanceId, TerracottaServer terracottaServer, Set<TerracottaServerState> wanted) {

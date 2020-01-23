@@ -44,7 +44,6 @@ import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CONFIG_TOOL;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.JCMD;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX;
-import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_STOP_PREFIX;
 import static com.terracottatech.qa.angela.client.util.IgniteClientHelper.executeRemotely;
 import static com.terracottatech.qa.angela.client.util.IgniteClientHelper.uploadKit;
 import static com.terracottatech.qa.angela.common.AngelaProperties.KIT_INSTALLATION_DIR;
@@ -264,11 +263,7 @@ public class Tsa implements AutoCloseable {
       return this;
     }
     logger.info("Stopping TC server on {}", terracottaServer.getHostname());
-    executeRemotely(ignite, terracottaServer.getHostname(), () -> {
-      String whatFor = SERVER_STOP_PREFIX + terracottaServer.getServerSymbolicName().getSymbolicName();
-      TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(whatFor);
-      Agent.controller.stopTsa(instanceId, terracottaServer, cliEnv);
-    });
+    executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.stopTsa(instanceId, terracottaServer));
     return this;
   }
 
@@ -798,12 +793,7 @@ public class Tsa implements AutoCloseable {
     }
     closed = true;
 
-    try {
-      stopAll();
-    } catch (Exception e) {
-      logger.error("Error when trying to stop servers", e);
-      // ignore, not installed
-    }
+    stopAll();
     if (!Boolean.parseBoolean(SKIP_UNINSTALL.getValue())) {
       uninstallAll();
     }
