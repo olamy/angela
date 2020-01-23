@@ -95,8 +95,8 @@ public class TerracottaServerInstance implements Closeable {
     }
   }
 
-  public void stop(TerracottaCommandLineEnvironment tcEnv) {
-    this.distributionController.stopTsa(terracottaServer.getServerSymbolicName(), installLocation, terracottaServerInstanceProcess, tcEnv);
+  public void stop() {
+    this.distributionController.stopTsa(terracottaServer.getServerSymbolicName(), terracottaServerInstanceProcess);
   }
 
   @Override

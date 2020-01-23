@@ -125,18 +125,6 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
-    logger.debug("Destroying TC server process for {}", serverSymbolicName);
-    for (Number pid : terracottaServerInstanceProcess.getPids()) {
-      try {
-        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
-      } catch (Exception e) {
-        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
-      }
-    }
-  }
-
-  @Override
   public ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
     List<String> command = new ArrayList<>();
     command.add(installLocation

@@ -12,6 +12,7 @@ import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
 import com.terracottatech.qa.angela.common.util.OS;
+import com.terracottatech.qa.angela.common.util.ProcessUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -26,6 +27,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
+import static com.terracottatech.qa.angela.common.util.RetryUtils.waitFor;
 
 /**
  * @author Aurelien Broszniowski
@@ -92,7 +96,29 @@ public abstract class DistributionController {
 
   public abstract void stopTms(File installLocation, TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void stopTsa(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
+  public void stopTsa(ServerSymbolicName serverSymbolicName, TerracottaServerInstanceProcess terracottaServerInstanceProcess) {
+    LOGGER.debug("Destroying TC server process for {}", serverSymbolicName);
+    for (Number pid : terracottaServerInstanceProcess.getPids()) {
+      try {
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
+      } catch (Exception e) {
+        throw new RuntimeException("Could not destroy TC server process with PID " + pid, e);
+      }
+    }
+
+    final int maxRetryCount = 5;
+    final int maxWaitTimeMillis = 25000;
+    if (!waitFor(() -> terracottaServerInstanceProcess.getState() == STOPPED, maxRetryCount, maxWaitTimeMillis)) {
+      throw new RuntimeException(
+          String.format(
+              "Tried for %d times (%dms), but server did not get the state %s",
+              maxRetryCount,
+              maxWaitTimeMillis,
+              STOPPED
+          )
+      );
+    }
+  }
 
   public abstract void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 
