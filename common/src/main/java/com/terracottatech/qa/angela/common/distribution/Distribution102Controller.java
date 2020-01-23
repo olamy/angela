@@ -4,9 +4,9 @@ import com.terracottatech.qa.angela.common.ClusterToolException;
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess;
 import com.terracottatech.qa.angela.common.TerracottaManagementServerState;
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
 import com.terracottatech.qa.angela.common.TerracottaServerState;
 import com.terracottatech.qa.angela.common.provider.ConfigurationManager;
 import com.terracottatech.qa.angela.common.provider.TcConfigManager;
@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -75,12 +76,8 @@ public class Distribution102Controller extends DistributionController {
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
-                                                                            File installLocation,
-                                                                            Topology topology,
-                                                                            Map<String, Integer> proxiedPorts,
-                                                                            TerracottaCommandLineEnvironment tcEnv,
-                                                                            List<String> startUpArgs) {
+  public TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology,
+                                                   Map<ServerSymbolicName, Integer> proxiedPorts, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(STOPPED);
@@ -101,7 +98,7 @@ public class Distribution102Controller extends DistributionController {
     );
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), topology, proxiedPorts, installLocation, startUpArgs))
+        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), terracottaServer.getId(), topology, proxiedPorts, installLocation, startUpArgs))
         .directory(installLocation)
         .environment(env)
         .redirectError(System.err)
@@ -118,11 +115,11 @@ public class Distribution102Controller extends DistributionController {
     if (!watchedProcess.isAlive()) {
       throw new RuntimeException("Terracotta server process died in its infancy : " + terracottaServer.getServerSymbolicName());
     }
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
+    return new TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
   }
 
   @Override
-  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stopTsa(ServerSymbolicName serverSymbolicName, File installLocation, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     logger.debug("Destroying TC server process for {}", serverSymbolicName);
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
@@ -255,8 +252,9 @@ public class Distribution102Controller extends DistributionController {
    * @return List of String representing the start command and its parameters
    */
   private List<String> createTsaCommand(ServerSymbolicName serverSymbolicName,
+                                        UUID serverId,
                                         Topology topology,
-                                        Map<String, Integer> proxiedPorts,
+                                        Map<ServerSymbolicName, Integer> proxiedPorts,
                                         File installLocation,
                                         List<String> startUpArgs) {
     List<String> options = new ArrayList<>();
@@ -271,14 +269,14 @@ public class Distribution102Controller extends DistributionController {
     }
 
     TcConfigManager configurationProvider = (TcConfigManager) topology.getConfigurationManager();
-    TcConfig tcConfig = configurationProvider.findTcConfig(serverSymbolicName);
+    TcConfig tcConfig = configurationProvider.findTcConfig(serverId);
     SecurityRootDirectory securityRootDirectory = null;
     if (tcConfig instanceof SecureTcConfig) {
       SecureTcConfig secureTcConfig = (SecureTcConfig) tcConfig;
       securityRootDirectory = secureTcConfig.securityRootDirectoryFor(serverSymbolicName);
     }
-    TcConfig modifiedConfig = TcConfig.copy(configurationProvider.findTcConfig(serverSymbolicName));
-    configurationProvider.setUpInstallation(modifiedConfig, serverSymbolicName, proxiedPorts, installLocation, securityRootDirectory);
+    TcConfig modifiedConfig = TcConfig.copy(configurationProvider.findTcConfig(serverId));
+    configurationProvider.setUpInstallation(modifiedConfig, serverSymbolicName, serverId, proxiedPorts, installLocation, securityRootDirectory);
 
     // add -f if applicable
     if (modifiedConfig.getPath() != null) {
@@ -309,7 +307,7 @@ public class Distribution102Controller extends DistributionController {
 
 
   @Override
-  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment tcEnv) {
+  public TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment tcEnv) {
     Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
@@ -342,11 +340,11 @@ public class Distribution102Controller extends DistributionController {
     }
     int wrapperPid = watchedProcess.getPid();
     int javaProcessPid = javaPid.get();
-    return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
+    return new TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
   }
 
   @Override
-  public void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stopTms(File installLocation, TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     logger.debug("Destroying TMS process");
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {

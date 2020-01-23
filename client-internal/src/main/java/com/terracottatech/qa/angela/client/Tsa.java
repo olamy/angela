@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CLUSTER_TOOL;
 import static com.terracottatech.qa.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CONFIG_TOOL;
@@ -372,7 +373,7 @@ public class Tsa implements AutoCloseable {
     return executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.getTsaState(instanceId, terracottaServer));
   }
 
-  public Map<String, Integer> getProxyGroupPortsForServer(TerracottaServer terracottaServer) {
+  public Map<ServerSymbolicName, Integer> getProxyGroupPortsForServer(TerracottaServer terracottaServer) {
     return executeRemotely(ignite, terracottaServer.getHostname(), () -> Agent.controller.getProxyGroupPortsForServer(instanceId, terracottaServer));
   }
 
@@ -382,6 +383,16 @@ public class Tsa implements AutoCloseable {
     allRunningServers.addAll(getPassives());
     allRunningServers.addAll(getDiagnosticModeSevers());
     return allRunningServers;
+  }
+
+  public Collection<TerracottaServer> getStopped() {
+    Collection<TerracottaServer> result = new ArrayList<>();
+    for (TerracottaServer terracottaServer : tsaConfigurationContext.getTopology().getServers()) {
+      if (getState(terracottaServer) == STOPPED) {
+        result.add(terracottaServer);
+      }
+    }
+    return result;
   }
 
   public Collection<TerracottaServer> getPassives() {
@@ -414,6 +425,28 @@ public class Tsa implements AutoCloseable {
       }
     }
     return result;
+  }
+
+  public Collection<TerracottaServer> getServer(ServerSymbolicName symbolicName) {
+    return tsaConfigurationContext.getTopology().getServers().stream()
+        .filter(server -> server.getServerSymbolicName().equals(symbolicName))
+        .collect(Collectors.toList());
+  }
+
+  public TerracottaServer getServer(int stripeIndex, int serverIndex) {
+    return tsaConfigurationContext.getTopology().getServer(stripeIndex, serverIndex);
+  }
+
+  public Collection<Integer> getStripeIdOf(ServerSymbolicName symbolicName) {
+    Collection<Integer> stripeIndices = new ArrayList<>();
+    List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
+    for (int i = 0; i < stripes.size(); i++) {
+      List<TerracottaServer> stripe = stripes.get(i);
+      if (stripe.stream().anyMatch(server -> server.getServerSymbolicName().equals(symbolicName))) {
+        stripeIndices.add(i);
+      }
+    }
+    return stripeIndices;
   }
 
   public TerracottaServer getActive() {

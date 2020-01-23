@@ -2,13 +2,12 @@ package com.terracottatech.qa.angela.common.distribution;
 
 import com.terracottatech.qa.angela.common.ClusterToolExecutionResult;
 import com.terracottatech.qa.angela.common.ConfigToolExecutionResult;
-import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.TerracottaCommandLineEnvironment;
-import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance;
-import com.terracottatech.qa.angela.common.TerracottaServerInstance;
+import com.terracottatech.qa.angela.common.TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess;
+import com.terracottatech.qa.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
+import com.terracottatech.qa.angela.common.ToolExecutionResult;
 import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
 import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TcConfig;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 import com.terracottatech.qa.angela.common.util.JavaLocationResolver;
@@ -59,7 +58,7 @@ public abstract class DistributionController {
     return env;
   }
 
-  public ToolExecutionResult invokeJcmd(TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
+  public ToolExecutionResult invokeJcmd(TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
     Number javaPid = terracottaServerInstanceProcess.getJavaPid();
     if (javaPid == null) {
       return new ToolExecutionResult(-1, Collections.singletonList("PID of java process could not be figured out"));
@@ -87,18 +86,13 @@ public abstract class DistributionController {
     }
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer,
-                                                                                     File installLocation,
-                                                                                     Topology topology,
-                                                                                     Map<String, Integer> proxiedPorts,
-                                                                                     TerracottaCommandLineEnvironment tcEnv,
-                                                                                     List<String> startUpArgs);
+  public abstract TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology, Map<ServerSymbolicName, Integer> proxiedPorts, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
 
-  public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
+  public abstract TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
 
-  public abstract void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
+  public abstract void stopTms(File installLocation, TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
-  public abstract void stopTsa(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstance.TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
+  public abstract void stopTsa(ServerSymbolicName serverSymbolicName, File location, TerracottaServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
   public abstract void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 

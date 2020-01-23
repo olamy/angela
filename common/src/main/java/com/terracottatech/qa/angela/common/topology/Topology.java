@@ -10,7 +10,9 @@ import com.terracottatech.qa.angela.common.tcconfig.TsaConfig;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 
 import static com.terracottatech.qa.angela.common.provider.TcConfigManager.mergeTcConfigs;
 
@@ -37,6 +39,7 @@ public class Topology {
   public Topology(Distribution distribution, TcConfig[] tcConfigs) {
     this(distribution, false, Arrays.asList(tcConfigs));
   }
+
   public Topology(Distribution distribution, TcConfig tcConfig, TcConfig... tcConfigs) {
     this(distribution, false, mergeTcConfigs(tcConfig, tcConfigs));
   }
@@ -81,10 +84,6 @@ public class Topology {
     return configurationManager;
   }
 
-  public int getStripeIdOf(ServerSymbolicName serverSymbolicName) {
-    return configurationManager.getStripeIndexOf(serverSymbolicName);
-  }
-
   public void addStripe(TerracottaServer... newServers) {
     configurationManager.addStripe(newServers);
   }
@@ -103,10 +102,6 @@ public class Topology {
 
   public void removeServer(int stripeIndex, int serverIndex) {
     configurationManager.removeServer(stripeIndex, serverIndex);
-  }
-
-  public TerracottaServer getServer(ServerSymbolicName serverSymbolicName) {
-    return configurationManager.getServer(serverSymbolicName);
   }
 
   public TerracottaServer getServer(int stripeIndex, int serverIndex) {

@@ -3,6 +3,7 @@ package com.terracottatech.qa.angela.common.tcconfig;
 import com.terracottatech.qa.angela.common.util.HostPort;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Logical definition of a Terracotta server instance
@@ -13,10 +14,13 @@ public class TerracottaServer {
 
   private final ServerSymbolicName serverSymbolicName;
   private final String hostName;
+  private final UUID id;
+
   private volatile int tsaPort;
   private volatile int tsaGroupPort;
   private volatile int managementPort;
   private volatile int jmxPort;
+  private volatile int proxyPort;
   private volatile String bindAddress;
   private volatile String groupBindAddress;
   private volatile String configRepo;
@@ -30,6 +34,7 @@ public class TerracottaServer {
   private TerracottaServer(String serverSymbolicName, String hostName) {
     this.serverSymbolicName = new ServerSymbolicName(serverSymbolicName);
     this.hostName = hostName;
+    this.id = UUID.randomUUID();
   }
 
   public static TerracottaServer server(String symbolicName, String hostName) {
@@ -53,6 +58,11 @@ public class TerracottaServer {
 
   public TerracottaServer jmxPort(int jmxPort) {
     this.jmxPort = jmxPort;
+    return this;
+  }
+
+  public TerracottaServer proxyPort(int proxyPort) {
+    this.proxyPort = proxyPort;
     return this;
   }
 
@@ -105,6 +115,10 @@ public class TerracottaServer {
     return serverSymbolicName;
   }
 
+  public UUID getId() {
+    return id;
+  }
+
   public String getHostname() {
     return hostName;
   }
@@ -127,6 +141,10 @@ public class TerracottaServer {
 
   public int getJmxPort() {
     return jmxPort;
+  }
+
+  public int getProxyPort() {
+    return proxyPort;
   }
 
   public String getBindAddress() {

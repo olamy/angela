@@ -3,13 +3,13 @@ package com.terracottatech.qa.angela.agent.kit;
 import com.terracottatech.qa.angela.common.TerracottaServerInstance;
 import com.terracottatech.qa.angela.common.distribution.Distribution;
 import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
 import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
 import com.terracottatech.qa.angela.common.topology.Topology;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 
 /**
@@ -18,7 +18,7 @@ import java.util.Map;
 public class TerracottaInstall {
 
   private final File rootInstallLocation;
-  private final Map<ServerSymbolicName, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
+  private final Map<UUID, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
 
   public TerracottaInstall(File rootInstallLocation) {
     this.rootInstallLocation = rootInstallLocation;
@@ -26,38 +26,33 @@ public class TerracottaInstall {
 
   public TerracottaServerInstance getTerracottaServerInstance(TerracottaServer terracottaServer) {
     synchronized (terracottaServerInstances) {
-      return terracottaServerInstances.get(terracottaServer.getServerSymbolicName());
+      return terracottaServerInstances.get(terracottaServer.getId());
     }
   }
 
   public File getInstallLocation(TerracottaServer terracottaServer) {
     synchronized (terracottaServerInstances) {
-      return terracottaServerInstances.get(terracottaServer.getServerSymbolicName()).getInstallLocation();
+      return terracottaServerInstances.get(terracottaServer.getId()).getInstallLocation();
     }
   }
 
   public File getLicenseFileLocation(TerracottaServer terracottaServer) {
     synchronized (terracottaServerInstances) {
-      return terracottaServerInstances.get(terracottaServer.getServerSymbolicName()).getLicenseFileLocation();
+      return terracottaServerInstances.get(terracottaServer.getId()).getLicenseFileLocation();
     }
   }
 
-  public void addServer(TerracottaServer terracottaServer,
-                        File installLocation,
-                        License license,
-                        Distribution distribution,
-                        Topology topology) {
+  public void addServer(TerracottaServer terracottaServer, File installLocation, License license, Distribution distribution, Topology topology) {
     synchronized (terracottaServerInstances) {
-      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer,
-          installLocation, license, distribution, topology);
-      terracottaServerInstances.put(terracottaServer.getServerSymbolicName(), serverInstance);
+      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer, installLocation, license, distribution, topology);
+      terracottaServerInstances.put(terracottaServer.getId(), serverInstance);
     }
   }
 
   public int removeServer(TerracottaServer terracottaServer) {
     synchronized (terracottaServerInstances) {
-      TerracottaServerInstance instance = terracottaServerInstances.remove(terracottaServer.getServerSymbolicName());
-      if (instance != null){
+      TerracottaServerInstance instance = terracottaServerInstances.remove(terracottaServer.getId());
+      if (instance != null) {
         instance.close();
       }
       return terracottaServerInstances.size();

@@ -1,26 +1,14 @@
 package com.terracottatech.qa.angela.common.tcconfig.holders;
 
+import com.terracottatech.qa.angela.common.net.PortChooser;
+import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
+import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
+import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
+import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import com.terracottatech.qa.angela.common.net.GroupMember;
-import com.terracottatech.qa.angela.common.net.PortChooser;
-import com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TsaStripeConfig;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -28,6 +16,19 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static java.io.File.separatorChar;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName.symbolicName;
 
 /**
  * Terracotta config for Terracotta 10.x
@@ -68,14 +69,14 @@ public class TcConfig10Holder extends TcConfigHolder {
 
   @Override
   protected NodeList getServersList(Document tcConfigXml, XPath xPath) throws XPathExpressionException {
-    return (NodeList)xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
+    return (NodeList) xPath.evaluate("//*[name()='servers']//*[name()='server']", tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
   }
 
   @Override
   public void updateSecurityRootDirectoryLocation(final String securityRootDirectory) {
     modifyXml((tcConfigXml, xPath) -> {
-      Node securityRootDirectoryNode = (Node)xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
-      Node securityWhiteListDeprectedNode = (Node)xPath.evaluate("//*[local-name()='white-list']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node securityWhiteListDeprectedNode = (Node) xPath.evaluate("//*[local-name()='white-list']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       if (securityRootDirectoryNode != null) {
         securityRootDirectoryNode.setTextContent(securityRootDirectory);
@@ -84,8 +85,8 @@ public class TcConfig10Holder extends TcConfigHolder {
       if (securityWhiteListDeprectedNode != null) {
         securityWhiteListDeprectedNode.getAttributes()
             .getNamedItem("path").setNodeValue(securityRootDirectory + "/"
-                                               + SecurityRootDirectory.WHITE_LIST_DEPRECATED_DIR_NAME + "/"
-                                               + SecurityRootDirectory.WHITE_LIST_DEPRECATED_FILE_NAME);
+            + SecurityRootDirectory.WHITE_LIST_DEPRECATED_DIR_NAME + "/"
+            + SecurityRootDirectory.WHITE_LIST_DEPRECATED_FILE_NAME);
       }
     });
   }
@@ -96,10 +97,10 @@ public class TcConfig10Holder extends TcConfigHolder {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
-        Node datarootNode = (Node)xPath.evaluate("//*[name()='data:directory']", server, XPathConstants.NODE);
+        Node datarootNode = (Node) xPath.evaluate("//*[name()='data:directory']", server, XPathConstants.NODE);
 
         if (datarootNode != null) {
-          String id = ((Element)datarootNode).getAttribute("id");
+          String id = ((Element) datarootNode).getAttribute("id");
           if (rootId.equalsIgnoreCase(id)) {
             datarootNode.setTextContent(newlocation);
           }
@@ -114,39 +115,38 @@ public class TcConfig10Holder extends TcConfigHolder {
       NodeList serversList = getServersList(tcConfigXml, xPath);
       for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
-        Node datarootNode = (Node)xPath.evaluate("//*[name()='data:directory']", server, XPathConstants.NODE);
+        Node datarootNode = (Node) xPath.evaluate("//*[name()='data:directory']", server, XPathConstants.NODE);
 
         if (datarootNode != null) {
-          String name = ((Element)datarootNode).getAttribute("name");
+          String name = ((Element) datarootNode).getAttribute("name");
           if (name.equalsIgnoreCase(serverName)) {
-            ((Element)server).setAttribute("host", hostname);
+            ((Element) server).setAttribute("host", hostname);
           }
         }
       }
     });
   }
 
-
-  public List<GroupMember> retrieveGroupMembers(final String serverName, final boolean updateProxy) {
-    List<GroupMember> members = new ArrayList<>();
+  public List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy) {
+    List<TerracottaServer> members = new ArrayList<>();
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
 
       for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
-        Node nameNode = (Node)xPath.evaluate("@name", server, XPathConstants.NODE);
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
         String name = nameNode.getTextContent();
-        Node hostNode = (Node)xPath.evaluate("@host", server, XPathConstants.NODE);
+        Node hostNode = (Node) xPath.evaluate("@host", server, XPathConstants.NODE);
         String host = hostNode.getTextContent();
 
-        Node tsaGroupPortNode = (Node)xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
+        Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
         int groupPort = Integer.parseInt(tsaGroupPortNode.getTextContent().trim());
-        GroupMember member = null;
+        TerracottaServer member;
         if (name.equals(serverName) || !updateProxy) {
-          member = new GroupMember(name, host, groupPort);
+          member = TerracottaServer.server(name, host).tsaGroupPort(groupPort);
         } else {
           int proxyPort = PORT_CHOOSER.chooseRandomPort();
-          member = new GroupMember(name, host, groupPort, proxyPort);
+          member = TerracottaServer.server(name, host).tsaGroupPort(groupPort).proxyPort(proxyPort);
           tsaGroupPortNode.setTextContent(String.valueOf(proxyPort));
         }
         if (name.equals(serverName)) {
@@ -167,10 +167,10 @@ public class TcConfig10Holder extends TcConfigHolder {
 
       for (int i = 0; i < serversList.getLength(); i++) {
         Node server = serversList.item(i);
-        Node nameNode = (Node)xPath.evaluate("@name", server, XPathConstants.NODE);
+        Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
         String name = nameNode.getTextContent();
 
-        Node tsaPortNode = (Node)xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
+        Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
         int tsaPort = Integer.parseInt(tsaPortNode.getTextContent().trim());
         if (updateForProxy) {
           tsaPort = PORT_CHOOSER.chooseRandomPort();
@@ -183,7 +183,7 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
-  public void updateServerGroupPort(Map<String, Integer> proxiedPorts) {
+  public void updateServerGroupPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
 
@@ -191,9 +191,9 @@ public class TcConfig10Holder extends TcConfigHolder {
         Node server = serversList.item(i);
         Node nameNode = (Node) xPath.evaluate("@name", server, XPathConstants.NODE);
         String name = nameNode.getTextContent();
-        if (proxiedPorts.containsKey(name)) {
+        if (proxiedPorts.containsKey(new ServerSymbolicName(name))) {
           Node tsaGroupPortNode = (Node) xPath.evaluate("*[name()='tsa-group-port']", server, XPathConstants.NODE);
-          tsaGroupPortNode.setTextContent(String.valueOf(proxiedPorts.get(name)));
+          tsaGroupPortNode.setTextContent(String.valueOf(proxiedPorts.get(symbolicName(name))));
         }
       }
     });
@@ -210,7 +210,7 @@ public class TcConfig10Holder extends TcConfigHolder {
         String name = nameNode.getTextContent();
         if (proxiedPorts.containsKey(new ServerSymbolicName(name))) {
           Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
-          tsaPortNode.setTextContent(String.valueOf(proxiedPorts.get(new ServerSymbolicName(name))));
+          tsaPortNode.setTextContent(String.valueOf(proxiedPorts.get(symbolicName(name))));
         }
       }
     });
@@ -219,12 +219,9 @@ public class TcConfig10Holder extends TcConfigHolder {
   @Override
   public void addOffheap(String resourceName, String size, String unit) {
     modifyXml((tcConfigXml, xPath) -> {
-      int serverIndex = getServersList(tcConfigXml, xPath).getLength() + 1;
-
-      Node serverElt = (Node)xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node serverElt = (Node) xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       Element node = tcConfigXml.createElement("config");
-
       Element node2 = tcConfigXml.createElement("ohr:offheap-resources");
       node2.setAttribute("xmlns:ohr", "http://www.terracotta.org/config/offheap-resource");
       node.appendChild(node2);
@@ -242,7 +239,7 @@ public class TcConfig10Holder extends TcConfigHolder {
   @Override
   public void addDataDirectory(List<TsaStripeConfig.TsaDataDirectory> tsaDataDirectoryList) {
     modifyXml((tcConfigXml, xPath) -> {
-      Node serverElt = (Node)xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node serverElt = (Node) xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       Element node = tcConfigXml.createElement("config");
 
@@ -271,9 +268,9 @@ public class TcConfig10Holder extends TcConfigHolder {
       DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
       documentBuilderFactory.setNamespaceAware(true);
       DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(UTF_8)));
 
-      NodeList nodes = (NodeList)xPath.evaluate("//*[local-name()='directory' and namespace-uri()='http://www.terracottatech.com/config/data-roots']",
+      NodeList nodes = (NodeList) xPath.evaluate("//*[local-name()='directory' and namespace-uri()='http://www.terracottatech.com/config/data-roots']",
           tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
 
       for (int i = 0; i < nodes.getLength(); i++) {
@@ -297,7 +294,7 @@ public class TcConfig10Holder extends TcConfigHolder {
   @Override
   public void addPersistencePlugin(String persistenceDataName) {
     modifyXml((tcConfigXml, xPath) -> {
-      Node serverElt = (Node)xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node serverElt = (Node) xPath.evaluate("//*[name()='plugins']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
 
       Element node1 = tcConfigXml.createElement("service");
       node1.setAttribute("xmlns:persistence", "http://www.terracottatech.com/config/platform-persistence");
@@ -319,9 +316,9 @@ public class TcConfig10Holder extends TcConfigHolder {
       DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
       documentBuilderFactory.setNamespaceAware(true);
       DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(UTF_8)));
 
-      NodeList nodes = (NodeList)xPath.evaluate("//*[local-name()='platform-persistence' and namespace-uri()='http://www.terracottatech.com/config/platform-persistence']",
+      NodeList nodes = (NodeList) xPath.evaluate("//*[local-name()='platform-persistence' and namespace-uri()='http://www.terracottatech.com/config/platform-persistence']",
           tcConfigXml.getDocumentElement(), XPathConstants.NODESET);
 
       for (int i = 0; i < nodes.getLength(); i++) {
@@ -340,9 +337,9 @@ public class TcConfig10Holder extends TcConfigHolder {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(Charset.forName("UTF-8"))));
+      Document tcConfigXml = builder.parse(new ByteArrayInputStream(this.tcConfigContent.getBytes(UTF_8)));
 
-      Node securityRootDirectoryNode = (Node)xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node securityRootDirectoryNode = (Node) xPath.evaluate("//*[local-name()='security-root-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       return securityRootDirectoryNode != null ? securityRootDirectoryNode.getTextContent() : null;
     } catch (Exception e) {
       throw new RuntimeException("Cannot parse tc-config xml", e);
@@ -352,13 +349,10 @@ public class TcConfig10Holder extends TcConfigHolder {
   @Override
   public synchronized void updateAuditDirectoryLocation(final File kitDir, final int stripeId) {
     modifyXml((tcConfigXml, xPath) -> {
-      Node auditLogNode = (Node)xPath.evaluate("//*[local-name()='audit-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
+      Node auditLogNode = (Node) xPath.evaluate("//*[local-name()='audit-directory']", tcConfigXml.getDocumentElement(), XPathConstants.NODE);
       if (auditLogNode != null) {
-
-        String logsPath = kitDir.getAbsolutePath() + File.separatorChar + "audit-" + stripeId;
-
+        String logsPath = kitDir.getAbsolutePath() + separatorChar + "audit-" + stripeId;
         Files.createDirectories(Paths.get(logsPath));
-
         auditLogNode.setTextContent(logsPath);
       }
     });
