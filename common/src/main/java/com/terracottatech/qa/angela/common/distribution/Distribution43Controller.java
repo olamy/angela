@@ -94,22 +94,24 @@ public class Distribution43Controller extends DistributionController {
             mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group()));
 
     // add an identifiable ID to the JVM's system properties
-    String serverUuid = UUID.randomUUID().toString();
     Map<String, String> env = buildEnv(tcEnv);
     env.compute("JAVA_OPTS", (key, value) -> {
-      String prop = " -Dangela.processIdentifier=" + serverUuid;
+      String prop = " -Dangela.processIdentifier=" + terracottaServer.getId();
       return value == null ? prop : value + prop;
     });
 
-    WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
-        .command(createTsaCommand(terracottaServer.getServerSymbolicName(), terracottaServer.getId(), topology.getConfigurationManager(), proxiedPorts, installLocation, startUpArgs))
-        .directory(installLocation)
-        .environment(env)
-        .redirectError(System.err)
-        .redirectOutput(serverLogOutputStream), stateRef, STOPPED);
+    WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(
+        new ProcessExecutor()
+            .command(createTsaCommand(terracottaServer.getServerSymbolicName(), terracottaServer.getId(), topology.getConfigurationManager(), proxiedPorts, installLocation, startUpArgs))
+            .directory(installLocation)
+            .environment(env)
+            .redirectError(System.err)
+            .redirectOutput(serverLogOutputStream),
+        stateRef,
+        STOPPED);
 
     int wrapperPid = watchedProcess.getPid();
-    Number javaPid = findWithJcmdJavaPidOf(serverUuid, tcEnv);
+    Number javaPid = findWithJcmdJavaPidOf(terracottaServer.getId().toString(), tcEnv);
     return new TerracottaServerInstanceProcess(stateRef, wrapperPid, javaPid);
   }
 
@@ -139,7 +141,9 @@ public class Distribution43Controller extends DistributionController {
       }
 
       if (processResult.getExitValue() == 0) {
-        return parseOutputAndFindUuid(processResult.getOutput().getLines(), serverUuid);
+        List<String> lines = processResult.getOutput().getLines();
+        Number pid = parseOutputAndFindUuid(lines, serverUuid);
+        if (pid != null) return pid;
       }
 
       try {
@@ -174,6 +178,7 @@ public class Distribution43Controller extends DistributionController {
         return pid;
       }
     }
+    logger.warn("Unable to parse jcmd output: {} to find serverUuid {}", lines, serverUuid);
     return null;
   }
 
