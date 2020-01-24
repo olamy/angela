@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.terracottatech.qa.angela.common.TerracottaServerState.STOPPED;
 import static com.terracottatech.qa.angela.common.util.RetryUtils.waitFor;
@@ -106,15 +107,15 @@ public abstract class DistributionController {
       }
     }
 
-    final int maxRetryCount = 5;
-    final int maxWaitTimeMillis = 25000;
-    if (!waitFor(() -> terracottaServerInstanceProcess.getState() == STOPPED, maxRetryCount, maxWaitTimeMillis)) {
+    final int maxWaitTimeMillis = 30000;
+    if (!waitFor(() -> terracottaServerInstanceProcess.getState() == STOPPED, maxWaitTimeMillis)) {
       throw new RuntimeException(
           String.format(
-              "Tried for %d times (%dms), but server did not get the state %s",
-              maxRetryCount,
+              "Tried for %dms, but server %s did not get the state %s [remained at state %s]",
               maxWaitTimeMillis,
-              STOPPED
+              serverSymbolicName.getSymbolicName(),
+              STOPPED,
+              terracottaServerInstanceProcess.getState()
           )
       );
     }
