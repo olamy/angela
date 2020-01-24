@@ -195,7 +195,7 @@ public class Distribution107Controller extends DistributionController {
           .readOutput(true)
           .redirectErrorStream(true)
           .redirectErrorAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
-          .redirectOutputAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
+          .redirectOutputAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asError())
           .execute();
       return new ConfigToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
     } catch (Exception e) {
