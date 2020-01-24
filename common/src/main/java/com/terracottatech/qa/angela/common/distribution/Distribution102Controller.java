@@ -182,7 +182,7 @@ public class Distribution102Controller extends DistributionController {
         .directory(location)
         .environment(env)
         .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
-        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo());
+        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asError());
 
     ProcessResult processResult;
     try {

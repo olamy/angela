@@ -7,14 +7,13 @@ public class RetryUtils {
    * Waits for {@code maxRetryCount} time for the {@code condition} to be true.
    *
    * @param condition the condition to evaluate
-   * @param maxRetryCount maximum attempts
    * @param maxWaitTimeMillis   the maximum time in milliseconds to wait before giving up
    * @return {@code true} if the condition was evaluated to true within the given constraints, false otherwise
    */
-  public static boolean waitFor(Callable<Boolean> condition, int maxRetryCount, int maxWaitTimeMillis) {
+  public static boolean waitFor(Callable<Boolean> condition, int maxWaitTimeMillis) {
     int currentRetryAttempt = 0;
     int totalBackOffMillis = 0;
-    while (currentRetryAttempt < maxRetryCount && totalBackOffMillis < maxWaitTimeMillis) {
+    while (totalBackOffMillis < maxWaitTimeMillis) {
       currentRetryAttempt++;
       try {
         if (!condition.call()) {
