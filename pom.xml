@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ The contents of this file are subject to the Terracotta Public License Version
+  ~ 2.0 (the "License"); You may not use this file except in compliance with the
+  ~ License. You may obtain a copy of the License at
+  ~
+  ~ http://terracotta.org/legal/terracotta-public-license.
+  ~
+  ~ Software distributed under the License is distributed on an "AS IS" basis,
+  ~ WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+  ~ the specific language governing rights and limitations under the License.
+  ~
+  ~ The Covered Software is Angela.
+  ~
+  ~ The Initial Developer of the Covered Software is
+  ~ Terracotta, Inc., a Software AG company
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -10,8 +27,8 @@
     <version>4.4</version>
   </parent>
 
-  <groupId>com.terracottatech.qa</groupId>
-  <artifactId>angela</artifactId>
+  <groupId>org.terracotta</groupId>
+  <artifactId>angela-root</artifactId>
   <version>3.0.6-SNAPSHOT</version>
   <packaging>pom</packaging>
 
@@ -47,42 +64,42 @@
     <module>agent</module>
     <module>docs</module>
     <module>test-utils</module>
-    <module>angela-os-client</module>
-    <module>angela-ee-client</module>
-    <module>integration-test-os</module>
+    <module>angela</module>
+    <module>angela-ee</module>
+    <module>integration-test</module>
     <module>integration-test-ee</module>
   </modules>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>com.terracottatech.qa</groupId>
+        <groupId>org.terracotta</groupId>
         <artifactId>angela-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.terracottatech.qa</groupId>
+        <groupId>org.terracotta</groupId>
         <artifactId>angela-client-internal</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.terracottatech.qa</groupId>
+        <groupId>org.terracotta</groupId>
         <artifactId>angela-agent-lib</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.terracottatech.qa</groupId>
+        <groupId>org.terracotta</groupId>
         <artifactId>angela-test-utils</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.terracottatech.qa</groupId>
-        <artifactId>angela-os-client</artifactId>
+        <groupId>org.terracotta</groupId>
+        <artifactId>angela</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.terracottatech.qa</groupId>
-        <artifactId>angela-ee-client</artifactId>
+        <groupId>org.terracotta</groupId>
+        <artifactId>angela-ee</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
