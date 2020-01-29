@@ -47,29 +47,6 @@ include::../java/GettingStarted.java[tags=configureCluster]
 <10> Install the license with the cluster tool
 <11> Stop all Terracotta servers and cleans up the installation
 
-== Tsa Cluster with Security example
-
-Given the following cluster configuration:
-
-[source,xml]
-----
-include::../resources/tc-config-a-with-security.xml[tags=security]
-----
-
-We expect the TSA to contain one Terracotta server running on localhost, and this will be automatically resolved by Angela.
-We can ask now Angela to setup such a cluster:
-
-[source,java]
-----
-include::../java/GettingStarted.java[tags=configureClusterWithSecurity]
-----
-<1> Specify the TSA cluster topology
-<2> Specify the Terracotta cluster config with security
-<3> Specify the SecurityRootDirectory for "Server1"
-<4> Create a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
-<5> Install the Tsa from the distribution on the appropriate server(s) (localhost in this case)
-<6> Install the license with the cluster tool using SecurityRootDirectory
-
 == Tsa API
 
 [source,java]
@@ -102,16 +79,3 @@ include::../java/GettingStarted.java[tags=runClient]
 <6> Create a client array on the remote servers
 <7> Execute the lambda on all the remote clients
 <8> Wait until all the clients finish their execution
-
-== Full example
-
-See class TcDBTest
-
-[source,java]
-----
-include::../../../../integration-test/src/test/java/com/terracottatech/qa/angela/TcDBTest.java[]
-----
-
-
-
-

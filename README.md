@@ -1,5 +1,4 @@
 Distributed control framework to handle a Terracotta cluster and tests clients
-a.k.a. TsaManager 2
 
 ## How to build
 
@@ -7,17 +6,17 @@ a.k.a. TsaManager 2
 
 ## Run specific tests
 
-    mvn test -f integration-test/pom.xml -Dtest=TmsSecurityTest*
+    mvn test -f integration-test/pom.xml -Dtest=<test-name>
 
-Be careful not to cd direclty into the module, you would not use the right kit version !
+Be careful not to cd directly into the module, you would not use the right kit version !
 
 ## Use specific location for Angela kits
 
-    -DkitsDir=/Users/adah/kits/
+    -Dangela.rootDir=/Users/adah/kits/
 
 ## Do not delete after run
 
-    -Dtc.qa.angela.skipUninstall=true
+    -Dangela.skipUninstall=true
 
 ## Specify JVM vendor
 

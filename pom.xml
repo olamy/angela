@@ -63,6 +63,7 @@
     <module>agent-lib</module>
     <module>agent</module>
     <module>docs</module>
+    <module>docs-ee</module>
     <module>test-utils</module>
     <module>angela</module>
     <module>angela-ee</module>
