@@ -1,31 +1,48 @@
-import com.terracottatech.qa.angela.client.ClientArray;
-import com.terracottatech.qa.angela.client.ClientArrayFuture;
-import com.terracottatech.qa.angela.client.ClusterFactory;
-import com.terracottatech.qa.angela.client.Tsa;
-import com.terracottatech.qa.angela.client.config.ConfigurationContext;
-import com.terracottatech.qa.angela.common.TerracottaServerState;
-import com.terracottatech.qa.angela.common.tcconfig.License;
-import com.terracottatech.qa.angela.common.tcconfig.ServerSymbolicName;
-import com.terracottatech.qa.angela.common.tcconfig.TerracottaServer;
-import com.terracottatech.qa.angela.common.topology.ClientArrayTopology;
-import com.terracottatech.qa.angela.common.topology.LicenseType;
-import com.terracottatech.qa.angela.common.topology.PackageType;
-import com.terracottatech.qa.angela.common.topology.Topology;
+/*
+ * The contents of this file are subject to the Terracotta Public License Version
+ * 2.0 (the "License"); You may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
+ *
+ * http://terracotta.org/legal/terracotta-public-license.
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+ * the specific language governing rights and limitations under the License.
+ *
+ * The Covered Software is Angela.
+ *
+ * The Initial Developer of the Covered Software is
+ * Terracotta, Inc., a Software AG company
+ */
+
+import org.terracotta.angela.client.ClientArray;
+import org.terracotta.angela.client.ClientArrayFuture;
+import org.terracotta.angela.client.ClusterFactory;
+import org.terracotta.angela.client.Tsa;
+import org.terracotta.angela.client.config.ConfigurationContext;
+import org.terracotta.angela.common.TerracottaServerState;
+import org.terracotta.angela.common.tcconfig.License;
+import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
+import org.terracotta.angela.common.tcconfig.TerracottaServer;
+import org.terracotta.angela.common.topology.ClientArrayTopology;
+import org.terracotta.angela.common.topology.LicenseType;
+import org.terracotta.angela.common.topology.PackageType;
+import org.terracotta.angela.common.topology.Topology;
 import org.awaitility.Awaitility;
 import org.junit.Test;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
-import static com.terracottatech.qa.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
-import static com.terracottatech.qa.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
-import static com.terracottatech.qa.angela.common.distribution.Distribution.distribution;
-import static com.terracottatech.qa.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
-import static com.terracottatech.qa.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
-import static com.terracottatech.qa.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
-import static com.terracottatech.qa.angela.common.tcconfig.TcConfig.tcConfig;
-import static com.terracottatech.qa.angela.common.topology.Version.version;
-import static com.terracottatech.qa.angela.test.Versions.TERRACOTTA_VERSION;
+import static org.terracotta.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
+import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
+import static org.terracotta.angela.common.distribution.Distribution.distribution;
+import static org.terracotta.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
+import static org.terracotta.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
+import static org.terracotta.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
+import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
+import static org.terracotta.angela.common.topology.Version.version;
+import static org.terracotta.angela.test.Versions.TERRACOTTA_VERSION;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
 
