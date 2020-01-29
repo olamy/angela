@@ -2,7 +2,7 @@ Distributed control framework to handle a Terracotta cluster and tests clients
 
 ## How to build
 
-    mvn clean install -DskipTests
+    mvn clean install
 
 ## Run specific tests
 

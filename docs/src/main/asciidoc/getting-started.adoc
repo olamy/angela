@@ -6,7 +6,6 @@ It also provides a set of utility methods to help with testing (e.g. network con
 It can set up a TSA from :
 
  - a Kit tarball
- - the SAG installer
  - a local build
 
 It can install the cluster locally or remotely
@@ -79,3 +78,16 @@ include::../java/GettingStarted.java[tags=runClient]
 <6> Create a client array on the remote servers
 <7> Execute the lambda on all the remote clients
 <8> Wait until all the clients finish their execution
+
+== Full example
+
+See class EhcacheOsTest
+
+[source,java]
+----
+include::../../../../integration-test/src/test/java/org/terracotta/angela/EhcacheOsTest.java[]
+----
+
+
+
+

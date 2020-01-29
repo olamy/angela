@@ -37,7 +37,7 @@
 
     <dependency>
       <groupId>org.terracotta</groupId>
-      <artifactId>angela-ee</artifactId>
+      <artifactId>angela</artifactId>
     </dependency>
 
     <dependency>

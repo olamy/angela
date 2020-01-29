@@ -221,7 +221,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
         File tmpDir = Files.createTempDirectory("angela").toFile();
         File agentFile = new File(tmpDir, "angela-agent-" + AngelaVersions.INSTANCE.getAngelaVersion() + ".jar");
         // TODO : this will be changed to maven central when we have the cloudbees publishing job for angela oss
-        String releaseUrl = "http://nexus.terrcacotta.eur.ad.sag:8080/service/local/repositories/terracotta-ee-releases/content/com/terracottatech/qa/angela-agent/" +
+        String releaseUrl = "https://search.maven.org/remotecontent?filepath=com/terracottatech/qa/angela-agent/" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +
                             "/angela-agent-" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +

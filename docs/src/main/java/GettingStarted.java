@@ -73,31 +73,6 @@ public class GettingStarted {
   }
 
   @Test
-  public void configureClusterWithSecurity() throws Exception {
-    // tag::configureClusterWithSecurity[]
-    ConfigurationContext configContext = customConfigurationContext()
-        .tsa(tsa -> tsa
-            .topology(
-                new Topology( // <1>
-                    distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
-                    secureTcConfig( // <2>
-                        version(TERRACOTTA_VERSION),
-                        getClass().getResource("/tc-config-a-with-security.xml"),
-                        withSecurityFor(new ServerSymbolicName("Server1"), securityRootDirectory(getClass().getResource("/security"))) // <3>
-                    )
-                )
-            ).license(LICENSE)
-        );
-    ClusterFactory factory = new ClusterFactory("GettingStarted::configureClusterWithSecurity", configContext); // <4>
-    Tsa tsa = factory.tsa() // <5>
-        .startAll()
-        .licenseAll(securityRootDirectory(getClass().getResource("/security"))); // <6>
-
-    factory.close();
-    // end::configureClusterWithSecurity[]
-  }
-
-  @Test
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
         distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
