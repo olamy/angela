@@ -22,9 +22,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.terracotta.forge</groupId>
-    <artifactId>forge-parent</artifactId>
-    <version>4.4</version>
+    <groupId>org.terracotta</groupId>
+    <artifactId>terracotta-parent</artifactId>
+    <version>5.5.0</version>
   </parent>
 
   <groupId>org.terracotta</groupId>
@@ -63,12 +63,9 @@
     <module>agent-lib</module>
     <module>agent</module>
     <module>docs</module>
-    <module>docs-ee</module>
     <module>test-utils</module>
     <module>angela</module>
-    <module>angela-ee</module>
     <module>integration-test</module>
-    <module>integration-test-ee</module>
   </modules>
 
   <dependencyManagement>
@@ -242,8 +239,8 @@
   </build>
 
   <scm>
-    <connection>scm:git:ssh://git@irepo.eur.ad.sag:7999/tabqa/angela.git</connection>
-    <developerConnection>scm:git:ssh://git@irepo.eur.ad.sag:7999/tabqa/angela.git</developerConnection>
+    <connection>scm:git:https://github.com/Terracotta-OSS/angela.git</connection>
+    <developerConnection>scm:git:https://github.com/Terracotta-OSS/angela.git</developerConnection>
   </scm>
 
   <distributionManagement>
