@@ -15,7 +15,7 @@
  * Terracotta, Inc., a Software AG company
  */
 
-package org.terracotta.angela.opensource;
+package org.terracotta.angela;
 
 import java.net.URL;
 
