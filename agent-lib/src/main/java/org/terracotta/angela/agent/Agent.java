@@ -17,11 +17,6 @@
 
 package org.terracotta.angela.agent;
 
-import org.terracotta.angela.common.AngelaProperties;
-import org.terracotta.angela.common.util.AngelaVersion;
-import org.terracotta.angela.common.util.HostPort;
-import org.terracotta.angela.common.util.IgniteCommonHelper;
-import org.terracotta.angela.common.util.IpUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -34,6 +29,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.terracotta.angela.common.AngelaProperties;
+import org.terracotta.angela.common.util.AngelaVersion;
+import org.terracotta.angela.common.util.HostPort;
+import org.terracotta.angela.common.util.IgniteCommonHelper;
+import org.terracotta.angela.common.util.IpUtils;
 
 import java.io.Closeable;
 import java.net.UnknownHostException;
@@ -51,6 +51,7 @@ import static org.terracotta.angela.common.AngelaProperties.NODE_NAME;
 import static org.terracotta.angela.common.AngelaProperties.PORT_RANGE;
 import static org.terracotta.angela.common.AngelaProperties.getEitherOf;
 import static org.terracotta.angela.common.util.DirectoryUtils.createAndValidateDir;
+import static org.terracotta.angela.common.util.HostAndIpValidator.isValidIPv6;
 
 /**
  * @author Ludovic Orban
@@ -165,7 +166,7 @@ public class Agent {
         nodesToJoinHostnames.add(hostIp[0]);
         if (hostIp.length > 1) {
           int lastColon = hostIp[0].lastIndexOf(":");
-          if (lastColon == -1) {
+          if (lastColon == -1 || isValidIPv6(hostIp[0])) {
             hostnameToIpMapping.put(hostIp[0], hostIp[1]);
           } else {
             hostnameToIpMapping.put(hostIp[0].substring(0, lastColon), hostIp[1]);
