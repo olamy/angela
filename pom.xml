@@ -36,8 +36,6 @@
     <!-- Terracotta dependencies -->
     <ehcache-os.version>3.8.1</ehcache-os.version>
     <ehcache-os-snapshot.version>3.8-SNAPSHOT</ehcache-os-snapshot.version>
-    <terracotta.version>10.5.0.0.193</terracotta.version>
-    <terracotta-4x.version>4.3.8.0.56</terracotta-4x.version>
 
     <!-- Third-party dependencies -->
     <ignite.version>2.7.6</ignite.version>
@@ -136,16 +134,6 @@
         <version>${sshj.version}</version>
       </dependency>
       <dependency>
-        <groupId>com.terracottatech.internal</groupId>
-        <artifactId>security-common-test</artifactId>
-        <version>${terracotta.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.terracottatech.store</groupId>
-        <artifactId>terracotta-store-client</artifactId>
-        <version>${terracotta.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.hamcrest</groupId>
         <artifactId>hamcrest-all</artifactId>
         <version>${hamcrest.version}</version>
@@ -242,19 +230,5 @@
     <connection>scm:git:https://github.com/Terracotta-OSS/angela.git</connection>
     <developerConnection>scm:git:https://github.com/Terracotta-OSS/angela.git</developerConnection>
   </scm>
-
-  <distributionManagement>
-    <repository>
-      <id>terracotta-ee-releases</id>
-      <name>Terracotta EE Releases Repository</name>
-      <url>${terracotta-ee-releases-url}</url>
-    </repository>
-    <snapshotRepository>
-      <id>terracotta-ee-snapshots</id>
-      <uniqueVersion>false</uniqueVersion>
-      <name>Terracotta Snapshots Repository</name>
-      <url>${terracotta-ee-snapshots-url}</url>
-    </snapshotRepository>
-  </distributionManagement>
 
 </project>
