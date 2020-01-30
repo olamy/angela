@@ -34,6 +34,10 @@
   </licenses>
 
   <properties>
+    <java.version>1.8</java.version>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+
     <!-- Terracotta dependencies -->
     <ehcache-os.version>3.8.1</ehcache-os.version>
     <ehcache-os-snapshot.version>3.8-SNAPSHOT</ehcache-os-snapshot.version>
