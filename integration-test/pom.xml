@@ -52,11 +52,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.terracotta</groupId>
-      <artifactId>angela-test-utils</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-all</artifactId>
       <scope>test</scope>

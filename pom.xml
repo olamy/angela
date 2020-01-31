@@ -85,11 +85,6 @@
       </dependency>
       <dependency>
         <groupId>org.terracotta</groupId>
-        <artifactId>angela-test-utils</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.terracotta</groupId>
         <artifactId>angela</artifactId>
         <version>${project.version}</version>
       </dependency>

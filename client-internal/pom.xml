@@ -42,13 +42,6 @@
       <groupId>org.terracotta</groupId>
       <artifactId>angela-agent-lib</artifactId>
     </dependency>
-<!--
-    <dependency>
-      <groupId>org.terracotta</groupId>
-      <artifactId>angela-test-utils</artifactId>
-      <scope>test</scope>
-    </dependency>
--->
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>json-path</artifactId>

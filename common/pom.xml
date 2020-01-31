@@ -64,13 +64,6 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
-<!--
-    <dependency>
-      <groupId>org.terracotta</groupId>
-      <artifactId>angela-test-utils</artifactId>
-      <scope>test</scope>
-    </dependency>
--->
     <dependency>
       <groupId>com.github.netcrusherorg</groupId>
       <artifactId>netcrusher-core</artifactId>
