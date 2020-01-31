@@ -44,8 +44,8 @@ import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newCli
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
 import static org.terracotta.angela.common.topology.Version.version;
-import static org.terracotta.angela.test.Versions.EHCACHE_OS_SNAPSHOT_VERSION;
-import static org.terracotta.angela.test.Versions.EHCACHE_OS_VERSION;
+import static org.terracotta.angela.Versions.EHCACHE_OS_SNAPSHOT_VERSION;
+import static org.terracotta.angela.Versions.EHCACHE_OS_VERSION;
 import static junit.framework.TestCase.assertEquals;
 
 public class EhcacheOsTest {

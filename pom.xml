@@ -38,10 +38,6 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
 
-    <!-- Terracotta dependencies -->
-    <ehcache-os.version>3.8.1</ehcache-os.version>
-    <ehcache-os-snapshot.version>3.8-SNAPSHOT</ehcache-os-snapshot.version>
-
     <!-- Third-party dependencies -->
     <ignite.version>2.7.6</ignite.version>
     <json-path.version>3.3.0</json-path.version>
@@ -66,7 +62,6 @@
     <module>agent-lib</module>
     <module>agent</module>
     <module>docs</module>
-    <module>test-utils</module>
     <module>angela</module>
     <module>integration-test</module>
   </modules>

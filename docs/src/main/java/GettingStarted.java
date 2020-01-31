@@ -15,6 +15,8 @@
  * Terracotta, Inc., a Software AG company
  */
 
+import org.awaitility.Awaitility;
+import org.junit.Test;
 import org.terracotta.angela.client.ClientArray;
 import org.terracotta.angela.client.ClientArrayFuture;
 import org.terracotta.angela.client.ClusterFactory;
@@ -22,35 +24,29 @@ import org.terracotta.angela.client.Tsa;
 import org.terracotta.angela.client.config.ConfigurationContext;
 import org.terracotta.angela.common.TerracottaServerState;
 import org.terracotta.angela.common.tcconfig.License;
-import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.topology.ClientArrayTopology;
 import org.terracotta.angela.common.topology.LicenseType;
 import org.terracotta.angela.common.topology.PackageType;
 import org.terracotta.angela.common.topology.Topology;
-import org.awaitility.Awaitility;
-import org.junit.Test;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.is;
 import static org.terracotta.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
 import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
-import static org.terracotta.angela.common.tcconfig.NamedSecurityRootDirectory.withSecurityFor;
-import static org.terracotta.angela.common.tcconfig.SecureTcConfig.secureTcConfig;
-import static org.terracotta.angela.common.tcconfig.SecurityRootDirectory.securityRootDirectory;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
 import static org.terracotta.angela.common.topology.Version.version;
-import static org.terracotta.angela.test.Versions.TERRACOTTA_VERSION;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.is;
 
 /**
  * @author Aurelien Broszniowski
  */
 public class GettingStarted {
   private static final License LICENSE = LicenseType.TERRACOTTA.defaultLicense();
+  private static String TERRACOTTA_VERSION;
 
   @Test
   public void configureCluster() throws Exception {
@@ -78,7 +74,8 @@ public class GettingStarted {
         distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
         tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-ap.xml"))
     );
-    ConfigurationContext configContext = customConfigurationContext().tsa(tsa -> tsa.topology(topology).license(LICENSE));
+    ConfigurationContext configContext = customConfigurationContext().tsa(tsa -> tsa.topology(topology)
+        .license(LICENSE));
 
     try (ClusterFactory factory = new ClusterFactory("GettingStarted::showTsaApi", configContext)) {
       // tag::showTsaApi[]

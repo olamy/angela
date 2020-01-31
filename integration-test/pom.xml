@@ -29,6 +29,12 @@
 
   <artifactId>integration-test</artifactId>
 
+  <properties>
+    <!-- Terracotta dependencies -->
+    <ehcache-os.version>3.8.1</ehcache-os.version>
+    <ehcache-os-snapshot.version>3.8-SNAPSHOT</ehcache-os-snapshot.version>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.ehcache</groupId>
@@ -62,4 +68,13 @@
     </dependency>
   </dependencies>
 
+  <!-- This is required to pass the 'terracotta.version' from the pom, via the versions.properties resource -->
+  <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+  </build>
 </project>
