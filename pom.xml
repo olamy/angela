@@ -25,6 +25,10 @@
   <artifactId>angela-root</artifactId>
   <version>3.0.6-SNAPSHOT</version>
   <packaging>pom</packaging>
+  <name>angela</name>
+
+  <description>Distributed control framework to handle a Terracotta cluster and tests clients</description>
+  <url>https://github.com/Terracotta-OSS/angela</url>
 
   <licenses>
     <license>
@@ -293,4 +297,76 @@
     <developerConnection>scm:git:https://github.com/Terracotta-OSS/angela.git</developerConnection>
   </scm>
 
+  <developers>
+    <developer>
+      <name>Aurelien Broszniowski</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Ludovic Orban</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+   <developer>
+      <name>Saurabh Agarwal</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Alexander Komarov</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Albert Gevorgyan</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Albin Suresh</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Anthony Dahanne</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Ravi Chaturvedi</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Chris Dennis</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Yakov Feldman</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Geoff Gibson</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Md Mobasherul Haque</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Venkata Sairam Madduri</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+    <developer>
+      <name>Eugene Sebastian</name>
+      <organization>Terracotta Inc., a wholly-owned subsidiary of Software AG USA, Inc.</organization>
+      <organizationUrl>https://terracotta.org</organizationUrl>
+    </developer>
+  </developers>
 </project>
