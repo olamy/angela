@@ -61,10 +61,10 @@ public class DisruptionController implements AutoCloseable {
 
   /**
    * Create disruptor to control traffic between all servers specified.
-   * (ex: Server1 <-> Server2, Server2 <-> Server3 & Server3 <-> Server1)
+   * (ex: Server1 &lt;-&gt; Server2, Server2 &lt;-&gt; Server3 &amp; Server3 &lt;-&gt; Server1)
    *
-   * @param servers
-   * @return
+   * @param servers  to be disrupted
+   * @return {@link ServerToServerDisruptor}
    */
   public ServerToServerDisruptor newServerToServerDisruptor(TerracottaServer... servers) {
     if (servers.length < 2) {
@@ -80,10 +80,10 @@ public class DisruptionController implements AutoCloseable {
 
   /**
    * Create disruptor to control traffic between set of servers specified
-   * (ex: [Server1] <-> [Server2,Server3]. No disruption between Server2 and Server3 in this example)
+   * (ex: [Server1] &lt;-&gt; [Server2,Server3]. No disruption between Server2 and Server3 in this example)
    *
-   * @param splitClusters
-   * @return
+   * @param splitClusters {@link SplitCluster}
+   * @return {@link ServerToServerDisruptor}
    */
   public ServerToServerDisruptor newServerToServerDisruptor(SplitCluster... splitClusters) {
     if (!topology.isNetDisruptionEnabled()) {
@@ -160,11 +160,11 @@ public class DisruptionController implements AutoCloseable {
 
   /**
    * Create client to server disruptor for controlling traffic between
-   * client like DatasetManager & CacheManager and servers. This needs to
+   * client like DatasetManager &amp; CacheManager and servers. This needs to
    * be created before initializing DatasetManager or CacheManager and use
    * connection URI obtained from this disruptor {@link ClientToServerDisruptor#uri()}
    *
-   * @return
+   * @return {@link ClientToServerDisruptor}
    */
   public ClientToServerDisruptor newClientToServerDisruptor() {
     if (!topology.isNetDisruptionEnabled()) {

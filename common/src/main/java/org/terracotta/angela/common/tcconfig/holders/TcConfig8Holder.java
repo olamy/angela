@@ -34,7 +34,7 @@ import java.util.Map;
 /**
  * Terracotta config for Terracotta 4.0.x
  * <p>
- * 8   -> 4.0.x
+ * 8   -&gt; 4.0.x
  *
  * @author Aurelien Broszniowski
  */

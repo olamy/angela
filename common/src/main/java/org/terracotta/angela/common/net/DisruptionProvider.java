@@ -27,18 +27,16 @@ public interface DisruptionProvider {
 
 
   /**
-   * Proxy based provider such as netcrusher or toxiproxy to return true here.
-   *
-   * @return
+   * @return true in case of a proxy based provider such as netcrusher or toxiproxy
    */
   boolean isProxyBased();
 
   /**
    * Create link to disrupt traffic flowing from the given source address to destination address(unidirectional)
    *
-   * @param src
-   * @param dest
-   * @return
+   * @param src source address
+   * @param dest destination address
+   * @return Disruptor link
    */
   Disruptor createLink(InetSocketAddress src, InetSocketAddress dest);
 
@@ -46,7 +44,7 @@ public interface DisruptionProvider {
   /**
    * remove link
    *
-   * @param link
+   * @param link {@link Disruptor}
    */
   void removeLink(Disruptor link);
 

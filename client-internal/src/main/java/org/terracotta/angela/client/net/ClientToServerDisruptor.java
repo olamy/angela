@@ -39,13 +39,10 @@ import java.util.stream.Collectors;
 
 /**
  * Disruptor to control traffic between client and servers. This needs to
- * be created before initializing client(DatasetManager & CacheManager) and use
+ * be created before initializing client(DatasetManager &amp; CacheManager) and use
  * connection URI obtained from this disruptor {@link #uri()}
- * <p>
- * <p>
- * <p>
- * <p>
- * <p>
+ * <br>
+ * <br>
  * This disruptor doesn't work with TopoConnectionService since topology configuration overrides proxy url before making
  * actual connection. So this disruption requires a test connection service(similar to DelayedConnectionService found in galvan)
  * to be created to skip topolgoy configuration or delegate to LeasedConnectionServiceImpl.

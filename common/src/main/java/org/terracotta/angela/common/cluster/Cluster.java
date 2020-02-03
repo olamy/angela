@@ -50,7 +50,7 @@ public class Cluster {
   }
 
   /**
-   * Returns the client ID if called in the context of a client job,
+   * @return the client ID if called in the context of a client job,
    * and null otherwise.
    */
   public ClientId getClientId() {

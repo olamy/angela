@@ -32,7 +32,7 @@ import java.util.Map;
 
 /**
  * base tc config holder
- * <p/>
+ * <br>
  *
  * @author Tim Eck
  */

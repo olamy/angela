@@ -34,9 +34,9 @@ import java.util.Map;
 /**
  * Terracotta config for Terracotta 4.1+
  * <p>
- * 9.0 -> 4.1.x
- * 9.1 -> 4.2.x
- * 9.2 -> 4.3.x
+ * 9.0 -&gt; 4.1.x
+ * 9.1 -&gt; 4.2.x
+ * 9.2 -&gt; 4.3.x
  *
  * @author Aurelien Broszniowski
  */

@@ -29,16 +29,16 @@ import java.util.Map;
 
 /**
  * This class is made to get the OS platform name, e.g.
- * <p/>
+ * <br>
  * Red Hat Enterprise Linux Server release 5.6 (Tikanga)
- * <p/>
- * <p/>
+ * <br>
+ * <br>
  * It currently supports :
  * - Linux
  * - Windows
  * - Mac OS
  * - Solaris
- * <p/>
+ * <br>
  * TODO :  P-UX / ZOS
  *
  * @author Aurelien Broszniowski

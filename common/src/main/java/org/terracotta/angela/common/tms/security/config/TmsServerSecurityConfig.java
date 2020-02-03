@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  *
  * Use example:
  *     TmsServerSecurityConfig tmsServerSecurityConfig =
- *     new TmsServerSecurityConfig.Builder().with($ -> {
+ *     new TmsServerSecurityConfig.Builder().with($ -&gt; {
  *               $.tmsSecurityRootDirectory = "/config/security-root-dir";
  *               $.tmsSecurityHttpsEnabled = "true";
  *               $.tmsSecurityAuthenticationScheme = null;
