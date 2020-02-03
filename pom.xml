@@ -320,6 +320,7 @@
   </distributionManagement>
 
   <scm>
+    <url>https://github.com/Terracotta-OSS/angela</url>
     <connection>scm:git:https://github.com/Terracotta-OSS/angela.git</connection>
     <developerConnection>scm:git:https://github.com/Terracotta-OSS/angela.git</developerConnection>
   </scm>
