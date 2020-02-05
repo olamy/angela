@@ -2,15 +2,15 @@
 
 A distributed control framework to handle a Terracotta cluster and tests clients
 
-## What is Angela?
+## What is the purpose of Angela?
 
 One major obstacle to testing a client/server system is setting up the environment. Not only the server must be installed, but also the clients and both of them might have to be installed on different remote locations. 
 
-Angela is means to tackle this problem and ease the setup of a distributed environment.
+Angela is meant to tackle this problem and ease the setup of a distributed environment.
 
-It also handles the control of that distributed environment (e.g. starting/stopping some of the components, fetching some remote files, monitoring, injecting network failures). 
+It also helps with the control of that distributed environment (e.g. starting/stopping some of the components, fetching some remote files, monitoring, injecting network failures). 
 
-The current implementation is specialized for Terracotta, which is a distributed data management platform.
+The current implementation is targeted for Terracotta, which is a distributed data management platform.
 
 Angela also supports Ehcache 2 and 3, which are implementations of a distributed cache.
 
@@ -18,7 +18,7 @@ Angela can be extensible to handle other distributed softwares.
 
 ## Initial setup
 
-For running tests on a node angela expects a directory at /data/angela to store all its metadata. So make sure that this directory exists or can be created before running any tests. For more details on what what that directory is used for, refer to Angela Directory Structure
+For running tests on a node, Angela expects a directory at /data/angela to store all its metadata. So make sure that this directory exists or can be created before running any tests. For more details on what what that directory is used for, refer to Angela Directory Structure
 
 ## Tsa Cluster example
 
