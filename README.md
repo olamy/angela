@@ -1,6 +1,6 @@
 <img src="angela.png" height="100" alt="Angela Logo" />
 
-A distributed control framework to handle a Terracotta cluster and tests clients
+A distributed control framework to handle a Terracotta cluster and test clients
 
 ## What is the purpose of Angela?
 
@@ -122,7 +122,7 @@ We expect the TSA to contain one Terracotta server running on localhost, and thi
 
   11) Get the current state of the Terracotta server
 
-Client array example
+## Client array example
 
 ```
     ConfigurationContext configContext = customConfigurationContext()
