@@ -1,4 +1,4 @@
-<img src="angela.png" height="200" alt="Angela Logo" />
+<img src="angela.png" height="100" alt="Angela Logo" />
 
 A distributed control framework to handle a Terracotta cluster and tests clients
 
