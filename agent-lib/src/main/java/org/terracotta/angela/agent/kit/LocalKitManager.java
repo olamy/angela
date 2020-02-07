@@ -17,11 +17,11 @@
 
 package org.terracotta.angela.agent.kit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.terracotta.angela.KitResolver;
 import org.terracotta.angela.common.distribution.Distribution;
 import org.terracotta.angela.common.tcconfig.License;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -29,10 +29,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
@@ -45,6 +47,7 @@ public class LocalKitManager extends KitManager {
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
   private final Map<String, File> clientJars = new HashMap<>();
   private final KitResolver kitResolver;
+  public static final String ANGELA_LOCK_FILE = "angela-install.lock";
 
   public LocalKitManager(Distribution distribution) {
     super(distribution);
@@ -84,27 +87,74 @@ public class LocalKitManager extends KitManager {
     } else if (rootInstallationPath != null) {
       Path localInstallerPath = rootInstallationPath.resolve(
           kitResolver.resolveLocalInstallerPath(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType()));
-      logger.info("Local kit found at: {}", localInstallerPath);
-      if (!isValidLocalInstallerFilePath(offline, localInstallerPath)) {
-        logger.info("Local kit at: {} found to be invalid. Downloading a fresh installer", localInstallerPath);
-        kitResolver.downloadLocalInstaller(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType(), localInstallerPath);
-      }
-
-      this.kitInstallationPath = kitResolver.resolveKitInstallationPath(distribution.getVersion(), distribution.getPackageType(), localInstallerPath, rootInstallationPath);
-
-      if (!Files.isDirectory(this.kitInstallationPath)) {
-        logger.info("Local install not available at: {}", this.kitInstallationPath);
-        if (offline) {
-          throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
-              " the kit compressed package is not available. Please run in online mode with an internet connection.");
+      logger.info("Checking if local kit is available at: {}", localInstallerPath);
+      lockConcurrentInstall(localInstallerPath);
+      try {
+        if (!isValidLocalInstallerFilePath(offline, localInstallerPath)) {
+          logger.info("Local kit at: {} found to be invalid. Downloading a fresh installer", localInstallerPath);
+          kitResolver.downloadLocalInstaller(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType(), localInstallerPath);
         }
-        kitResolver.createLocalInstallFromInstaller(distribution.getVersion(), distribution.getPackageType(), license, localInstallerPath, rootInstallationPath);
+
+        this.kitInstallationPath = kitResolver.resolveKitInstallationPath(distribution.getVersion(), distribution.getPackageType(), localInstallerPath, rootInstallationPath);
+
+        if (!Files.isDirectory(this.kitInstallationPath)) {
+          logger.info("Local install not available at: {}", this.kitInstallationPath);
+          if (offline) {
+            throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
+                                               " the kit compressed package is not available. Please run in online mode with an internet connection.");
+          }
+          kitResolver.createLocalInstallFromInstaller(distribution.getVersion(), distribution.getPackageType(), license, localInstallerPath, rootInstallationPath);
+        }
+      } finally {
+        unlockConcurrentInstall(localInstallerPath);
       }
     }
     if (this.kitInstallationPath != null) {
       initClientJarsMap();
       logger.info("Local distribution is located in {}", this.kitInstallationPath);
     }
+  }
+
+  void unlockConcurrentInstall(Path localInstallerPath) {
+    logger.debug(Thread.currentThread().getId() +" unlock");
+    File file = localInstallerPath.resolve(ANGELA_LOCK_FILE).toFile();
+    final boolean deleted = file.delete();
+    if (!deleted) {
+      logger.error("Angela Installer lock file can not be deleted when unlocking at {}", file.getAbsolutePath());
+    }
+  }
+
+  void lockConcurrentInstall(Path localInstallerPath) {
+    logger.debug(Thread.currentThread().getId() +" lock");
+    File file = localInstallerPath.resolve("angela-install.lock").toFile();
+    try {
+      if (!file.createNewFile()) {
+        long diff = new Date().getTime() - file.lastModified();
+        if (diff > TimeUnit.MINUTES.toMillis(5)) {
+          final boolean deleted = file.delete();
+          if (!deleted) {
+            logger.error("Angela Installer lock file can not be deleted when locking at {}", file.getAbsolutePath());
+          }
+          final boolean created = file.createNewFile();
+          if (!created) {
+            logger.error("Angela Installer lock file can not be created at {}", file.getAbsolutePath());
+          }
+        }
+        logger.debug(Thread.currentThread().getId() +" wait");
+        for (int i = 0; i < 20; i++) {
+          Thread.sleep(6000);
+          if (file.createNewFile()) {
+            logger.debug(Thread.currentThread().getId() +" pass");
+            break;
+          }
+        }
+      }
+    } catch (IOException | InterruptedException e) {
+      e.printStackTrace();
+      logger.error("Angela Installer lock file issue at {}", file.getAbsolutePath());
+    }
+    logger.debug(Thread.currentThread().getId() +" pass");
+
   }
 
   private void initClientJarsMap() {
