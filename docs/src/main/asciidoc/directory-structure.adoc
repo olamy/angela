@@ -40,15 +40,14 @@ This directory contains `commons jars`, `angela classes` and `test classes`, hav
             ├── classes
             │   ├── angela
             │   │   └── angela-version.properties
-            │   ├── com
-            │   │   └── terracottatech
-            │   │       └── qa
-            │   │           └── angela
-            │   │               ├── agent
-            │   │               │   ├── Agent$Node.class
-            │   │               │   ├── Agent.class
-            │   │               │   ├── AgentController$1.class
-            │   │               │   ├── AgentController.class
+            │   ├── org
+            │   │   └── terracotta
+            │   │       └── angela
+            │   │           ├── agent
+            │   │           │   ├── Agent$Node.class
+            │   │           │   ├── Agent.class
+            │   │           │   ├── AgentController$1.class
+            │   │           │   ├── AgentController.class
             .
             .
             .
@@ -57,21 +56,12 @@ This directory contains `commons jars`, `angela classes` and `test classes`, hav
             ├── terracotta-common-client-10.3.0.0.203.jar
             ├── terracotta-store-client-10.3.0.0.203.jar
             ├── test-classes
-            │   ├── com
-            │   │   └── terracottatech
-            │   │       └── qa
-            │   │           └── angela
-            │   │               ├── BrowseTest.class
-            │   │               ├── ClientTest.class
-            │   │               ├── ClusterToolTest.class
-            │   │               ├── InstallTest.class
-            │   │               ├── InstallWithSecurityTest.class
-            │   │               ├── MultiStripeWithSecurityTest.class
-            │   │               ├── MultistripesTest.class
-            │   │               ├── TcDBTest.class
-            │   │               ├── TmsSecurityTest.class
-            │   │               └── TmsTest.class
-
+            │   ├── org
+            │   │   └── terracotta
+            │   │       └── angela
+            │   │           ├── BrowseTest.class
+            │   │           ├── ClientTest.class
+            │   │           ├── InstallTest.class
 
 === Server Directories
 Every test case a new server directory in the format `<id-prefix>-<UUID>` within directory `ROOT_DIR + "work"`.
@@ -82,7 +72,6 @@ This directory contains `license file`, `tc-config`, `logs` and `data` directory
     drwxr-xr-x  13 ravi  wheel   442 Jun 25 12:20 .
     drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 ..
     -rw-r--r--   1 ravi  wheel  2438 May 31 22:58 README.txt
-    -rw-r--r--   1 ravi  wheel  1247 Jun 25 12:20 Terracotta101.xml
     drwxr-xr-x   6 ravi  wheel   204 May 31 22:58 client
     drwxr-xr-x   6 ravi  wheel   204 May 31 23:04 legal
     drwxr-xr-x   3 ravi  wheel   102 Jun 25 12:20 logs-0-1

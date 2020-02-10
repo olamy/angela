@@ -157,7 +157,7 @@ public class RemoteClientManager {
     // if
     //   file:/Users/lorban/.m2/repository/org/slf4j/slf4j-api/1.7.22/slf4j-api-1.7.22.jar!/org/slf4j/Logger.class
     // else
-    //   /work/terracotta/irepo/lorban/angela/agent/target/classes/com/terracottatech/qa/angela/agent/Agent.class
+    //   /work/terracotta/irepo/lorban/angela/agent/target/classes/org/terracotta/angela/agent/Agent.class
 
     String agentClassName = Agent.class.getName().replace('.', '/');
     String agentClassPath = Agent.class.getResource("/" + agentClassName + ".class").getPath();
