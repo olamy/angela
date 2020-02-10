@@ -190,7 +190,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
     try {
       if (AngelaVersions.INSTANCE.isSnapshot()) {
         String snapshotLocation =
-            System.getProperty("user.home") + "/.m2/repository/com/terracottatech/qa/angela-agent/" +
+            System.getProperty("user.home") + "/.m2/repository/org/terracotta/angela-agent/" +
             AngelaVersions.INSTANCE.getAngelaVersion() +
             "/angela-agent-" +
             AngelaVersions.INSTANCE.getAngelaVersion() +
@@ -220,8 +220,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       } else {
         File tmpDir = Files.createTempDirectory("angela").toFile();
         File agentFile = new File(tmpDir, "angela-agent-" + AngelaVersions.INSTANCE.getAngelaVersion() + ".jar");
-        // TODO : this will be changed to maven central when we have the cloudbees publishing job for angela oss
-        String releaseUrl = "https://search.maven.org/remotecontent?filepath=com/terracottatech/qa/angela-agent/" +
+        String releaseUrl = "https://search.maven.org/remotecontent?filepath=org/terracotta/angela-agent/" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +
                             "/angela-agent-" +
                             AngelaVersions.INSTANCE.getAngelaVersion() +
