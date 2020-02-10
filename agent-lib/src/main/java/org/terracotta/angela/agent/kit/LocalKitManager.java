@@ -47,7 +47,7 @@ public class LocalKitManager extends KitManager {
   private static final Logger logger = LoggerFactory.getLogger(LocalKitManager.class);
   private final Map<String, File> clientJars = new HashMap<>();
   private final KitResolver kitResolver;
-  public static final String ANGELA_LOCK_FILE = "angela-install.lock";
+  static final String INSTALLATION_LOCK_FILE_NAME = "angela-install.lock";
 
   public LocalKitManager(Distribution distribution) {
     super(distribution);
@@ -117,7 +117,7 @@ public class LocalKitManager extends KitManager {
 
   void unlockConcurrentInstall(Path localInstallerPath) {
     logger.debug(Thread.currentThread().getId() +" unlock");
-    File file = localInstallerPath.resolve(ANGELA_LOCK_FILE).toFile();
+    File file = localInstallerPath.resolve(INSTALLATION_LOCK_FILE_NAME).toFile();
     final boolean deleted = file.delete();
     if (!deleted) {
       logger.error("Angela Installer lock file can not be deleted when unlocking at {}", file.getAbsolutePath());
