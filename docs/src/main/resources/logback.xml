@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ The contents of this file are subject to the Terracotta Public License Version
   ~ 2.0 (the "License"); You may not use this file except in compliance with the
@@ -16,16 +15,17 @@
   ~ Terracotta, Inc., a Software AG company
   -->
 
-<tc-config xmlns="http://www.terracotta.org/config">
+<configuration>
 
-  <!-- tag::servers[] -->
-  <servers>
-    <server host="localhost" name="Server1">
-      <logs>logs1</logs>
-      <tsa-port>9510</tsa-port>
-      <tsa-group-port>9530</tsa-group-port>
-    </server>
-  </servers>
-  <!-- end::servers[] -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{1}:%L - %msg%n</pattern>
+    </encoder>
+  </appender>
 
-</tc-config>
+  <logger name="net.schmizz.sshj" level="ERROR"/>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>
