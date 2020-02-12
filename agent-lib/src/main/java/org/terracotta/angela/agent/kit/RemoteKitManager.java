@@ -17,26 +17,21 @@
 
 package org.terracotta.angela.agent.kit;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.terracotta.angela.agent.Agent;
 import org.terracotta.angela.common.distribution.Distribution;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.topology.InstanceId;
 import org.terracotta.angela.common.util.DirectoryUtils;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Stream;
+
+import static org.terracotta.angela.common.util.FileUtils.cleanupPermissions;
 
 /**
  * Download the kit tarball from Kratos
@@ -74,32 +69,6 @@ public class RemoteKitManager extends KitManager {
       return workingInstallBasePath;
     } catch (IOException e) {
       throw new RuntimeException("Can not create working install", e);
-    }
-  }
-
-  // TODO : duplicate
-  private void cleanupPermissions(Path dest) {
-    if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
-      return;
-    }
-
-    try (Stream<Path> walk = Files.walk(dest)) {
-      walk.filter(Files::isRegularFile)
-          .filter(path -> {
-            String name = path.getFileName().toString();
-            return name.endsWith(".sh") || name.endsWith("tms.jar");
-          })
-          .forEach(path -> {
-            try {
-              Set<PosixFilePermission> perms = new HashSet<>(Files.getPosixFilePermissions(path));
-              perms.addAll(EnumSet.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
-              Files.setPosixFilePermissions(path, perms);
-            } catch (IOException ioe) {
-              throw new UncheckedIOException(ioe);
-            }
-          });
-    } catch (IOException ioe) {
-      throw new UncheckedIOException(ioe);
     }
   }
 
