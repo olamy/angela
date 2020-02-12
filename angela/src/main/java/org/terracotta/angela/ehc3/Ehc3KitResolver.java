@@ -37,7 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.terracotta.angela.common.topology.PackageType.KIT;
-import static org.terracotta.angela.common.util.KitUtils.extract;
+import static org.terracotta.angela.common.util.KitUtils.extractZip;
 
 /**
  * @author Aurelien Broszniowski
@@ -58,7 +58,7 @@ public class Ehc3KitResolver extends KitResolver {
   @Override
   public void createLocalInstallFromInstaller(Version version, PackageType packageType, License license, Path localInstallerPath, Path rootInstallationPath) {
     if (packageType == KIT) {
-      extract(localInstallerPath, rootInstallationPath);
+      extractZip(localInstallerPath, rootInstallationPath);
     } else {
       throw new IllegalArgumentException("PackageType " + packageType + " is not supported by " + getClass().getSimpleName());
     }

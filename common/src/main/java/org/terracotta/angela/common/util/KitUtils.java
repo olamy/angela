@@ -32,17 +32,12 @@ import java.util.zip.GZIPInputStream;
 import static org.terracotta.angela.common.util.FileUtils.cleanupPermissions;
 
 public class KitUtils {
-  public static void extract(Path kitInstaller, Path kitDest) {
-    try {
-      extractZip(kitInstaller, kitDest);
-    } catch (IOException ioe) {
-      throw new UncheckedIOException("Error when extracting installer package", ioe);
-    }
-  }
-
-  public static void extractZip(Path kitInstaller, Path kitDest) throws IOException {
+  public static void extractZip(Path kitInstaller, Path kitDest) {
     try (ArchiveInputStream archiveIs = new ZipArchiveInputStream(new BufferedInputStream(Files.newInputStream(kitInstaller)))) {
       extractArchive(archiveIs, kitDest);
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      throw new UncheckedIOException("Error when extracting installer package", ioe);
     }
     cleanupPermissions(kitDest);
   }
@@ -65,10 +60,13 @@ public class KitUtils {
     }
   }
 
-  public static void extractTarGz(Path kitInstaller, Path kitDest) throws IOException {
+  public static void extractTarGz(Path kitInstaller, Path kitDest) {
     try (ArchiveInputStream archiveIs = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(Files
         .newInputStream(kitInstaller))))) {
       extractArchive(archiveIs, kitDest);
+    } catch (IOException ioe) {
+      ioe.printStackTrace();
+      throw new UncheckedIOException("Error when extracting installer package", ioe);
     }
     cleanupPermissions(kitDest);
   }
@@ -78,7 +76,8 @@ public class KitUtils {
       ArchiveEntry entry = archiveIs.getNextEntry();
       return entry.getName().split("/")[0];
     } catch (IOException ioe) {
-      throw new UncheckedIOException(ioe);
+      ioe.printStackTrace();
+      throw new UncheckedIOException("Error when getting parent dir from archive", ioe);
     }
   }
 }
