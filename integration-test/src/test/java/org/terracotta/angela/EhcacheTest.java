@@ -17,16 +17,6 @@
 
 package org.terracotta.angela;
 
-import org.terracotta.angela.client.ClientArray;
-import org.terracotta.angela.client.ClientArrayFuture;
-import org.terracotta.angela.client.ClientJob;
-import org.terracotta.angela.client.ClusterFactory;
-import org.terracotta.angela.client.config.ConfigurationContext;
-import org.terracotta.angela.client.config.custom.CustomConfigurationContext;
-import org.terracotta.angela.common.topology.ClientArrayTopology;
-import org.terracotta.angela.common.topology.LicenseType;
-import org.terracotta.angela.common.topology.PackageType;
-import org.terracotta.angela.common.topology.Topology;
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
 import org.ehcache.clustered.client.config.builders.ClusteredResourcePoolBuilder;
@@ -37,31 +27,41 @@ import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.EntryUnit;
 import org.ehcache.config.units.MemoryUnit;
 import org.junit.Test;
+import org.terracotta.angela.client.ClientArray;
+import org.terracotta.angela.client.ClientArrayFuture;
+import org.terracotta.angela.client.ClientJob;
+import org.terracotta.angela.client.ClusterFactory;
+import org.terracotta.angela.client.config.ConfigurationContext;
+import org.terracotta.angela.client.config.custom.CustomConfigurationContext;
+import org.terracotta.angela.common.topology.ClientArrayTopology;
+import org.terracotta.angela.common.topology.LicenseType;
+import org.terracotta.angela.common.topology.PackageType;
+import org.terracotta.angela.common.topology.Topology;
 
 import java.net.URI;
 
+import static junit.framework.TestCase.assertEquals;
+import static org.terracotta.angela.Versions.EHCACHE_SNAPSHOT_VERSION;
+import static org.terracotta.angela.Versions.EHCACHE_VERSION;
 import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
 import static org.terracotta.angela.common.topology.Version.version;
-import static org.terracotta.angela.Versions.EHCACHE_OS_SNAPSHOT_VERSION;
-import static org.terracotta.angela.Versions.EHCACHE_OS_VERSION;
-import static junit.framework.TestCase.assertEquals;
 
-public class EhcacheOsTest {
+public class EhcacheTest {
   @Test
   public void testTsaWithEhcacheReleaseKit() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
-                    tcConfig(version(EHCACHE_OS_VERSION), TestUtils.TC_CONFIG_OS)
+                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    tcConfig(version(EHCACHE_VERSION), TestUtils.TC_CONFIG_A)
                 )
             )
         );
 
-    try (ClusterFactory factory = new ClusterFactory("EhcacheOsTest::testTsaWithEhcacheReleaseKit", configContext)) {
+    try (ClusterFactory factory = new ClusterFactory("EhcacheTest::testTsaWithEhcacheReleaseKit", configContext)) {
       factory.tsa().startAll();
     }
   }
@@ -72,13 +72,13 @@ public class EhcacheOsTest {
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version(EHCACHE_OS_SNAPSHOT_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
-                    tcConfig(version(EHCACHE_OS_SNAPSHOT_VERSION), TestUtils.TC_CONFIG_OS)
+                    distribution(version(EHCACHE_SNAPSHOT_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    tcConfig(version(EHCACHE_SNAPSHOT_VERSION), TestUtils.TC_CONFIG_A)
                 )
             )
         );
 
-    try (ClusterFactory factory = new ClusterFactory("EhcacheOsTest::testTsaWithEhcacheSnapshotKit", configContext)) {
+    try (ClusterFactory factory = new ClusterFactory("EhcacheTest::testTsaWithEhcacheSnapshotKit", configContext)) {
       factory.tsa().startAll();
     }
   }
@@ -89,20 +89,20 @@ public class EhcacheOsTest {
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
-                    tcConfig(version(EHCACHE_OS_VERSION), TestUtils.TC_CONFIG_OS)
+                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    tcConfig(version(EHCACHE_VERSION), TestUtils.TC_CONFIG_A)
                 )
             )
         ).clientArray(
             clientArray -> clientArray.clientArrayTopology(
                 new ClientArrayTopology(
-                    distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
                     newClientArrayConfig().host("localhost")
                 )
             )
         );
 
-    try (ClusterFactory factory = new ClusterFactory("EhcacheOsTest::testClusteredEhcacheOperations", configContext)) {
+    try (ClusterFactory factory = new ClusterFactory("EhcacheTest::testClusteredEhcacheOperations", configContext)) {
       factory.tsa().startAll();
       ClientArray clientArray = factory.clientArray();
       String uri = factory.tsa().uri().toString() + "/clustered-cache-manager";

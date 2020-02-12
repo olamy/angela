@@ -77,11 +77,11 @@ include::../java/GettingStarted.java[tags=runClient]
 
 == Full example
 
-See class EhcacheOsTest
+See class EhcacheTest
 
 [source,java]
 ----
-include::../../../../integration-test/src/test/java/org/terracotta/angela/EhcacheOsTest.java[]
+include::../../../../integration-test/src/test/java/org/terracotta/angela/EhcacheTest.java[]
 ----
 
 

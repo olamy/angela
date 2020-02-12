@@ -198,7 +198,7 @@ public class TsaConfigTest {
   public void testOneTcConfig() {
     Version version = mock(Version.class);
     when(version.getMajor()).thenReturn(10);
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(version, getClass().getResource("/terracotta/10/tc-config10.xml")));
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(version, getClass().getResource("/tc-config.xml")));
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(1));
   }
@@ -207,8 +207,8 @@ public class TsaConfigTest {
   public void testMultipleTcConfigs() {
     Version version = mock(Version.class);
     when(version.getMajor()).thenReturn(10);
-    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(version, getClass().getResource("/terracotta/10/tc-config10.xml")),
-        TcConfig.tcConfig(version, getClass().getResource("/terracotta/10/tc-config10.xml")));
+    TsaConfig tsaConfig = TsaConfig.tsaConfig(TcConfig.tcConfig(version, getClass().getResource("/tc-config.xml")),
+        TcConfig.tcConfig(version, getClass().getResource("/tc-config.xml")));
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(2));
   }
@@ -217,8 +217,8 @@ public class TsaConfigTest {
   public void testListOfTcConfigs() {
     Version version = mock(Version.class);
     when(version.getMajor()).thenReturn(10);
-    List<TcConfig> tcConfigList = Arrays.asList(TcConfig.tcConfig(version, getClass().getResource("/terracotta/10/tc-config10.xml")),
-        TcConfig.tcConfig(version, getClass().getResource("/terracotta/10/tc-config10.xml")));
+    List<TcConfig> tcConfigList = Arrays.asList(TcConfig.tcConfig(version, getClass().getResource("/tc-config.xml")),
+        TcConfig.tcConfig(version, getClass().getResource("/tc-config.xml")));
     TsaConfig tsaConfig = TsaConfig.tsaConfig(tcConfigList);
     final List<TcConfig> tcConfigs = tsaConfig.getTcConfigs();
     assertThat(tcConfigs.size(), equalTo(2));

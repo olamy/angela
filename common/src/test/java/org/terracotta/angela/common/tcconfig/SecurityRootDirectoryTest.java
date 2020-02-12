@@ -203,7 +203,7 @@ public class SecurityRootDirectoryTest {
 
   @Test
   public void testSerializationWithKeyStoreFiles() throws Exception {
-    Path securityRootDirectory = Paths.get(getClass().getResource("/terracotta/10/security").toURI());
+    Path securityRootDirectory = Paths.get(getClass().getResource("/security").toURI());
     serializeAndVerify(securityRootDirectory);
   }
 

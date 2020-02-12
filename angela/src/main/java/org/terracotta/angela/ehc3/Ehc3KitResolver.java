@@ -22,7 +22,6 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.terracotta.angela.KitResolver;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.topology.LicenseType;
@@ -34,16 +33,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Stream;
 
 import static org.terracotta.angela.common.topology.PackageType.KIT;
+import static org.terracotta.angela.common.util.KitUtils.extract;
 
 /**
  * @author Aurelien Broszniowski
@@ -70,68 +64,6 @@ public class Ehc3KitResolver extends KitResolver {
     }
   }
 
-  private void extract(Path kitInstaller, Path kitDest) {
-    try {
-      extractZip(kitInstaller, kitDest);
-    } catch (IOException ioe) {
-      throw new UncheckedIOException("Error when extracting installer package", ioe);
-    }
-    logger.info("kit installation path: {}", kitDest.toAbsolutePath());
-  }
-
-  // TODO : duplicate
-  private void extractZip(Path kitInstaller, Path kitDest) throws IOException {
-    try (ArchiveInputStream archiveIs = new ZipArchiveInputStream(new BufferedInputStream(Files.newInputStream(kitInstaller)))) {
-      extractArchive(archiveIs, kitDest);
-    }
-    cleanupPermissions(kitDest);
-  }
-
-  // TODO : duplicate
-  private void extractArchive(ArchiveInputStream archiveIs, Path pathOutput) throws IOException {
-    while (true) {
-      ArchiveEntry archiveEntry = archiveIs.getNextEntry();
-      if (archiveEntry == null) {
-        break;
-      }
-
-      Path pathEntryOutput = pathOutput.resolve(archiveEntry.getName());
-      if (!archiveEntry.isDirectory()) {
-        Path parentPath = pathEntryOutput.getParent();
-        if (!Files.isDirectory(parentPath)) {
-          Files.createDirectories(parentPath);
-        }
-        Files.copy(archiveIs, pathEntryOutput);
-      }
-    }
-  }
-
-  // TODO : duplicate
-  private void cleanupPermissions(Path dest) {
-    if (!FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
-      return;
-    }
-
-    try (Stream<Path> walk = Files.walk(dest)) {
-      walk.filter(Files::isRegularFile)
-          .filter(path -> {
-            String name = path.getFileName().toString();
-            return name.endsWith(".sh") || name.endsWith("tms.jar");
-          })
-          .forEach(path -> {
-            try {
-              Set<PosixFilePermission> perms = new HashSet<>(Files.getPosixFilePermissions(path));
-              perms.addAll(EnumSet.of(PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE));
-              Files.setPosixFilePermissions(path, perms);
-            } catch (IOException ioe) {
-              throw new UncheckedIOException(ioe);
-            }
-          });
-    } catch (IOException ioe) {
-      throw new UncheckedIOException(ioe);
-    }
-  }
-
   @Override
   public Path resolveKitInstallationPath(Version version, PackageType packageType, Path localInstallerPath, Path rootInstallationPath) {
     return rootInstallationPath.resolve(getDirFromArchive(packageType, localInstallerPath));
@@ -139,7 +71,7 @@ public class Ehc3KitResolver extends KitResolver {
 
   private String getDirFromArchive(PackageType packageType, Path localInstaller) {
     if (packageType == KIT) {
-    return getParentDirFromZip(localInstaller);
+      return getParentDirFromZip(localInstaller);
     }
     throw new IllegalArgumentException("PackageType " + packageType + " is not supported by " + getClass().getSimpleName());
   }
@@ -168,7 +100,7 @@ public class Ehc3KitResolver extends KitResolver {
 
         URL kitUrl = new URL(sb.toString());
         URL md5Url = new URL(sb.toString() + ".md5");
-        return new URL[] { kitUrl, md5Url };
+        return new URL[]{kitUrl, md5Url};
       } else {
         throw new IllegalArgumentException("PackageType " + packageType + " is not supported by " + getClass().getSimpleName());
       }

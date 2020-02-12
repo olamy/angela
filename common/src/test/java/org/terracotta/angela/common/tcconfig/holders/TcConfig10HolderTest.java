@@ -33,7 +33,7 @@ public class TcConfig10HolderTest {
 
   @Test
   public void testUpdateSecurityRootDirectoryLocation() throws Exception {
-    try (InputStream tcConfigStream = TcConfig10HolderTest.class.getResourceAsStream("/terracotta/10/tc-config10.xml")) {
+    try (InputStream tcConfigStream = TcConfig10HolderTest.class.getResourceAsStream("/tc-config.xml")) {
       TcConfig10Holder tcConfig10Holder = new TcConfig10Holder(tcConfigStream);
       assertThat(tcConfig10Holder.getSecurityRootDirectory(), is("initial_path"));
 
