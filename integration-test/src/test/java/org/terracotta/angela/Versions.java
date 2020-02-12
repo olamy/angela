@@ -23,8 +23,8 @@ import java.util.Properties;
 
 public class Versions {
 
-  public static final String EHCACHE_OS_VERSION;
-  public static final String EHCACHE_OS_SNAPSHOT_VERSION;
+  public static final String EHCACHE_VERSION;
+  public static final String EHCACHE_SNAPSHOT_VERSION;
 
   static {
     try {
@@ -32,11 +32,10 @@ public class Versions {
       try (InputStream in = Versions.class.getResourceAsStream("versions.properties")) {
         versionsProps.load(in);
       }
-      EHCACHE_OS_VERSION = versionsProps.getProperty("ehcache-os.version");
-      EHCACHE_OS_SNAPSHOT_VERSION = versionsProps.getProperty("ehcache-os-snapshot.version");
+      EHCACHE_VERSION = versionsProps.getProperty("ehcache.version");
+      EHCACHE_SNAPSHOT_VERSION = versionsProps.getProperty("ehcache-snapshot.version");
     } catch (IOException ioe) {
       throw new RuntimeException("Cannot find versions.properties in classpath");
     }
   }
-
 }

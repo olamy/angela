@@ -49,7 +49,7 @@ public class TsaTest {
     TcConfig tcConfig = mock(TcConfig.class);
     License license = mock(License.class);
     TsaConfigurationContext tsaConfigurationContext = mock(TsaConfigurationContext.class);
-    when(tsaConfigurationContext.getTopology()).then(invocationOnMock -> new Topology(distribution(version("10.3.0.0.0"), PackageType.KIT, LicenseType.TERRACOTTA), tcConfig));
+    when(tsaConfigurationContext.getTopology()).then(invocationOnMock -> new Topology(distribution(version("3.8.1"), PackageType.KIT, LicenseType.EHCACHE_OS), tcConfig));
     when(tsaConfigurationContext.getLicense()).thenReturn(license);
     Tsa tsa = new Tsa(null, null, tsaConfigurationContext);
     List<TerracottaServer> terracottaServerList = new ArrayList<>();

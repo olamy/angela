@@ -20,5 +20,6 @@ package org.terracotta.angela;
 import java.net.URL;
 
 public class TestUtils {
-  public static final URL TC_CONFIG_OS = TestUtils.class.getResource("/terracotta/10/tc-config-a-os.xml");
+  public static final URL TC_CONFIG_A = TestUtils.class.getResource("/configs/tc-config-a.xml");
+  public static final URL TC_CONFIG_AP = TestUtils.class.getResource("/configs/tc-config-ap.xml");
 }

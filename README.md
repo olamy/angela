@@ -40,17 +40,15 @@ We expect the TSA to contain one Terracotta server running on localhost, and thi
     ConfigurationContext configContext = customConfigurationContext() (1)
         .tsa(tsa -> tsa (2)
             .topology(new Topology( (3)
-                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), (4)
-                tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-a.xml")))) (5)
-            .license(LICENSE) (6)
+                distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), (4)
+                tcConfig(version(EHCACHE_VERSION), getClass().getResource("/tc-config-a.xml")))) (5)
         );
 
-    ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster", configContext); (7)
-    Tsa tsa = factory.tsa() (8)
-        .startAll() (9)
-        .licenseAll(); (10)
+    ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster", configContext); (6)
+    Tsa tsa = factory.tsa() (7)
+        .startAll() (8)
 
-    factory.close(); (11)
+    factory.close(); (9)
 ```
 
   1) Create a custom configuration context that is going to hold all the configurable bits
@@ -63,37 +61,32 @@ We expect the TSA to contain one Terracotta server running on localhost, and thi
 
   5) Specify the Terracotta cluster config
 
-  6) Specify the license in case the distribution is enterprise
+  6) Create a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
 
-  7) Create a Tsa logical instance that serves as an endpoint to call functionalities regarding the Tsa lifecycle
+  7) Install the Tsa from the distribution on the appropriate server(s) (localhost in this case)
 
-  8) Install the Tsa from the distribution on the appropriate server(s) (localhost in this case)
+  8) Start all servers from the Tsa
 
-  9) Start all servers from the Tsa
-
-  10) Install the license with the cluster tool
-
-  11) Stop all Terracotta servers and cleans up the installation
+  9) Stop all Terracotta servers and cleans up the installation
 
 ## Tsa API
 
 ```
       Tsa tsa = factory.tsa() (1)
           .startAll() (2)
-          .licenseAll(); (3)
 
-      TerracottaServer active = tsa.getActive(); (4)
-      Collection<TerracottaServer> actives = tsa.getActives(); (5)
-      TerracottaServer passive = tsa.getPassive(); (6)
-      Collection<TerracottaServer> passives = tsa.getPassives(); (7)
+      TerracottaServer active = tsa.getActive(); (3)
+      Collection<TerracottaServer> actives = tsa.getActives(); (4)
+      TerracottaServer passive = tsa.getPassive(); (5)
+      Collection<TerracottaServer> passives = tsa.getPassives(); (6)
 
-      tsa.stopAll(); (8)
+      tsa.stopAll(); (7)
 
-      tsa.start(active); (9)
+      tsa.start(active); (8)
       tsa.start(passive);
 
-      tsa.stop(active); (10)
-      Callable<TerracottaServerState> serverState = () -> tsa.getState(passive); (11)
+      tsa.stop(active); (9)
+      Callable<TerracottaServerState> serverState = () -> tsa.getState(passive); (10)
       Awaitility.await()
           .pollInterval(1, SECONDS)
           .atMost(15, SECONDS)
@@ -104,60 +97,55 @@ We expect the TSA to contain one Terracotta server running on localhost, and thi
 
   2) Start all Terracotta servers
 
-  3) License all Terracotta servers
+  3) Get the reference of the active server. Null is returned if there is none. An exception is throw if there are more than one
 
-  4) Get the reference of the active server. Null is returned if there is none. An exception is throw if there are more than one
+  4) Get the references of all active servers. Get an empty collection if there are none.
 
-  5) Get the references of all active servers. Get an empty collection if there are none.
+  5) Get the reference of the passive server. Null is returned if there is none. An exception is throw if there are more than one
 
-  6) Get the reference of the passive server. Null is returned if there is none. An exception is throw if there are more than one
+  6) Get the references of all passive servers. Get an empty collection if there are none.
 
-  7) Get the references of all passive servers. Get an empty collection if there are none.
+  7) Stop all Terracotta servers
 
-  8) Stop all Terracotta servers
+  8) Start one Terracotta server
 
-  9) Start one Terracotta server
+  9) Stop one Terracotta server
 
-  10) Stop one Terracotta server
-
-  11) Get the current state of the Terracotta server
+  10) Get the current state of the Terracotta server
 
 ## Client array example
 
 ```
     ConfigurationContext configContext = customConfigurationContext()
         .clientArray(clientArray -> clientArray (1)
-            .license(LICENSE) (2)
-            .clientArrayTopology(new ClientArrayTopology( (3)
-                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), (4)
-                newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) (5)
+            .clientArrayTopology(new ClientArrayTopology( (2)
+                distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), (3)
+                newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) (4)
             )
         );
     ClusterFactory factory = new ClusterFactory("GettingStarted::runClient", configContext);
-    ClientArray clientArray = factory.clientArray(); (6)
-    ClientArrayFuture f = clientArray.executeOnAll((context) -> System.out.println("Hello")); (7)
-    f.get(); (8)
+    ClientArray clientArray = factory.clientArray(); (5)
+    ClientArrayFuture f = clientArray.executeOnAll((context) -> System.out.println("Hello")); (6)
+    f.get(); (7)
 
     factory.close();
 ```
 
   1) Define the client array config
 
-  2) Specify the license that the TC clients will use
+  2) Define the client array topology
 
-  3) Define the client array topology
+  3) Specify the distribution from which to install the client jars
 
-  4) Specify the distribution from which to install the client jars
+  4) Specify the list of hosts that are going to be used by this client array (two clients, both on localhost in this case)
 
-  5) Specify the list of hosts that are going to be used by this client array (two clients, both on localhost in this case)
+  5) Create a client array on the remote servers
 
-  6) Create a client array on the remote servers
+  6) Execute the lambda on all the remote clients
 
-  7) Execute the lambda on all the remote clients
+  7) Wait until all the clients finish their execution
 
-  8) Wait until all the clients finish their execution
-
-Full example : See class [EhcacheOsTest](integration-test/src/test/java/org/terracotta/angela/EhcacheOsTest.java)
+Full example : See class [EhcacheTest](integration-test/src/test/java/org/terracotta/angela/EhcacheTest.java)
 
 ## How to build
 

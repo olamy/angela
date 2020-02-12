@@ -19,8 +19,6 @@ package org.terracotta.angela.common.topology;
 
 import org.terracotta.angela.common.tcconfig.License;
 
-import java.net.URL;
-
 /**
  * @author Aurelien Broszniowski
  */
@@ -54,11 +52,6 @@ public enum LicenseType {
   }
 
   public License defaultLicense() {
-    final URL licenseResource = LicenseType.class.getResource(defaultLicenseResourceName);
-    if (licenseResource == null) {
-      return null;
-    } else {
-      return new License(licenseResource);
-    }
+    return defaultLicenseResourceName == null ? null : new License(LicenseType.class.getResource(defaultLicenseResourceName));
   }
 }

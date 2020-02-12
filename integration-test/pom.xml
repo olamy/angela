@@ -31,15 +31,15 @@
 
   <properties>
     <!-- Terracotta dependencies -->
-    <ehcache-os.version>3.8.1</ehcache-os.version>
-    <ehcache-os-snapshot.version>3.8-SNAPSHOT</ehcache-os-snapshot.version>
+    <ehcache.version>3.8.1</ehcache.version>
+    <ehcache-snapshot.version>3.8-SNAPSHOT</ehcache-snapshot.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.ehcache</groupId>
       <artifactId>ehcache-clustered</artifactId>
-      <version>${ehcache-os.version}</version>
+      <version>${ehcache.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -59,6 +59,11 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
