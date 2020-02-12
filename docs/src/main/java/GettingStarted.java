@@ -23,7 +23,6 @@ import org.terracotta.angela.client.ClusterFactory;
 import org.terracotta.angela.client.Tsa;
 import org.terracotta.angela.client.config.ConfigurationContext;
 import org.terracotta.angela.common.TerracottaServerState;
-import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.topology.ClientArrayTopology;
 import org.terracotta.angela.common.topology.LicenseType;
@@ -45,8 +44,7 @@ import static org.terracotta.angela.common.topology.Version.version;
  * @author Aurelien Broszniowski
  */
 public class GettingStarted {
-  private static final License LICENSE = LicenseType.TERRACOTTA.defaultLicense();
-  private static String TERRACOTTA_VERSION;
+  private static String EHCACHE_OS_VERSION = "3.8.1";
 
   @Test
   public void configureCluster() throws Exception {
@@ -54,47 +52,43 @@ public class GettingStarted {
     ConfigurationContext configContext = customConfigurationContext() // <1>
         .tsa(tsa -> tsa // <2>
             .topology(new Topology( // <3>
-                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
-                tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-a.xml")))) // <5>
-            .license(LICENSE) // <6>
+                distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), // <4>
+                tcConfig(version(EHCACHE_OS_VERSION), getClass().getResource("/tc-config-a.xml")))) // <5>
         );
 
-    ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster", configContext); // <7>
-    Tsa tsa = factory.tsa() // <8>
-        .startAll() // <9>
-        .licenseAll(); // <10>
+    ClusterFactory factory = new ClusterFactory("GettingStarted::configureCluster", configContext); // <6>
+    Tsa tsa = factory.tsa() // <7>
+        .startAll(); // <8>
 
-    factory.close(); // <11>
+    factory.close(); // <9>
     // end::configureCluster[]
   }
 
   @Test
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
-        distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA),
-        tcConfig(version(TERRACOTTA_VERSION), getClass().getResource("/tc-config-ap.xml"))
+        distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+        tcConfig(version(EHCACHE_OS_VERSION), getClass().getResource("/tc-config-ap.xml"))
     );
-    ConfigurationContext configContext = customConfigurationContext().tsa(tsa -> tsa.topology(topology)
-        .license(LICENSE));
+    ConfigurationContext configContext = customConfigurationContext().tsa(tsa -> tsa.topology(topology));
 
     try (ClusterFactory factory = new ClusterFactory("GettingStarted::showTsaApi", configContext)) {
       // tag::showTsaApi[]
       Tsa tsa = factory.tsa() // <1>
-          .startAll() // <2>
-          .licenseAll(); // <3>
+          .startAll(); // <2>
 
-      TerracottaServer active = tsa.getActive(); // <4>
-      Collection<TerracottaServer> actives = tsa.getActives(); // <5>
-      TerracottaServer passive = tsa.getPassive(); // <6>
-      Collection<TerracottaServer> passives = tsa.getPassives(); // <7>
+      TerracottaServer active = tsa.getActive(); // <3>
+      Collection<TerracottaServer> actives = tsa.getActives(); // <4>
+      TerracottaServer passive = tsa.getPassive(); // <5>
+      Collection<TerracottaServer> passives = tsa.getPassives(); // <6>
 
-      tsa.stopAll(); // <8>
+      tsa.stopAll(); // <7>
 
-      tsa.start(active); // <9>
+      tsa.start(active); // <8>
       tsa.start(passive);
 
-      tsa.stop(active); // <10>
-      Callable<TerracottaServerState> serverState = () -> tsa.getState(passive); // <11>
+      tsa.stop(active); // <9>
+      Callable<TerracottaServerState> serverState = () -> tsa.getState(passive); // <10>
       Awaitility.await()
           .pollInterval(1, SECONDS)
           .atMost(15, SECONDS)
@@ -108,16 +102,15 @@ public class GettingStarted {
     // tag::runClient[]
     ConfigurationContext configContext = customConfigurationContext()
         .clientArray(clientArray -> clientArray // <1>
-            .license(LICENSE) // <2>
-            .clientArrayTopology(new ClientArrayTopology( // <3>
-                distribution(version(TERRACOTTA_VERSION), PackageType.KIT, LicenseType.TERRACOTTA), // <4>
-                newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) // <5>
+            .clientArrayTopology(new ClientArrayTopology( // <2>
+                distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), // <3>
+                newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) // <4>
             )
         );
     ClusterFactory factory = new ClusterFactory("GettingStarted::runClient", configContext);
-    ClientArray clientArray = factory.clientArray(); // <6>
-    ClientArrayFuture f = clientArray.executeOnAll((context) -> System.out.println("Hello")); // <7>
-    f.get(); // <8>
+    ClientArray clientArray = factory.clientArray(); // <5>
+    ClientArrayFuture f = clientArray.executeOnAll((context) -> System.out.println("Hello")); // <6>
+    f.get(); // <7>
 
     factory.close();
     // end::runClient[]

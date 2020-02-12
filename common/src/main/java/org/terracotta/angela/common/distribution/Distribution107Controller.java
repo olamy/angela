@@ -17,26 +17,25 @@
 
 package org.terracotta.angela.common.distribution;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.terracotta.angela.common.ClusterToolExecutionResult;
 import org.terracotta.angela.common.ConfigToolExecutionResult;
 import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
+import org.terracotta.angela.common.TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess;
 import org.terracotta.angela.common.TerracottaManagementServerState;
+import org.terracotta.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
 import org.terracotta.angela.common.TerracottaServerState;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
+import org.terracotta.angela.common.topology.PackageType;
 import org.terracotta.angela.common.topology.Topology;
 import org.terracotta.angela.common.util.ExternalLoggers;
 import org.terracotta.angela.common.util.HostPort;
 import org.terracotta.angela.common.util.OS;
 import org.terracotta.angela.common.util.ProcessUtil;
 import org.terracotta.angela.common.util.TriggeringOutputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.terracotta.angela.common.AngelaProperties;
-import org.terracotta.angela.common.TerracottaManagementServerInstance;
-import org.terracotta.angela.common.TerracottaServerInstance;
-import org.terracotta.angela.common.topology.PackageType;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.stream.slf4j.Slf4jStream;
@@ -55,20 +54,22 @@ import java.util.stream.Collectors;
 import static java.io.File.separator;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
+import static org.terracotta.angela.common.AngelaProperties.TMS_FULL_LOGGING;
+import static org.terracotta.angela.common.AngelaProperties.TSA_FULL_LOGGING;
 
 public class Distribution107Controller extends DistributionController {
   private final static Logger LOGGER = LoggerFactory.getLogger(Distribution107Controller.class);
-  private final boolean tsaFullLogging = Boolean.parseBoolean(AngelaProperties.TSA_FULL_LOGGING.getValue());
-  private final boolean tmsFullLogging = Boolean.parseBoolean(AngelaProperties.TMS_FULL_LOGGING.getValue());
+  private final boolean tsaFullLogging = Boolean.parseBoolean(TSA_FULL_LOGGING.getValue());
+  private final boolean tmsFullLogging = Boolean.parseBoolean(TMS_FULL_LOGGING.getValue());
 
   public Distribution107Controller(Distribution distribution) {
     super(distribution);
   }
 
   @Override
-  public TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation,
-                                                                            Topology topology, Map<ServerSymbolicName, Integer> proxiedPorts,
-                                                                            TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
+  public TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation,
+                                                   Topology topology, Map<ServerSymbolicName, Integer> proxiedPorts,
+                                                   TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     Map<String, String> env = buildEnv(tcEnv);
     AtomicReference<TerracottaServerState> stateRef = new AtomicReference<>(TerracottaServerState.STOPPED);
     AtomicInteger javaPid = new AtomicInteger(-1);
@@ -117,11 +118,11 @@ public class Distribution107Controller extends DistributionController {
     if (!watchedProcess.isAlive()) {
       throw new RuntimeException("Terracotta server process died in its infancy : " + terracottaServer.getServerSymbolicName());
     }
-    return new TerracottaServerInstance.TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
+    return new TerracottaServerInstanceProcess(stateRef, watchedProcess.getPid(), javaPid);
   }
 
   @Override
-  public TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment tcEnv) {
+  public TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment tcEnv) {
     Map<String, String> env = buildEnv(tcEnv);
 
     AtomicReference<TerracottaManagementServerState> stateRef = new AtomicReference<>(TerracottaManagementServerState.STOPPED);
@@ -130,14 +131,13 @@ public class Distribution107Controller extends DistributionController {
     TriggeringOutputStream outputStream = TriggeringOutputStream
         .triggerOn(
             compile("^.*\\Qstarted on port\\E.*$"),
-            mr -> stateRef.set(TerracottaManagementServerState.STARTED)
-        ).andTriggerOn(
+            mr -> stateRef.set(TerracottaManagementServerState.STARTED))
+        .andTriggerOn(
             compile("^.*\\QStarting TmsApplication\\E.*with PID (\\d+).*$"),
-            mr -> javaPid.set(parseInt(mr.group(1)))
-        ).andTriggerOn(
+            mr -> javaPid.set(parseInt(mr.group(1))))
+        .andTriggerOn(
             tmsFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
-            mr -> ExternalLoggers.tmsLogger.info(mr.group())
-        );
+            mr -> ExternalLoggers.tmsLogger.info(mr.group()));
 
     WatchedProcess<TerracottaManagementServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTmsCommand(installLocation))
@@ -159,11 +159,11 @@ public class Distribution107Controller extends DistributionController {
 
     int wrapperPid = watchedProcess.getPid();
     int javaProcessPid = javaPid.get();
-    return new TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
+    return new TerracottaManagementServerInstanceProcess(stateRef, wrapperPid, javaProcessPid);
   }
 
   @Override
-  public void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
+  public void stopTms(File installLocation, TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     LOGGER.debug("Destroying TMS process");
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
       try {
@@ -190,10 +190,10 @@ public class Distribution107Controller extends DistributionController {
   public ConfigToolExecutionResult invokeConfigTool(File installLocation, TerracottaCommandLineEnvironment tcEnv, String... arguments) {
     List<String> command = new ArrayList<>();
     command.add(installLocation
-                + separator + "tools"
-                + separator + "config-tool"
-                + separator + "bin"
-                + separator + "config-tool" + OS.INSTANCE.getShellExtension());
+        + separator + "tools"
+        + separator + "config-tool"
+        + separator + "bin"
+        + separator + "config-tool" + OS.INSTANCE.getShellExtension());
     command.addAll(Arrays.asList(arguments));
     LOGGER.info("Invoking config tool with args: {}", Arrays.asList(arguments));
 
@@ -203,8 +203,8 @@ public class Distribution107Controller extends DistributionController {
           .environment(buildEnv(tcEnv))
           .readOutput(true)
           .redirectErrorStream(true)
-          .redirectErrorAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
-          .redirectOutputAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asError())
+          .redirectOutputAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
+          .redirectErrorAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asError())
           .execute();
       return new ConfigToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
     } catch (Exception e) {

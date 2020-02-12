@@ -16,27 +16,7 @@
   ~ Terracotta, Inc., a Software AG company
   -->
 
-<tc-config xmlns="http://www.terracotta.org/config"
-           xmlns:ohr="http://www.terracotta.org/config/offheap-resource"
-           xmlns:data="http://www.terracottatech.com/config/data-roots"
-           xmlns:persistence="http://www.terracottatech.com/config/platform-persistence">
-
-  <plugins>
-    <config>
-      <ohr:offheap-resources>
-        <ohr:resource name="offheap" unit="GB">1</ohr:resource>
-      </ohr:offheap-resources>
-    </config>
-    <config>
-      <data:data-directories>
-        <data:directory use-for-platform="true" name="platform">platform</data:directory>
-        <data:directory name="data">data</data:directory>
-      </data:data-directories>
-    </config>
-    <service>
-      <persistence:platform-persistence data-directory-id="data"/>
-    </service>
-  </plugins>
+<tc-config xmlns="http://www.terracotta.org/config">
 
   <servers>
     <server host="localhost" name="Server1">
