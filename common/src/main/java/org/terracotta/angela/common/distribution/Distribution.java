@@ -84,7 +84,8 @@ public class Distribution {
   }
 
   public DistributionController createDistributionController() {
-    if (version.getMajor() == 10 && version.getMinor() == 7) {
+    //TODO: Remove version.isSnapshot() check once dynamic-config is open sourced
+    if (version.getMajor() == 10 && version.getMinor() == 7 && version.isSnapshot()) {
       return new Distribution107Controller(this);
     }
     if (version.getMajor() == 10 || version.getMajor() == 3) {
