@@ -88,8 +88,9 @@ public class LocalKitManager extends KitManager {
       Path localInstallerPath = rootInstallationPath.resolve(
           kitResolver.resolveLocalInstallerPath(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType()));
       logger.info("Checking if local kit is available at: {}", localInstallerPath);
-      lockConcurrentInstall(localInstallerPath);
+
       try {
+        lockConcurrentInstall(localInstallerPath);
         if (!isValidLocalInstallerFilePath(offline, localInstallerPath)) {
           logger.info("Local kit at: {} found to be invalid. Downloading a fresh installer", localInstallerPath);
           kitResolver.downloadLocalInstaller(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType(), localInstallerPath);
@@ -101,7 +102,7 @@ public class LocalKitManager extends KitManager {
           logger.info("Local install not available at: {}", this.kitInstallationPath);
           if (offline) {
             throw new IllegalArgumentException("Can not install the kit version " + distribution + " in offline mode because" +
-                                               " the kit compressed package is not available. Please run in online mode with an internet connection.");
+                " the kit compressed package is not available. Please run in online mode with an internet connection.");
           }
           kitResolver.createLocalInstallFromInstaller(distribution.getVersion(), distribution.getPackageType(), license, localInstallerPath, rootInstallationPath);
         }
@@ -116,17 +117,20 @@ public class LocalKitManager extends KitManager {
   }
 
   void unlockConcurrentInstall(Path localInstallerPath) {
-    logger.debug(Thread.currentThread().getId() +" unlock");
-    File file = localInstallerPath.resolve(INSTALLATION_LOCK_FILE_NAME).toFile();
+    logger.debug(Thread.currentThread().getId() + " unlock");
+    File file = localInstallerPath.getParent().resolve(INSTALLATION_LOCK_FILE_NAME).toFile();
     final boolean deleted = file.delete();
     if (!deleted) {
-      logger.error("Angela Installer lock file can not be deleted when unlocking at {}", file.getAbsolutePath());
+      logger.error("Installer lock file {} could not be deleted", file.getAbsolutePath());
+    } else {
+      logger.info("Deleted installer lock file {}", file);
     }
   }
 
   void lockConcurrentInstall(Path localInstallerPath) {
-    logger.debug(Thread.currentThread().getId() +" lock");
-    File file = localInstallerPath.resolve("angela-install.lock").toFile();
+    logger.debug(Thread.currentThread().getId() + " lock");
+    File file = localInstallerPath.getParent().resolve(INSTALLATION_LOCK_FILE_NAME).toFile();
+    logger.info("Creating Installer lock file at: {}", file);
     try {
       if (!file.createNewFile()) {
         long diff = new Date().getTime() - file.lastModified();
@@ -140,11 +144,11 @@ public class LocalKitManager extends KitManager {
             logger.error("Angela Installer lock file can not be created at {}", file.getAbsolutePath());
           }
         }
-        logger.debug(Thread.currentThread().getId() +" wait");
+        logger.debug(Thread.currentThread().getId() + " wait");
         for (int i = 0; i < 20; i++) {
           Thread.sleep(6000);
           if (file.createNewFile()) {
-            logger.debug(Thread.currentThread().getId() +" pass");
+            logger.debug(Thread.currentThread().getId() + " pass");
             break;
           }
         }
@@ -153,7 +157,7 @@ public class LocalKitManager extends KitManager {
       e.printStackTrace();
       logger.error("Angela Installer lock file issue at {}", file.getAbsolutePath());
     }
-    logger.debug(Thread.currentThread().getId() +" pass");
+    logger.debug(Thread.currentThread().getId() + " pass");
 
   }
 
