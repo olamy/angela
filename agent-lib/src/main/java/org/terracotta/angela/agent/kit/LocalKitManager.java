@@ -129,7 +129,9 @@ public class LocalKitManager extends KitManager {
 
   void lockConcurrentInstall(Path localInstallerPath) {
     logger.debug(Thread.currentThread().getId() + " lock");
-    File file = localInstallerPath.getParent().resolve(INSTALLATION_LOCK_FILE_NAME).toFile();
+    Path lockDir = localInstallerPath.getParent();
+    lockDir.toFile().mkdirs();
+    File file = lockDir.resolve(INSTALLATION_LOCK_FILE_NAME).toFile();
     logger.info("Creating Installer lock file at: {}", file);
     try {
       if (!file.createNewFile()) {
