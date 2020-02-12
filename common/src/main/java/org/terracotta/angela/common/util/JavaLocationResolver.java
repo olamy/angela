@@ -85,6 +85,16 @@ public class JavaLocationResolver {
           if (vendors == null) {
             return true;
           }
+          boolean vendorsNull = true;
+          for (String vendor : vendors) {
+            if (!vendor.equals("null")) {
+              vendorsNull = false;
+              break;
+            }
+          }
+          if (vendorsNull) {
+            return true;
+          }
           for (String vendor : vendors) {
             if (vendor.equalsIgnoreCase(jdk.getVendor())) {
               return true;

@@ -23,6 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.terracotta.angela.common.AngelaProperties.JAVA_BUILD_VENDOR;
+
 /**
  * Instances of this class are immutable.
  */
@@ -35,7 +37,7 @@ public class TerracottaCommandLineEnvironment {
    * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
    */
   @Deprecated
-  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Collections.singletonList("zulu")));
+  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = Collections.unmodifiableSet(new HashSet<>(Collections.singletonList(JAVA_BUILD_VENDOR.getValue())));
 
   /**
    * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.

@@ -167,7 +167,7 @@ Be careful not to cd directly into the module, you would not use the right kit v
 
 ## Specify JVM vendor
 
-    -Djava.build.vendor=zulu
+    -Dangela.java.vendor=zulu
 
 ## Things to know
 
