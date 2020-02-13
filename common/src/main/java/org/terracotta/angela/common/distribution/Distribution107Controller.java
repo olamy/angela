@@ -178,7 +178,12 @@ public class Distribution107Controller extends DistributionController {
   public void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName,
       Integer> proxyTsaPorts, SecurityRootDirectory srd, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServer server = topology.getServers().get(0);
-    invokeConfigTool(location, tcEnv, "activate", "-n", clusterName, "-l", licensePath, "-s", server.getHostPort());
+    List<String> args = new ArrayList<>(Arrays.asList("activate", "-n", clusterName, "-s", server.getHostPort()));
+    if (licensePath != null) {
+      args.add("-l");
+      args.add(licensePath);
+    }
+    invokeConfigTool(location, tcEnv, args.toArray(new String[0]));
   }
 
   @Override
