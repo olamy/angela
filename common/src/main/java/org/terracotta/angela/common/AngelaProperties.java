@@ -41,6 +41,8 @@ public enum AngelaProperties {
   TSA_FULL_LOGGING("angela.tsa.fullLogging", "false"),
   JAVA_BUILD_VENDOR("angela.java.vendor","zulu"),
 
+  JDK_SECURITY_ALLOW_NON_CA_ANCHOR("jdk.security.allowNonCaAnchor", "false"),
+
   // Deprecated properties
   KITS_DIR("kitsDir", Paths.get("/data/angela").toAbsolutePath().toString()),
   KIT_INSTALLATION_PATH("kitInstallationPath", null),
@@ -79,6 +81,10 @@ public enum AngelaProperties {
 
   public void clearProperty() {
     System.clearProperty(propertyName);
+  }
+
+  public String getJvmFormattedProperty() {
+    return "-D" + getPropertyName() + "=" + getValue();
   }
 
   /**

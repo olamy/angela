@@ -18,12 +18,14 @@
 package org.terracotta.angela.common;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.terracotta.angela.common.AngelaProperties.JAVA_BUILD_VENDOR;
+import static org.terracotta.angela.common.AngelaProperties.JDK_SECURITY_ALLOW_NON_CA_ANCHOR;
 
 /**
  * Instances of this class are immutable.
@@ -45,8 +47,8 @@ public class TerracottaCommandLineEnvironment {
   @Deprecated
   public static final String DEFAULT_JDK_VERSION = "1.8";
 
-  public static final TerracottaCommandLineEnvironment DEFAULT = new TerracottaCommandLineEnvironment(DEFAULT_JDK_VERSION, DEFAULT_ALLOWED_JDK_VENDORS, null);
-
+ public static final TerracottaCommandLineEnvironment DEFAULT = new TerracottaCommandLineEnvironment(DEFAULT_JDK_VERSION, DEFAULT_ALLOWED_JDK_VENDORS,
+      Arrays.asList(JDK_SECURITY_ALLOW_NON_CA_ANCHOR.getJvmFormattedProperty()));
   private final String javaVersion;
   private final Set<String> javaVendors;
   private final List<String> javaOpts;
