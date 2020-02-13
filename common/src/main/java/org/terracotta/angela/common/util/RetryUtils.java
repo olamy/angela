@@ -17,32 +17,68 @@
 
 package org.terracotta.angela.common.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+
+import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class RetryUtils {
+  private static final Logger logger = LoggerFactory.getLogger(RetryUtils.class);
+
   /**
    * Waits for {@code maxRetryCount} time for the {@code condition} to be true.
    *
-   * @param condition the condition to evaluate
-   * @param maxWaitTimeMillis   the maximum time in milliseconds to wait before giving up
+   * @param condition         the condition to evaluate
+   * @param maxWaitTimeMillis the maximum time in milliseconds to wait before giving up
    * @return {@code true} if the condition was evaluated to true within the given constraints, false otherwise
    */
   public static boolean waitFor(Callable<Boolean> condition, int maxWaitTimeMillis) {
-    int currentRetryAttempt = 0;
-    int totalBackOffMillis = 0;
-    while (totalBackOffMillis < maxWaitTimeMillis) {
-      currentRetryAttempt++;
-      try {
-        if (!condition.call()) {
-          totalBackOffMillis += 100 * currentRetryAttempt;
-          Thread.sleep(totalBackOffMillis);
-        } else {
-          return true;
-        }
-      } catch (Exception e) {
-        throw new RuntimeException(e);
+    int currRetryTime = min(maxWaitTimeMillis, 100);
+    int timeRemaining = maxWaitTimeMillis;
+    ExecutorService executorService = Executors.newSingleThreadExecutor(Thread::new);
+    boolean success = false;
+
+    while (currRetryTime <= maxWaitTimeMillis) {
+      long timeout = min(currRetryTime, timeRemaining); //Keep track of how much time remains
+      Future<Boolean> future = executorService.submit(condition);
+      if (getResult(timeout, future)) {
+        logger.info("Condition became true after {}ms ", currRetryTime);
+        success = true;
+        break;
+      } else {
+        timeRemaining -= currRetryTime;
+        currRetryTime *= 2; //Double retry timeout on each failure
       }
     }
-    return false;
+
+    cleanup(executorService);
+    return success;
+  }
+
+  private static Boolean getResult(long timeout, Future<Boolean> future) {
+    Boolean result;
+    try {
+      result = future.get(timeout, MILLISECONDS);
+      return result;
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      return false;
+    }
+  }
+
+  private static void cleanup(ExecutorService executorService) {
+    try {
+      executorService.shutdownNow();
+      executorService.awaitTermination(1, MILLISECONDS);
+    } catch (InterruptedException e) {
+      // Ignore
+    }
   }
 }
