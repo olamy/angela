@@ -52,7 +52,7 @@ public class GettingStarted {
     ConfigurationContext configContext = customConfigurationContext() // <1>
         .tsa(tsa -> tsa // <2>
             .topology(new Topology( // <3>
-                distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), // <4>
+                distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS), // <4>
                 tcConfig(version(EHCACHE_OS_VERSION), getClass().getResource("/tc-config-a.xml")))) // <5>
         );
 
@@ -67,7 +67,7 @@ public class GettingStarted {
   @Test
   public void showTsaApi() throws Exception {
     Topology topology = new Topology(
-        distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+        distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
         tcConfig(version(EHCACHE_OS_VERSION), getClass().getResource("/tc-config-ap.xml"))
     );
     ConfigurationContext configContext = customConfigurationContext().tsa(tsa -> tsa.topology(topology));
@@ -103,7 +103,7 @@ public class GettingStarted {
     ConfigurationContext configContext = customConfigurationContext()
         .clientArray(clientArray -> clientArray // <1>
             .clientArrayTopology(new ClientArrayTopology( // <2>
-                distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), // <3>
+                distribution(version(EHCACHE_OS_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS), // <3>
                 newClientArrayConfig().host("localhost-1", "localhost").host("localhost-2", "localhost")) // <4>
             )
         );

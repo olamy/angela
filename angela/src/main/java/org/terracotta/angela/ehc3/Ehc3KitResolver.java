@@ -111,6 +111,6 @@ public class Ehc3KitResolver extends KitResolver {
 
   @Override
   public boolean supports(LicenseType licenseType) {
-    return licenseType == LicenseType.EHCACHE_OS;
+    return licenseType == LicenseType.TERRACOTTA_OS;
   }
 }

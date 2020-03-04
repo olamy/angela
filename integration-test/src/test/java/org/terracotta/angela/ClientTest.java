@@ -26,7 +26,6 @@ import org.terracotta.angela.client.ClusterMonitor;
 import org.terracotta.angela.client.config.ConfigurationContext;
 import org.terracotta.angela.client.config.custom.CustomConfigurationContext;
 import org.terracotta.angela.client.config.custom.CustomMultiConfigurationContext;
-import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.clientconfig.ClientArrayConfig;
 import org.terracotta.angela.common.clientconfig.ClientId;
 import org.terracotta.angela.common.cluster.AtomicCounter;
@@ -40,18 +39,15 @@ import org.terracotta.angela.common.topology.ClientArrayTopology;
 import org.terracotta.angela.common.topology.LicenseType;
 import org.terracotta.angela.common.topology.PackageType;
 import org.terracotta.angela.common.topology.Topology;
-import org.terracotta.angela.common.util.OS;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -70,10 +66,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.terracotta.angela.TestUtils.TC_CONFIG_A;
-import static org.terracotta.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
-import static org.terracotta.angela.common.TerracottaCommandLineEnvironment.DEFAULT;
 import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
@@ -197,7 +190,7 @@ public class ClientTest {
 
   @Test
   public void testMultipleClientsOnSameHost() throws Exception {
-    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS);
+    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig()
@@ -216,7 +209,7 @@ public class ClientTest {
   public void testMultipleClientJobsOnSameMachine() throws Exception {
     int serieLength = 3;
     int clientsPerMachine = 2;
-    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS);
+    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .clientArray(clientArray -> clientArray
             .clientArrayTopology(
@@ -247,7 +240,7 @@ public class ClientTest {
 
   @Test
   public void testRemoteClient() throws Exception {
-    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS);
+    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))))
@@ -315,11 +308,11 @@ public class ClientTest {
     final Path resultPath = Paths.get("target", UUID.randomUUID().toString());
 
     final String clientHostname = "localhost";
-    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
         newClientArrayConfig().host(clientHostname));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LicenseType.EHCACHE_OS.defaultLicense()).clientArrayTopology(ct))
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA_OS.defaultLicense()).clientArrayTopology(ct))
         .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.CPU)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientCpuMetricsLogs", configContext)) {
@@ -354,11 +347,11 @@ public class ClientTest {
     final Path resultPath = Paths.get("target", UUID.randomUUID().toString());
 
     final String clientHostname = "localhost";
-    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
         newClientArrayConfig().host(clientHostname));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LicenseType.EHCACHE_OS.defaultLicense()).clientArrayTopology(ct))
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA_OS.defaultLicense()).clientArrayTopology(ct))
         .monitoring(monitoring -> monitoring.commands(EnumSet.allOf(HardwareMetric.class)));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientAllHardwareMetricsLogs", configContext)) {
@@ -391,12 +384,12 @@ public class ClientTest {
     final Path resultPath = Paths.get("target", UUID.randomUUID().toString());
 
     final String clientHostname = "localhost";
-    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
         newClientArrayConfig().host(clientHostname));
 
     HardwareMetric metric = HardwareMetric.MEMORY;
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LicenseType.EHCACHE_OS.defaultLicense()).clientArrayTopology(ct))
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA_OS.defaultLicense()).clientArrayTopology(ct))
         .monitoring(monitoring -> monitoring.command(metric, new MonitoringCommand("dummy", "command")));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
@@ -422,11 +415,11 @@ public class ClientTest {
 
   @Test(expected = IllegalStateException.class)
   public void testClusterMonitorWhenNoMonitoringSpecified() throws Exception {
-    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+    ClientArrayTopology ct = new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
         newClientArrayConfig().host("localhost"));
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LicenseType.EHCACHE_OS.defaultLicense()).clientArrayTopology(ct));
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA_OS.defaultLicense()).clientArrayTopology(ct));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testClientDummyMemoryMetrics", configContext)) {
       factory.monitor();
@@ -436,12 +429,12 @@ public class ClientTest {
   @Test
   public void testMixingLocalhostWithRemote() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
             tcConfig(version(Versions.EHCACHE_VERSION), TC_CONFIG_A)))
-            .license(LicenseType.EHCACHE_OS.defaultLicense())
+            .license(LicenseType.TERRACOTTA_OS.defaultLicense())
         )
-        .clientArray(clientArray -> clientArray.license(LicenseType.EHCACHE_OS.defaultLicense())
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS), newClientArrayConfig()
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA_OS.defaultLicense())
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS), newClientArrayConfig()
                 .host("remote-server")))
         );
 
@@ -461,7 +454,7 @@ public class ClientTest {
   public void testBarrier() throws Exception {
     final int clientCount = 2;
     final int loopCount = 20;
-    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS);
+    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS);
     ConfigurationContext configContext = CustomMultiConfigurationContext.customMultiConfigurationContext()
         .clientArray(clientArray -> clientArray
             .clientArrayTopology(new ClientArrayTopology(distribution, newClientArrayConfig().host("localhost"))))
@@ -498,7 +491,7 @@ public class ClientTest {
 
   @Test
   public void testUploadClientJars() throws Exception {
-    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS);
+    Distribution distribution = distribution(version(Versions.EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS);
     ClientArrayConfig clientArrayConfig1 = newClientArrayConfig()
         .host("client2", "localhost")
         .host("client2-2", "localhost");
@@ -506,7 +499,7 @@ public class ClientTest {
     ClientArrayTopology ct = new ClientArrayTopology(distribution, clientArrayConfig1);
 
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(LicenseType.EHCACHE_OS.defaultLicense()).clientArrayTopology(ct));
+        .clientArray(clientArray -> clientArray.license(LicenseType.TERRACOTTA_OS.defaultLicense()).clientArrayTopology(ct));
 
     try (ClusterFactory factory = new ClusterFactory("ClientTest::testMixingLocalhostWithRemote", configContext)) {
       ClientJob clientJob = (cluster) -> {

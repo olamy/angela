@@ -23,7 +23,7 @@ import org.terracotta.angela.common.topology.Version;
 
 import java.util.Objects;
 
-import static org.terracotta.angela.common.topology.LicenseType.EHCACHE_OS;
+import static org.terracotta.angela.common.topology.LicenseType.TERRACOTTA_OS;
 import static org.terracotta.angela.common.topology.LicenseType.GO;
 import static org.terracotta.angela.common.topology.LicenseType.MAX;
 import static org.terracotta.angela.common.topology.LicenseType.TERRACOTTA;
@@ -51,9 +51,9 @@ public class Distribution {
       if (licenseType != GO && licenseType != MAX) {
         return throwException("Expected license of type '%s' or '%s for version: %s, but found: %s", GO, MAX, version, licenseType);
       }
-    } else if (version.getMajor() == 3) {
-      if (licenseType != EHCACHE_OS) {
-        throwException("Expected license of type '%s' for version: %s, but found: %s", EHCACHE_OS, version, licenseType);
+    } else if (version.getMajor() == 3 || version.getMajor() == 5) {
+      if (licenseType != TERRACOTTA_OS) {
+        throwException("Expected license of type '%s' for version: %s, but found: %s", TERRACOTTA_OS, version, licenseType);
       }
     } else {
       if (licenseType != TERRACOTTA) {
@@ -84,8 +84,7 @@ public class Distribution {
   }
 
   public DistributionController createDistributionController() {
-    //TODO: Remove version.isSnapshot() check once dynamic-config is open sourced
-    if (version.getMajor() == 10 && version.getMinor() == 7 && version.isSnapshot()) {
+    if ((version.getMajor() == 10 && version.getMinor() == 7) || (version.getMajor() == 5 && version.getMinor() == 7)) {
       return new Distribution107Controller(this);
     }
     if (version.getMajor() == 10 || version.getMajor() == 3) {

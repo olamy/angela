@@ -22,8 +22,6 @@ import org.terracotta.angela.client.ClusterMonitor;
 import org.terracotta.angela.client.Tsa;
 import org.terracotta.angela.client.config.ConfigurationContext;
 import org.terracotta.angela.client.config.custom.CustomConfigurationContext;
-import org.terracotta.angela.client.config.custom.CustomMultiConfigurationContext;
-import org.terracotta.angela.client.filesystem.RemoteFile;
 import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.TerracottaServerState;
 import org.terracotta.angela.common.metrics.HardwareMetric;
@@ -33,31 +31,25 @@ import org.terracotta.angela.common.topology.Topology;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
 import static org.terracotta.angela.TestUtils.TC_CONFIG_A;
 import static org.terracotta.angela.TestUtils.TC_CONFIG_AP;
 import static org.terracotta.angela.Versions.EHCACHE_VERSION;
-import static org.terracotta.angela.client.config.TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.SERVER_START_PREFIX;
 import static org.terracotta.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
 import static org.terracotta.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
 import static org.terracotta.angela.common.TerracottaServerState.STARTING;
 import static org.terracotta.angela.common.TerracottaServerState.STOPPED;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
-import static org.terracotta.angela.common.topology.LicenseType.EHCACHE_OS;
+import static org.terracotta.angela.common.topology.LicenseType.TERRACOTTA_OS;
 import static org.terracotta.angela.common.topology.PackageType.KIT;
 import static org.terracotta.angela.common.topology.Version.version;
 
@@ -70,7 +62,7 @@ public class InstallTest {
     final File resultPath = new File("target", UUID.randomUUID().toString());
 
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
             tcConfig(version(EHCACHE_VERSION), TC_CONFIG_AP))))
         .monitoring(monitoring -> monitoring.commands(EnumSet.of(HardwareMetric.DISK)));
 
@@ -94,7 +86,7 @@ public class InstallTest {
     TcConfig tcConfig = tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A);
     tcConfig.updateServerHost(0, InetAddress.getLocalHost().getHostName());
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
             tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A))));
 
     SSH_STRICT_HOST_CHECKING.setProperty("false");
@@ -112,7 +104,7 @@ public class InstallTest {
         .tsa(tsa -> tsa
             .topology(
                 new Topology(
-                    distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+                    distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
                     tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A)
                 ))
             .terracottaCommandLineEnvironment(TerracottaCommandLineEnvironment.DEFAULT.withJavaVersion("1.11"))
@@ -128,7 +120,7 @@ public class InstallTest {
   public void testLocalInstall() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS), tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A))));
+            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS), tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A))));
 
     try (ClusterFactory factory = new ClusterFactory("InstallTest::testLocalInstall", config)) {
       Tsa tsa = factory.tsa();
@@ -138,9 +130,9 @@ public class InstallTest {
 
   @Test
   public void testTwoTsaCustomConfigsFailWithoutMultiConfig() {
-    Topology topology1 = new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+    Topology topology1 = new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
         tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A));
-    Topology topology2 = new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+    Topology topology2 = new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
         tcConfig(version(EHCACHE_VERSION), TC_CONFIG_AP));
 
     try {
@@ -157,7 +149,7 @@ public class InstallTest {
   public void testStopStalledServer() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
                 tcConfig(version(EHCACHE_VERSION), getClass().getResource("/configs/tc-config-ap-consistent.xml"))))
         );
 
@@ -178,7 +170,7 @@ public class InstallTest {
   public void testStartCreatedServer() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
                 tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A)))
         );
 
@@ -196,7 +188,7 @@ public class InstallTest {
   public void testServerStartUpWithArg() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
                 tcConfig(version(EHCACHE_VERSION), TC_CONFIG_A)))
         );
 
@@ -214,7 +206,7 @@ public class InstallTest {
   public void testStopPassive() throws Exception {
     ConfigurationContext config = CustomConfigurationContext.customConfigurationContext()
         .tsa(tsa -> tsa
-            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, EHCACHE_OS),
+            .topology(new Topology(distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
                 tcConfig(version(EHCACHE_VERSION), TC_CONFIG_AP)))
         );
 
