@@ -30,28 +30,24 @@ import org.terracotta.angela.common.topology.ClientArrayTopology;
 import org.terracotta.angela.common.topology.PackageType;
 import org.terracotta.angela.common.topology.Topology;
 
-import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.fail;
 import static org.terracotta.angela.TestUtils.TC_CONFIG_AP;
 import static org.terracotta.angela.Versions.EHCACHE_VERSION;
 import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
-import static org.terracotta.angela.common.topology.LicenseType.EHCACHE_OS;
+import static org.terracotta.angela.common.topology.LicenseType.TERRACOTTA_OS;
 import static org.terracotta.angela.common.topology.Version.version;
 
 /**
@@ -61,8 +57,8 @@ public class BrowseTest {
   @Test
   public void testClient() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(EHCACHE_OS.defaultLicense())
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(EHCACHE_VERSION), PackageType.KIT, EHCACHE_OS), newClientArrayConfig().host("localhost")))
+        .clientArray(clientArray -> clientArray.license(TERRACOTTA_OS.defaultLicense())
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(EHCACHE_VERSION), PackageType.KIT, TERRACOTTA_OS), newClientArrayConfig().host("localhost")))
         );
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testClient", configContext)) {
       ClientArray clientArray = factory.clientArray();
@@ -100,9 +96,9 @@ public class BrowseTest {
   @Test
   public void testUploadPlugin() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), PackageType.KIT, EHCACHE_OS),
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), PackageType.KIT, TERRACOTTA_OS),
             tcConfig(version(EHCACHE_VERSION), TC_CONFIG_AP)))
-            .license(EHCACHE_OS.defaultLicense())
+            .license(TERRACOTTA_OS.defaultLicense())
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testUploadPlugin", configContext)) {
@@ -121,8 +117,8 @@ public class BrowseTest {
   @Test
   public void testNonExistentFolder() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(EHCACHE_OS.defaultLicense())
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(EHCACHE_VERSION), PackageType.KIT, EHCACHE_OS), newClientArrayConfig().host("localhost")))
+        .clientArray(clientArray -> clientArray.license(TERRACOTTA_OS.defaultLicense())
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(EHCACHE_VERSION), PackageType.KIT, TERRACOTTA_OS), newClientArrayConfig().host("localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testNonExistentFolder", configContext)) {
@@ -140,8 +136,8 @@ public class BrowseTest {
   @Test
   public void testUpload() throws Exception {
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .clientArray(clientArray -> clientArray.license(EHCACHE_OS.defaultLicense())
-            .clientArrayTopology(new ClientArrayTopology(distribution(version(EHCACHE_VERSION), PackageType.KIT, EHCACHE_OS), newClientArrayConfig().host("localhost")))
+        .clientArray(clientArray -> clientArray.license(TERRACOTTA_OS.defaultLicense())
+            .clientArrayTopology(new ClientArrayTopology(distribution(version(EHCACHE_VERSION), PackageType.KIT, TERRACOTTA_OS), newClientArrayConfig().host("localhost")))
         );
 
     try (ClusterFactory factory = new ClusterFactory("BrowseTest::testUpload", configContext)) {

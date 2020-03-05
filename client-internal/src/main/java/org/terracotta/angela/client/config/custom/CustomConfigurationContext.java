@@ -24,28 +24,13 @@ import org.terracotta.angela.client.config.RemotingConfigurationContext;
 import org.terracotta.angela.client.config.TmsConfigurationContext;
 import org.terracotta.angela.client.config.TsaConfigurationContext;
 import org.terracotta.angela.client.remote.agent.SshRemoteAgentLauncher;
-import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.distribution.Distribution;
-import org.terracotta.angela.common.topology.Version;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class CustomConfigurationContext implements ConfigurationContext {
-
-  /**
-   * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
-   */
-  @Deprecated
-  public static final Set<String> DEFAULT_ALLOWED_JDK_VENDORS = TerracottaCommandLineEnvironment.DEFAULT_ALLOWED_JDK_VENDORS;
-
-  /**
-   * @deprecated Use {@link TerracottaCommandLineEnvironment#DEFAULT} instead.
-   */
-  @Deprecated
-  public static final String DEFAULT_JDK_VERSION = TerracottaCommandLineEnvironment.DEFAULT_JDK_VERSION;
-
   private CustomRemotingConfigurationContext customRemotingConfigurationContext = new CustomRemotingConfigurationContext().remoteAgentLauncherSupplier(SshRemoteAgentLauncher::new);
   private CustomTsaConfigurationContext customTsaConfigurationContext;
   private CustomTmsConfigurationContext customTmsConfigurationContext;
@@ -83,9 +68,7 @@ public class CustomConfigurationContext implements ConfigurationContext {
     if (customTsaConfigurationContext.getTopology() == null) {
       throw new IllegalArgumentException("You added a tsa to the Configuration but did not define its topology");
     }
-    if (customTsaConfigurationContext.getLicense() == null && !customTsaConfigurationContext.getTopology().getLicenseType().isOpenSource() &&
-        //TODO: Remove this check when dynamic-config is open sourced
-        !(customTsaConfigurationContext.getTopology().getDistribution().getVersion().equals(Version.version("10.7.0-SNAPSHOT")))) {
+    if (customTsaConfigurationContext.getLicense() == null && !customTsaConfigurationContext.getTopology().getLicenseType().isOpenSource()) {
       throw new IllegalArgumentException("LicenseType " + customTsaConfigurationContext.getTopology().getLicenseType() + " requires a license.");
     }
     return this;
@@ -120,9 +103,7 @@ public class CustomConfigurationContext implements ConfigurationContext {
     customClientArrayConfigurationContext = new CustomClientArrayConfigurationContext();
     clientArray.accept(customClientArrayConfigurationContext);
     Distribution distribution = customClientArrayConfigurationContext.getClientArrayTopology().getDistribution();
-    if (customClientArrayConfigurationContext.getLicense() == null && distribution != null && !distribution.getLicenseType().isOpenSource() &&
-        //TODO: Remove this check when dynamic-config is open sourced
-        !(customClientArrayConfigurationContext.getClientArrayTopology().getDistribution().getVersion().equals(Version.version("10.7.0-SNAPSHOT")))) {
+    if (customClientArrayConfigurationContext.getLicense() == null && distribution != null && !distribution.getLicenseType().isOpenSource()) {
       throw new IllegalArgumentException("Distribution's license type '" + distribution.getLicenseType() + "' requires a license.");
     }
     return this;

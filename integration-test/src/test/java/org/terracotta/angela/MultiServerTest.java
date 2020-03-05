@@ -45,7 +45,7 @@ import static org.terracotta.angela.common.TerracottaServerState.STARTED_AS_ACTI
 import static org.terracotta.angela.common.TerracottaServerState.STARTED_AS_PASSIVE;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
-import static org.terracotta.angela.common.topology.LicenseType.EHCACHE_OS;
+import static org.terracotta.angela.common.topology.LicenseType.TERRACOTTA_OS;
 import static org.terracotta.angela.common.topology.Version.version;
 
 public class MultiServerTest {
@@ -60,7 +60,7 @@ public class MultiServerTest {
   public void testPartitionBetweenActivePassives() throws Exception {
     //set netDisruptionEnabled to true to enable disruption
     ConfigurationContext configContext = CustomConfigurationContext.customConfigurationContext()
-        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), PackageType.KIT, EHCACHE_OS), true,
+        .tsa(tsa -> tsa.topology(new Topology(distribution(version(EHCACHE_VERSION), PackageType.KIT, TERRACOTTA_OS), true,
             tcConfig(version(EHCACHE_VERSION), getClass().getResource("/configs/tc-config-app-consistent.xml"))))
         );
 

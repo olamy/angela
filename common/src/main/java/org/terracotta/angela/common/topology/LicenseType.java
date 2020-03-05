@@ -23,15 +23,12 @@ import org.terracotta.angela.common.tcconfig.License;
  * @author Aurelien Broszniowski
  */
 public enum LicenseType {
-  // 3.x
-  EHCACHE_OS(null, null),
-
   // 4.x:
   GO("bigmemory-go", "/licenses/terracotta-license.key"),
-
   MAX("bigmemory-max", "/licenses/terracotta-license.key"),
 
   // 10.x:
+  TERRACOTTA_OS(null, null),
   TERRACOTTA("terracotta-db", "/licenses/Terracotta101.xml"),
   ;
 

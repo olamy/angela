@@ -55,7 +55,7 @@ public class EhcacheTest {
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
                     tcConfig(version(EHCACHE_VERSION), TestUtils.TC_CONFIG_A)
                 )
             )
@@ -72,7 +72,7 @@ public class EhcacheTest {
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version(EHCACHE_SNAPSHOT_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    distribution(version(EHCACHE_SNAPSHOT_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
                     tcConfig(version(EHCACHE_SNAPSHOT_VERSION), TestUtils.TC_CONFIG_A)
                 )
             )
@@ -89,14 +89,14 @@ public class EhcacheTest {
         .tsa(
             tsa -> tsa.topology(
                 new Topology(
-                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
                     tcConfig(version(EHCACHE_VERSION), TestUtils.TC_CONFIG_A)
                 )
             )
         ).clientArray(
             clientArray -> clientArray.clientArrayTopology(
                 new ClientArrayTopology(
-                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.EHCACHE_OS),
+                    distribution(version(EHCACHE_VERSION), PackageType.KIT, LicenseType.TERRACOTTA_OS),
                     newClientArrayConfig().host("localhost")
                 )
             )

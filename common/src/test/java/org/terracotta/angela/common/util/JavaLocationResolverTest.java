@@ -19,15 +19,15 @@ package org.terracotta.angela.common.util;
 
 import org.hamcrest.core.IsNull;
 import org.junit.Test;
-import org.terracotta.angela.common.util.JDK;
-import org.terracotta.angela.common.util.JavaLocationResolver;
 
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
@@ -42,7 +42,7 @@ public class JavaLocationResolverTest {
   public void testResolveAll() throws Exception {
     try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
       JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
-      List<JDK> jdks = javaLocationResolver.resolveJavaLocations(null, null, true);
+      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("", emptySet(), true);
       assertThat(jdks.size(), is(7));
       assertThat(jdks.get(0).getVendor(), is("sun"));
       assertThat(jdks.get(0).getVersion(), is("1.6"));
@@ -65,7 +65,7 @@ public class JavaLocationResolverTest {
   public void testResolveOne() throws Exception {
     try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
       JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
-      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.6", Collections.singleton("sun"), true);
+      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.6", singleton("sun"), true);
       assertThat(jdks.size(), is(1));
       assertThat(jdks.get(0).getVendor(), is("sun"));
       assertThat(jdks.get(0).getVersion(), is("1.6"));
@@ -73,10 +73,23 @@ public class JavaLocationResolverTest {
   }
 
   @Test
+  public void testResolveManyOfaVendor() throws Exception {
+    try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
+      JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
+      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("", new HashSet<>(singletonList("sun")), true);
+      assertThat(jdks.size(), is(2));
+      assertThat(jdks.get(0).getVendor(), is("sun"));
+      assertThat(jdks.get(0).getVersion(), is("1.6"));
+      assertThat(jdks.get(1).getVendor(), is("sun"));
+      assertThat(jdks.get(1).getVersion(), is("1.8"));
+    }
+  }
+
+  @Test
   public void testResolveManyOfaVersion() throws Exception {
     try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
       JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
-      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.8", new HashSet<>(Arrays.asList("Oracle Corporation", "openjdk")), true);
+      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.8", new HashSet<>(asList("Oracle Corporation", "openjdk")), true);
       assertThat(jdks.size(), is(2));
       assertThat(jdks.get(0).getVendor(), is("openjdk"));
       assertThat(jdks.get(0).getVersion(), is("1.8"));
@@ -89,7 +102,7 @@ public class JavaLocationResolverTest {
   public void testResolveAllOfaVersion() throws Exception {
     try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
       JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
-      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.8", new HashSet<>(Arrays.asList("Oracle Corporation", "sun", "openjdk")), true);
+      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.8", new HashSet<>(asList("Oracle Corporation", "sun", "openjdk")), true);
       assertThat(jdks.size(), is(3));
       assertThat(jdks.get(0).getVendor(), is("openjdk"));
       assertThat(jdks.get(0).getVersion(), is("1.8"));
@@ -97,6 +110,15 @@ public class JavaLocationResolverTest {
       assertThat(jdks.get(1).getVersion(), is("1.8"));
       assertThat(jdks.get(2).getVendor(), is("Oracle Corporation"));
       assertThat(jdks.get(2).getVersion(), is("1.8"));
+    }
+  }
+
+  @Test
+  public void testResolveAllOfaVersionNoVendorsSpecified() throws Exception {
+    try (InputStream inputStream = getClass().getResourceAsStream("/toolchains/toolchains.xml")) {
+      JavaLocationResolver javaLocationResolver = new JavaLocationResolver(inputStream);
+      List<JDK> jdks = javaLocationResolver.resolveJavaLocations("1.8", emptySet(), true);
+      assertThat(jdks.size(), is(5));
     }
   }
 }

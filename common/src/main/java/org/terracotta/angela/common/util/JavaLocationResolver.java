@@ -68,7 +68,7 @@ public class JavaLocationResolver {
   public JDK resolveJavaLocation(TerracottaCommandLineEnvironment tcEnv) {
     List<JDK> jdks = resolveJavaLocations(tcEnv.getJavaVersion(), tcEnv.getJavaVendors(), true);
     if (jdks.size() > 1) {
-      LOGGER.info("Multiple java with version {} found: {} - using the 1st one", tcEnv.getJavaVersion(), jdks);
+      LOGGER.info("Multiple matching java versions found: {} - using the 1st one", jdks);
     }
     return jdks.get(0);
   }
@@ -80,19 +80,9 @@ public class JavaLocationResolver {
   List<JDK> resolveJavaLocations(String version, Set<String> vendors, boolean checkValidity) {
     List<JDK> list = jdks.stream()
         .filter(jdk -> !checkValidity || jdk.isValid())
-        .filter(jdk -> version == null || version.equals(jdk.getVersion()))
+        .filter(jdk -> version.isEmpty() || version.equals(jdk.getVersion()))
         .filter(jdk -> {
-          if (vendors == null) {
-            return true;
-          }
-          boolean vendorsNull = true;
-          for (String vendor : vendors) {
-            if (!vendor.equals("null")) {
-              vendorsNull = false;
-              break;
-            }
-          }
-          if (vendorsNull) {
+          if (vendors.isEmpty()) {
             return true;
           }
           for (String vendor : vendors) {

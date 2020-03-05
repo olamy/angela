@@ -17,9 +17,9 @@
 
 package org.terracotta.angela.common;
 
-import org.terracotta.angela.common.util.IpUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.terracotta.angela.common.util.IpUtils;
 
 import java.nio.file.Paths;
 
@@ -39,9 +39,10 @@ public enum AngelaProperties {
   SSH_STRICT_HOST_CHECKING("angela.ssh.strictHostKeyChecking", "true"),
   TMS_FULL_LOGGING("angela.tms.fullLogging", "false"),
   TSA_FULL_LOGGING("angela.tsa.fullLogging", "false"),
-  JAVA_BUILD_VENDOR("angela.java.vendor","zulu"),
-
-  JDK_SECURITY_ALLOW_NON_CA_ANCHOR("jdk.security.allowNonCaAnchor", "false"),
+  JAVA_VENDOR("angela.java.vendor", "zulu"),
+  JAVA_VERSION("angela.java.version", "1.8"),
+  JAVA_OPTS("angela.java.opts", "-Djdk.security.allowNonCaAnchor=false"),
+  DISTRIBUTION("angela.distribution", null),
 
   // Deprecated properties
   KITS_DIR("kitsDir", Paths.get("/data/angela").toAbsolutePath().toString()),
@@ -68,7 +69,7 @@ public enum AngelaProperties {
 
   public String getValue() {
     String specifiedValue = getSpecifiedValue();
-    return specifiedValue == null || specifiedValue.isEmpty() ? getDefaultValue() : specifiedValue;
+    return specifiedValue == null ? getDefaultValue() : specifiedValue;
   }
 
   public String getPropertyName() {
@@ -81,10 +82,6 @@ public enum AngelaProperties {
 
   public void clearProperty() {
     System.clearProperty(propertyName);
-  }
-
-  public String getJvmFormattedProperty() {
-    return "-D" + getPropertyName() + "=" + getValue();
   }
 
   /**
