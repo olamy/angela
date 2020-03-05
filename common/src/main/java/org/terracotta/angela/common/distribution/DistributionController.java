@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Aurelien Broszniowski
@@ -69,8 +70,8 @@ public abstract class DistributionController {
     env.put("JAVA_HOME", javaHome);
     LOGGER.info(" JAVA_HOME = {}", javaHome);
 
-    List<String> javaOpts = tcEnv.getJavaOpts();
-    if (javaOpts != null) {
+    Set<String> javaOpts = tcEnv.getJavaOpts();
+    if (!javaOpts.isEmpty()) {
       String joinedJavaOpts = String.join(" ", javaOpts);
       env.put("JAVA_OPTS", joinedJavaOpts);
       LOGGER.info(" JAVA_OPTS = {}", joinedJavaOpts);

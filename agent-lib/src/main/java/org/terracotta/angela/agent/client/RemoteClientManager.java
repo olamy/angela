@@ -102,7 +102,7 @@ public class RemoteClientManager {
       } else {
         cmdLine.add(javaHome + "/bin/java");
       }
-      if (tcEnv.getJavaOpts() != null) {
+      if (!tcEnv.getJavaOpts().isEmpty()) {
         cmdLine.addAll(tcEnv.getJavaOpts());
       }
       cmdLine.add("-classpath");
