@@ -19,7 +19,6 @@ package org.terracotta.angela.common;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -61,19 +60,18 @@ public class TerracottaCommandLineEnvironment {
     this.javaOpts = unmodifiableSet(new HashSet<>(javaOpts));
   }
 
-  private void validate(String javaVersion, Set<String> javaVendors, Set<String> javaOpts) {
+  private static void validate(String javaVersion, Set<String> javaVendors, Set<String> javaOpts) {
     requireNonNull(javaVersion);
     requireNonNull(javaVendors);
     requireNonNull(javaOpts);
 
-    javaVendors.stream()
-        .filter(((Predicate<String>) vendor -> vendor == null || vendor.isEmpty()).negate())
-        .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("None of the java vendors can be null or empty"));
-    javaOpts.stream()
-        .filter(((Predicate<String>) opt -> opt == null || opt.isEmpty()).negate())
-        .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("None of the java opts can be null or empty"));
+    if (javaVendors.stream().anyMatch(vendor -> vendor == null || vendor.isEmpty())) {
+      throw new IllegalArgumentException("None of the java vendors can be null or empty");
+    }
+
+    if (javaOpts.stream().anyMatch(opt -> opt == null || opt.isEmpty())) {
+      throw new IllegalArgumentException("None of the java opts can be null or empty");
+    }
   }
 
   public TerracottaCommandLineEnvironment withJavaVersion(String javaVersion) {
