@@ -331,7 +331,7 @@ public class Distribution107Controller extends DistributionController {
   }
 
   private String getTsaCreateExecutable(File installLocation) {
-    String execPath = "server" + separator + "bin" + separator + "start-node" + OS.INSTANCE.getShellExtension();
+    String execPath = "server" + separator + "bin" + separator + "start-tc-server" + OS.INSTANCE.getShellExtension();
     if (distribution.getPackageType() == PackageType.KIT) {
       return installLocation.getAbsolutePath() + separator + execPath;
     } else if (distribution.getPackageType() == PackageType.SAG_INSTALLER) {
