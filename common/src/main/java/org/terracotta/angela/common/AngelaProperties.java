@@ -33,6 +33,7 @@ public enum AngelaProperties {
   IGNITE_LOGGING("angela.igniteLogging", "false"),
   NODE_NAME("angela.nodeName", IpUtils.getHostName()),
   PORT_RANGE("angela.portRange", "1000"),
+  SKIP_KIT_COPY_LOCALHOST("angela.skipKitCopyLocalhost", "true"),
   SKIP_UNINSTALL("angela.skipUninstall", "false"),
   SSH_USERNAME("angela.ssh.userName", System.getProperty("user.name")),
   SSH_USERNAME_KEY_PATH("angela.ssh.userName.keyPath", null),

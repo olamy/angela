@@ -49,7 +49,13 @@ public class TerracottaInstall {
 
   public File getInstallLocation(TerracottaServer terracottaServer) {
     synchronized (terracottaServerInstances) {
-      return terracottaServerInstances.get(terracottaServer.getId()).getInstallLocation();
+      return terracottaServerInstances.get(terracottaServer.getId()).getWorkingDir();
+    }
+  }
+
+  public File getKitLocation(TerracottaServer terracottaServer) {
+    synchronized (terracottaServerInstances) {
+      return terracottaServerInstances.get(terracottaServer.getId()).getKitDir();
     }
   }
 
@@ -59,9 +65,9 @@ public class TerracottaInstall {
     }
   }
 
-  public void addServer(TerracottaServer terracottaServer, File installLocation, License license, Distribution distribution, Topology topology) {
+  public void addServer(TerracottaServer terracottaServer, File kitLocation, File installLocation, License license, Distribution distribution, Topology topology) {
     synchronized (terracottaServerInstances) {
-      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer, installLocation, license, distribution, topology);
+      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer, kitLocation, installLocation, license, distribution, topology);
       terracottaServerInstances.put(terracottaServer.getId(), serverInstance);
     }
   }
@@ -94,7 +100,17 @@ public class TerracottaInstall {
           .filter(tsi -> tsi.getDistribution().equals(distribution))
           .findFirst()
           .orElseThrow(() -> new RuntimeException("Distribution not installed : " + distribution));
-      return terracottaServerInstance.getInstallLocation();
+      return terracottaServerInstance.getWorkingDir();
+    }
+  }
+
+  public File kitLocation(Distribution distribution) {
+    synchronized (terracottaServerInstances) {
+      TerracottaServerInstance terracottaServerInstance = terracottaServerInstances.values().stream()
+          .filter(tsi -> tsi.getDistribution().equals(distribution))
+          .findFirst()
+          .orElseThrow(() -> new RuntimeException("Distribution not installed : " + distribution));
+      return terracottaServerInstance.getKitDir();
     }
   }
 

@@ -30,23 +30,25 @@ import java.io.File;
 public class TmsInstall {
 
   private final Distribution distribution;
-  private final File installLocation;
+  private final File kitLocation;
+  private final File workingDir;
   private final TerracottaCommandLineEnvironment tcEnv;
   private TerracottaManagementServerInstance terracottaManagementServerInstance;
 
-  public File getInstallLocation() {
-    return installLocation;
+  public File getKitLocation() {
+    return kitLocation;
   }
 
-  public TmsInstall(Distribution distribution, File location, TerracottaCommandLineEnvironment tcEnv) {
+  public TmsInstall(Distribution distribution, File kitLocation, File workingDir, TerracottaCommandLineEnvironment tcEnv) {
     this.distribution = distribution;
-    this.installLocation = location;
+    this.kitLocation = kitLocation;
+    this.workingDir = workingDir;
     this.tcEnv = tcEnv;
     addTerracottaManagementServer();
   }
 
   public void addTerracottaManagementServer() {
-    terracottaManagementServerInstance = new TerracottaManagementServerInstance(distribution.createDistributionController(), installLocation, tcEnv);
+    terracottaManagementServerInstance = new TerracottaManagementServerInstance(distribution.createDistributionController(), kitLocation, workingDir, tcEnv);
   }
 
   public TerracottaManagementServerInstance getTerracottaManagementServerInstance() {
