@@ -93,30 +93,31 @@ public class AgentController {
 
   public boolean installTsa(InstanceId instanceId,
                             TerracottaServer terracottaServer,
-                            boolean offline,
                             License license,
                             String kitInstallationName,
                             Distribution distribution,
                             Topology topology) {
     TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
 
-    File installLocation;
+    File kitLocation;
+    File workingDir;
     if (terracottaInstall == null || !terracottaInstall.installed(distribution)) {
       RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
-      boolean isKitAvailable = kitManager.verifyKitAvailability(offline);
-      if (!isKitAvailable) {
+      if (!kitManager.isKitAvailable()) {
         return false;
       }
 
       logger.info("Installing kit for {} from {}", terracottaServer, distribution);
-      installLocation = kitManager.installKit(license);
-      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(kitManager.getWorkingKitInstallationPath().toFile()));
+      kitLocation = kitManager.installKit(license, topology.getServersHostnames());
+      workingDir = kitManager.getWorkingDir().toFile();
+      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(workingDir.getParentFile()));
     } else {
-      installLocation = terracottaInstall.installLocation(distribution);
+      kitLocation = terracottaInstall.kitLocation(distribution);
+      workingDir = terracottaInstall.installLocation(distribution);
       logger.info("Kit for {} already installed", terracottaServer);
     }
 
-    terracottaInstall.addServer(terracottaServer, installLocation, license, distribution, topology);
+    terracottaInstall.addServer(terracottaServer, kitLocation, workingDir, license, distribution, topology);
 
     return true;
   }
@@ -139,10 +140,9 @@ public class AgentController {
     return licenseFileLocation == null ? null : licenseFileLocation.getPath();
   }
 
-  public boolean installTms(InstanceId instanceId, String tmsHostname,
-                            Distribution distribution, boolean offline, License license,
+  public boolean installTms(InstanceId instanceId, String tmsHostname, Distribution distribution, License license,
                             TmsServerSecurityConfig tmsServerSecurityConfig, String kitInstallationName,
-                            TerracottaCommandLineEnvironment tcEnv) {
+                            TerracottaCommandLineEnvironment tcEnv, Collection<String> hostNames) {
     TmsInstall tmsInstall = tmsInstalls.get(instanceId);
     if (tmsInstall != null) {
       logger.debug("Kit for " + tmsHostname + " already installed");
@@ -152,14 +152,15 @@ public class AgentController {
       logger.debug("Attempting to install kit from cached install for " + tmsHostname);
       RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
 
-      boolean isKitAvailable = kitManager.verifyKitAvailability(offline);
-      if (isKitAvailable) {
-        File kitDir = kitManager.installKit(license);
+      if (kitManager.isKitAvailable()) {
+        File kitDir = kitManager.installKit(license, hostNames);
+        File workingDir = kitManager.getWorkingDir().toFile();
+
         File tmcProperties = new File(kitDir, "/tools/management/conf/tmc.properties");
         if (tmsServerSecurityConfig != null) {
           enableTmsSecurity(tmcProperties, tmsServerSecurityConfig);
         }
-        tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir, tcEnv));
+        tmsInstalls.put(instanceId, new TmsInstall(distribution, kitDir, workingDir, tcEnv));
         return true;
       } else {
         return false;
@@ -205,7 +206,7 @@ public class AgentController {
 
   public String getTmsInstallationPath(InstanceId instanceId) {
     TmsInstall serverInstance = tmsInstalls.get(instanceId);
-    return serverInstance.getInstallLocation().getPath();
+    return serverInstance.getKitLocation().getPath();
   }
 
   public TerracottaManagementServerState getTmsState(InstanceId instanceId) {
@@ -259,10 +260,10 @@ public class AgentController {
           RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
           // TODO : get log files
 
-          kitManager.deleteInstall(tmsInstall.getInstallLocation());
+          kitManager.deleteInstall(tmsInstall.getKitLocation());
           kitsInstalls.remove(instanceId);
         } catch (IOException ioe) {
-          throw new RuntimeException("Unable to uninstall kit at " + tmsInstall.getInstallLocation()
+          throw new RuntimeException("Unable to uninstall kit at " + tmsInstall.getKitLocation()
               .getAbsolutePath(), ioe);
         }
       } else {

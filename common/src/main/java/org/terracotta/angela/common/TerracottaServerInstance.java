@@ -53,24 +53,23 @@ public class TerracottaServerInstance implements Closeable {
   private final Map<ServerSymbolicName, Disruptor> disruptionLinks = new ConcurrentHashMap<>();
   private final Map<ServerSymbolicName, Integer> proxiedPorts = new HashMap<>();
   private final TerracottaServer terracottaServer;
+  private final File kitDir;
   private final DistributionController distributionController;
-  private final File installLocation;
+  private final File workingDir;
   private final Distribution distribution;
   private final File licenseFileLocation;
   private volatile TerracottaServerInstanceProcess terracottaServerInstanceProcess;
   private final boolean netDisruptionEnabled;
   private final Topology topology;
 
-  public TerracottaServerInstance(TerracottaServer terracottaServer,
-                                  File installLocation,
-                                  License license,
-                                  Distribution distribution,
-                                  Topology topology) {
+  public TerracottaServerInstance(TerracottaServer terracottaServer, File kitDir, File workingDir,
+                                  License license, Distribution distribution, Topology topology) {
     this.terracottaServer = terracottaServer;
+    this.kitDir = kitDir;
     this.distributionController = distribution.createDistributionController();
-    this.installLocation = installLocation;
+    this.workingDir = workingDir;
     this.distribution = distribution;
-    this.licenseFileLocation = license == null ? null : new File(installLocation, license.getFilename());
+    this.licenseFileLocation = license == null ? null : new File(kitDir, license.getFilename());
     this.netDisruptionEnabled = topology.isNetDisruptionEnabled();
     this.topology = topology;
     constructLinks();
@@ -91,7 +90,7 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public void create(TerracottaCommandLineEnvironment env, List<String> startUpArgs) {
-    this.terracottaServerInstanceProcess = this.distributionController.createTsa(terracottaServer, installLocation, topology, proxiedPorts, env, startUpArgs);
+    this.terracottaServerInstanceProcess = this.distributionController.createTsa(terracottaServer, kitDir, workingDir, topology, proxiedPorts, env, startUpArgs);
   }
 
   public void disrupt(Collection<TerracottaServer> targets) {
@@ -122,15 +121,15 @@ public class TerracottaServerInstance implements Closeable {
   }
 
   public void configure(String clusterName, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose) {
-    this.distributionController.configure(clusterName, installLocation, licensePath, topology, proxyTsaPorts, securityRootDirectory, env, verbose);
+    this.distributionController.configure(clusterName, kitDir, workingDir, licensePath, topology, proxyTsaPorts, securityRootDirectory, env, verbose);
   }
 
   public ClusterToolExecutionResult clusterTool(TerracottaCommandLineEnvironment env, String... arguments) {
-    return distributionController.invokeClusterTool(installLocation, env, arguments);
+    return distributionController.invokeClusterTool(kitDir, workingDir, env, arguments);
   }
 
   public ConfigToolExecutionResult configTool(TerracottaCommandLineEnvironment env, String... arguments) {
-    return distributionController.invokeConfigTool(installLocation, env, arguments);
+    return distributionController.invokeConfigTool(kitDir, workingDir, env, arguments);
   }
 
   public ToolExecutionResult jcmd(TerracottaCommandLineEnvironment env, String... arguments) {
@@ -158,8 +157,12 @@ public class TerracottaServerInstance implements Closeable {
     }
   }
 
-  public File getInstallLocation() {
-    return installLocation;
+  public File getKitDir() {
+    return kitDir;
+  }
+
+  public File getWorkingDir() {
+    return workingDir;
   }
 
   public File getLicenseFileLocation() {

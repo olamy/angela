@@ -17,6 +17,10 @@
 
 package org.terracotta.angela.client;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.lang.IgniteCallable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.terracotta.angela.agent.Agent;
 import org.terracotta.angela.agent.kit.LocalKitManager;
 import org.terracotta.angela.client.config.TmsConfigurationContext;
@@ -30,10 +34,8 @@ import org.terracotta.angela.common.tms.security.config.TmsClientSecurityConfig;
 import org.terracotta.angela.common.tms.security.config.TmsServerSecurityConfig;
 import org.terracotta.angela.common.topology.InstanceId;
 import org.terracotta.angela.common.util.HostPort;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singleton;
 import static org.terracotta.angela.common.AngelaProperties.KIT_INSTALLATION_DIR;
 import static org.terracotta.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
 import static org.terracotta.angela.common.AngelaProperties.SKIP_UNINSTALL;
@@ -157,20 +159,15 @@ public class Tms implements AutoCloseable {
     localKitManager.setupLocalInstall(license, kitInstallationPath, offline);
 
     logger.info("Attempting to remotely install if distribution already exists on {}", tmsHostname);
-    boolean isRemoteInstallationSuccessful;
-    if (kitInstallationPath == null) {
-      isRemoteInstallationSuccessful = IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.installTms(
-          instanceId, tmsHostname, distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv));
-    } else {
-      isRemoteInstallationSuccessful = false;
-    }
+    IgniteCallable<Boolean> callable = () -> Agent.controller.installTms(instanceId, tmsHostname, distribution, license,
+        tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv, singleton(tmsConfigurationContext.getHostname()));
+    boolean isRemoteInstallationSuccessful = kitInstallationPath == null && IgniteClientHelper.executeRemotely(ignite, tmsHostname, callable);
+
     if (!isRemoteInstallationSuccessful) {
       try {
         IgniteClientHelper.uploadKit(ignite, tmsHostname, instanceId, distribution,
             localKitManager.getKitInstallationName(), localKitManager.getKitInstallationPath().toFile());
-
-        IgniteClientHelper.executeRemotely(ignite, tmsHostname, () -> Agent.controller.installTms(instanceId, tmsHostname,
-            distribution, offline, license, tmsServerSecurityConfig, localKitManager.getKitInstallationName(), tcEnv));
+        IgniteClientHelper.executeRemotely(ignite, tmsHostname, callable);
       } catch (Exception e) {
         throw new RuntimeException("Cannot upload kit to " + tmsHostname, e);
       }

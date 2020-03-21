@@ -42,8 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -59,6 +57,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.terracotta.angela.common.AngelaProperties.IGNITE_LOGGING;
+import static org.terracotta.angela.common.util.IpUtils.areAllLocal;
+import static org.terracotta.angela.common.util.IpUtils.isAnyLocal;
+import static org.terracotta.angela.common.util.IpUtils.isLocal;
 
 public class ClusterFactory implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClusterFactory.class);
@@ -166,34 +167,6 @@ public class ClusterFactory implements AutoCloseable {
     }
 
     return instanceId;
-  }
-
-  private static boolean isLocal(String targetServerName) {
-    InetAddress address;
-    try {
-      address = InetAddress.getByName(targetServerName);
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-    return address.isLoopbackAddress() || address.isLinkLocalAddress();
-  }
-
-  private static boolean areAllLocal(Collection<String> targetServerNames) {
-    for (String targetServerName : targetServerNames) {
-      if (!isLocal(targetServerName)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private static boolean isAnyLocal(Collection<String> targetServerNames) {
-    for (String targetServerName : targetServerNames) {
-      if (isLocal(targetServerName)) {
-        return true;
-      }
-    }
-    return false;
   }
 
   public Cluster cluster() {

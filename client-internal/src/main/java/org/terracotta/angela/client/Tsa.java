@@ -149,7 +149,7 @@ public class Tsa implements AutoCloseable {
 
     boolean isRemoteInstallationSuccessful;
     IgniteCallable<Boolean> installTsaCallable = () -> Agent.controller.installTsa(instanceId, terracottaServer,
-        offline, license, localKitManager.getKitInstallationName(), distribution, topology);
+        license, localKitManager.getKitInstallationName(), distribution, topology);
     if (kitInstallationPath == null) {
       logger.info("Attempting to remotely install if distribution already exists on {}", terracottaServer.getHostname());
       isRemoteInstallationSuccessful = IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), installTsaCallable);

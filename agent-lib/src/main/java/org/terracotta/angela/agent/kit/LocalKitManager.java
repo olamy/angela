@@ -92,7 +92,7 @@ public class LocalKitManager extends KitManager {
       try {
         lockConcurrentInstall(localInstallerPath);
         if (!isValidLocalInstallerFilePath(offline, localInstallerPath)) {
-          logger.info("Local kit at: {} found to be invalid. Downloading a fresh installer", localInstallerPath);
+          logger.info("Local kit at: {} invalid or absent. Downloading a fresh installer", localInstallerPath);
           kitResolver.downloadLocalInstaller(distribution.getVersion(), distribution.getLicenseType(), distribution.getPackageType(), localInstallerPath);
         }
 

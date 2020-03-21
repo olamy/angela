@@ -107,9 +107,9 @@ public abstract class DistributionController {
     }
   }
 
-  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File installLocation, Topology topology, Map<ServerSymbolicName, Integer> proxiedPorts, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
+  public abstract TerracottaServerInstance.TerracottaServerInstanceProcess createTsa(TerracottaServer terracottaServer, File kitDir, File workingDir, Topology topology, Map<ServerSymbolicName, Integer> proxiedPorts, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs);
 
-  public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File installLocation, TerracottaCommandLineEnvironment env);
+  public abstract TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess startTms(File kitDir, File workingDir, TerracottaCommandLineEnvironment env);
 
   public abstract void stopTms(File installLocation, TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv);
 
@@ -137,11 +137,11 @@ public abstract class DistributionController {
     }
   }
 
-  public abstract void configure(String clusterName, File location, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
+  public abstract void configure(String clusterName, File kitDir, File workingDir, String licensePath, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment env, boolean verbose);
 
-  public abstract ClusterToolExecutionResult invokeClusterTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
+  public abstract ClusterToolExecutionResult invokeClusterTool(File kitDir, File workingDir, TerracottaCommandLineEnvironment env, String... arguments);
 
-  public abstract ConfigToolExecutionResult invokeConfigTool(File installLocation, TerracottaCommandLineEnvironment env, String... arguments);
+  public abstract ConfigToolExecutionResult invokeConfigTool(File kitDir, File workingDir, TerracottaCommandLineEnvironment env, String... arguments);
 
   public abstract URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts);
 
