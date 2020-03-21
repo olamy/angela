@@ -17,7 +17,7 @@
 
 package org.terracotta.angela.common;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
@@ -36,8 +36,10 @@ public class TerracottaCommandLineEnvironment {
 
   static {
     String version = JAVA_VERSION.getValue();
-    Set<String> vendors = JAVA_VENDOR.getValue().equals("") ? new HashSet<>() : singleton(JAVA_VENDOR.getValue());
-    Set<String> opts = JAVA_OPTS.getValue().equals("") ? new HashSet<>() : singleton(JAVA_OPTS.getValue());
+    // Important - Use a LinkedHashSet to preserve the order of preferred Java vendor
+    Set<String> vendors = JAVA_VENDOR.getValue().equals("") ? new LinkedHashSet<>() : singleton(JAVA_VENDOR.getValue());
+    // Important - Use a LinkedHashSet to preserve the order of opts, as some opts are position-sensitive
+    Set<String> opts = JAVA_OPTS.getValue().equals("") ? new LinkedHashSet<>() : singleton(JAVA_OPTS.getValue());
     DEFAULT = new TerracottaCommandLineEnvironment(version, vendors, opts);
   }
 
@@ -56,8 +58,8 @@ public class TerracottaCommandLineEnvironment {
   private TerracottaCommandLineEnvironment(String javaVersion, Set<String> javaVendors, Set<String> javaOpts) {
     validate(javaVersion, javaVendors, javaOpts);
     this.javaVersion = javaVersion;
-    this.javaVendors = unmodifiableSet(new HashSet<>(javaVendors));
-    this.javaOpts = unmodifiableSet(new HashSet<>(javaOpts));
+    this.javaVendors = unmodifiableSet(new LinkedHashSet<>(javaVendors));
+    this.javaOpts = unmodifiableSet(new LinkedHashSet<>(javaOpts));
   }
 
   private static void validate(String javaVersion, Set<String> javaVendors, Set<String> javaOpts) {
@@ -79,11 +81,11 @@ public class TerracottaCommandLineEnvironment {
   }
 
   public TerracottaCommandLineEnvironment withJavaVendors(String... javaVendors) {
-    return new TerracottaCommandLineEnvironment(javaVersion, new HashSet<>(asList(javaVendors)), javaOpts);
+    return new TerracottaCommandLineEnvironment(javaVersion, new LinkedHashSet<>(asList(javaVendors)), javaOpts);
   }
 
   public TerracottaCommandLineEnvironment withJavaOpts(String... javaOpts) {
-    return new TerracottaCommandLineEnvironment(javaVersion, javaVendors, new HashSet<>(asList(javaOpts)));
+    return new TerracottaCommandLineEnvironment(javaVersion, javaVendors, new LinkedHashSet<>(asList(javaOpts)));
   }
 
   public String getJavaVersion() {
