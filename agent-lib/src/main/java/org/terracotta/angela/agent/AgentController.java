@@ -71,6 +71,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static java.util.stream.Collectors.toList;
+import static org.terracotta.angela.common.util.FileUtils.setCorrectPermissions;
 
 /**
  * @author Aurelien Broszniowski
@@ -459,6 +460,7 @@ public class AgentController {
           logger.debug("downloaded " + fileMetadata);
         }
       }
+      setCorrectPermissions(installDir.toPath());
     } catch (Exception e) {
       throw new RuntimeException("Cannot download files to " + installDir.getAbsolutePath(), e);
     }
