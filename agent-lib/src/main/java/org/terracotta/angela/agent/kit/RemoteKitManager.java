@@ -34,7 +34,6 @@ import java.util.Collection;
 
 import static java.lang.Boolean.parseBoolean;
 import static org.terracotta.angela.common.AngelaProperties.SKIP_KIT_COPY_LOCALHOST;
-import static org.terracotta.angela.common.util.FileUtils.cleanupPermissions;
 import static org.terracotta.angela.common.util.IpUtils.areAllLocal;
 
 /**
@@ -71,7 +70,6 @@ public class RemoteKitManager extends KitManager {
         if (license != null) {
           license.writeToFile(workingDir.toFile());
         }
-        cleanupPermissions(workingDir);
         return workingDir.toFile();
       }
     } catch (IOException e) {
