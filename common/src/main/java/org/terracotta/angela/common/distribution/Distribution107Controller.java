@@ -326,6 +326,46 @@ public class Distribution107Controller extends DistributionController {
       options.add(server.getClientLeaseDuration());
     }
 
+    if (server.getClientReconnectWindow() != null) {
+      options.add("-R");
+      options.add(server.getClientReconnectWindow());
+    }
+
+    if (server.getBackupDir() != null) {
+      options.add("-b");
+      options.add(server.getBackupDir());
+    }
+
+    if (server.getAuditLogDir() != null) {
+      options.add("-u");
+      options.add(server.getAuditLogDir());
+    }
+
+    if (server.getAuthc() != null) {
+      options.add("-z");
+      options.add(server.getAuthc());
+    }
+
+    if (server.getSecurityDir() != null) {
+      options.add("-x");
+      options.add(server.getSecurityDir());
+    }
+
+    if (server.isSslTls()) {
+      options.add("-t");
+      options.add("true");
+    }
+
+    if (server.isWhitelist()) {
+      options.add("-w");
+      options.add("true");
+    }
+
+    if (server.getProperties() != null) {
+      options.add("-T");
+      options.add(server.getProperties());
+    }
+
     LOGGER.info("Server startup options: {}", options);
     return options;
   }
