@@ -292,7 +292,7 @@ public class AgentController {
   public void waitForTsaInState(InstanceId instanceId, TerracottaServer terracottaServer, Set<TerracottaServerState> wanted) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId)
         .getTerracottaServerInstance(terracottaServer);
-    serverInstance.waitForState(wanted::contains);
+    serverInstance.waitForState(wanted);
   }
 
   public TerracottaServerState getTsaState(InstanceId instanceId, TerracottaServer terracottaServer) {

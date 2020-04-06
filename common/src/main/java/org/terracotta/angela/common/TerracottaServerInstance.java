@@ -41,7 +41,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 /**
  * Terracotta server instance
@@ -77,7 +76,8 @@ public class TerracottaServerInstance implements Closeable {
 
   private void constructLinks() {
     if (netDisruptionEnabled) {
-      topology.getConfigurationManager().createDisruptionLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts);
+      topology.getConfigurationManager()
+          .createDisruptionLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts);
     }
   }
 
@@ -136,16 +136,30 @@ public class TerracottaServerInstance implements Closeable {
     return distributionController.invokeJcmd(terracottaServerInstanceProcess, env, arguments);
   }
 
-  public void waitForState(Predicate<TerracottaServerState> condition) {
-    while (this.terracottaServerInstanceProcess.isAlive() && !condition.test(getTerracottaServerState())) {
+  public void waitForState(Set<TerracottaServerState> terracottaServerStates) {
+    boolean isStateSame = true;
+    TerracottaServerState currentState = getTerracottaServerState();
+    while (isStateSame) {
       try {
         Thread.sleep(100);
+
+        isStateSame = this.terracottaServerInstanceProcess.isAlive();
+        currentState = getTerracottaServerState();
+        for (TerracottaServerState terracottaServerState : terracottaServerStates) {
+          isStateSame &= (terracottaServerState != currentState);
+        }
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
     }
     if (!this.terracottaServerInstanceProcess.isAlive()) {
-      throw new RuntimeException("TC server died while waiting on state-change condition");
+      StringBuilder states = new StringBuilder();
+      for (TerracottaServerState terracottaServerState : terracottaServerStates) {
+        states.append(terracottaServerState).append(" ");
+      }
+      throw new RuntimeException("The Terracotta server was in state " + currentState +
+                                 " and was expected to reach one of the states: " + states.toString()
+                                 + "but died before reaching it.");
     }
   }
 
@@ -205,7 +219,7 @@ public class TerracottaServerInstance implements Closeable {
       try {
         // if at least one PID is alive, the process is considered alive
         return (wrapperPid != null && Processes.newPidProcess(wrapperPid.intValue()).isAlive()) ||
-            (javaPid != null && Processes.newPidProcess(javaPid.intValue()).isAlive());
+               (javaPid != null && Processes.newPidProcess(javaPid.intValue()).isAlive());
       } catch (Exception e) {
         throw new RuntimeException("Error checking liveness of a process instance with PIDs " + wrapperPid + " and " + javaPid, e);
       }
