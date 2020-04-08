@@ -88,6 +88,9 @@ public class Distribution107Controller extends DistributionController {
             compile("^.*\\QL2 exiting\\E.*$"),
             mr -> stateRef.set(TerracottaServerState.STOPPED))
         .andTriggerOn(
+            compile("^.*\\QMOVE_TO_ACTIVE not allowed because not enough servers are connected\\E.*$"),
+            mr -> stateRef.set(TerracottaServerState.START_SUSPENDED))
+        .andTriggerOn(
             compile("^.*PID is (\\d+).*$"),
             mr -> {
               javaPid.set(parseInt(mr.group(1)));
