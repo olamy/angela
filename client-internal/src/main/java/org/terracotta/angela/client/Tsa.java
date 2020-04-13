@@ -350,15 +350,6 @@ public class Tsa implements AutoCloseable {
         TerracottaCommandLineEnvironment cliEnv = tsaConfigurationContext.getTerracottaCommandLineEnvironment(TsaConfigurationContext.TerracottaCommandLineEnvironmentKeys.CONFIG_TOOL);
         Agent.controller.configure(instanceId, terracottaServer, topology, null, tsaConfigurationContext.getClusterName(), null, cliEnv, false);
       });
-
-      final int maxWaitTimeMillis = 30000;
-      if (!waitFor(() -> getActives().size() == stripes.size(), maxWaitTimeMillis)) {
-        throw new RuntimeException("Tried for " + maxWaitTimeMillis + "ms, but all stripes did not get actives");
-      }
-
-      if (!waitFor(() -> getPassives().size() == topology.getServers().size() - getActives().size(), maxWaitTimeMillis)) {
-        throw new RuntimeException("Tried for " + maxWaitTimeMillis + "ms, but all stripes did not get the expected number of passives");
-      }
       return this;
     } else {
       throw new IllegalStateException();
