@@ -85,7 +85,7 @@ public class Distribution107Controller extends DistributionController {
             compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
             mr -> stateRef.set(TerracottaServerState.STARTED_AS_PASSIVE))
         .andTriggerOn(
-            compile("^.*\\QL2 exiting\\E.*$"),
+            compile("^.*\\QL2 Exiting\\E.*$"),
             mr -> stateRef.set(TerracottaServerState.STOPPED))
         .andTriggerOn(
             compile("^.*\\QMOVE_TO_ACTIVE not allowed because not enough servers are connected\\E.*$"),

@@ -103,7 +103,7 @@ public class Distribution102Controller extends DistributionController {
             compile("^.*\\QMoved to State[ PASSIVE-STANDBY ]\\E.*$"),
             mr -> stateRef.set(TerracottaServerState.STARTED_AS_PASSIVE))
         .andTriggerOn(
-            compile("^.*\\QL2 exiting\\E.*$"),
+            compile("^.*\\QL2 Exiting\\E.*$"),
             mr -> stateRef.set(TerracottaServerState.STOPPED))
         .andTriggerOn(
             compile("^.*PID is (\\d+).*$"), mr -> {
