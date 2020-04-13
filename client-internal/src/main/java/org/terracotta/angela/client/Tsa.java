@@ -645,9 +645,6 @@ public class Tsa implements AutoCloseable {
       throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
     }
 
-    for (TerracottaServer detachServer : toDetachStripe) {
-      stop(detachServer);
-    }
     tsaConfigurationContext.getTopology().removeStripe(stripeIndex);
     return result;
   }
@@ -726,7 +723,6 @@ public class Tsa implements AutoCloseable {
       throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
     }
 
-    stop(toDetach);
     tsaConfigurationContext.getTopology().removeServer(stripeIndex, serverIndex);
     return result;
   }
