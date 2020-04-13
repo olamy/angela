@@ -49,7 +49,9 @@ public class RemoteKitManager extends KitManager {
   public RemoteKitManager(InstanceId instanceId, Distribution distribution, String kitInstallationName) {
     super(distribution);
     this.kitInstallationPath = rootInstallationPath.resolve(kitInstallationName);
-    this.workingDir = Agent.WORK_DIR.resolve(instanceId.toString()).resolve(distribution.getVersion().toString());
+    Path workingDir = Agent.WORK_DIR.resolve(instanceId.toString());
+    logger.info("Working directory is: {}", workingDir);
+    this.workingDir = workingDir;
   }
 
   // Returns the location to be used for kit - could be the source kit path itself, or a new location based on if or not
