@@ -58,7 +58,7 @@ public class RetryUtils {
       long timeout = min(currRetryTime, timeBudget.remaining()); //Keep track of how much time remains
       Future<Boolean> future = executorService.submit(condition);
       if (getResult(timeout, future)) {
-        logger.info("Condition became true after {}{}", maxWaitDuration - timeBudget.remaining(), timeUnit);
+        logger.info("Condition became true after {} {}", maxWaitDuration - timeBudget.remaining(), timeUnit.name().toLowerCase());
         success = true;
         break;
       } else {
