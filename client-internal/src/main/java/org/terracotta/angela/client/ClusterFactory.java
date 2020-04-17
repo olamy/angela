@@ -23,6 +23,7 @@ import org.terracotta.angela.client.config.ConfigurationContext;
 import org.terracotta.angela.client.config.MonitoringConfigurationContext;
 import org.terracotta.angela.client.config.TmsConfigurationContext;
 import org.terracotta.angela.client.config.TsaConfigurationContext;
+import org.terracotta.angela.client.config.VoterConfigurationContext;
 import org.terracotta.angela.client.remote.agent.RemoteAgentLauncher;
 import org.terracotta.angela.common.cluster.Cluster;
 import org.terracotta.angela.common.metrics.HardwareMetric;
@@ -69,6 +70,7 @@ public class ClusterFactory implements AutoCloseable {
   private static final String TMS = "tms";
   private static final String CLIENT_ARRAY = "clientArray";
   private static final String MONITOR = "monitor";
+  private static final String VOTER = "voter";
   private static final DateTimeFormatter PATH_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-hhmmss");
 
   private final List<AutoCloseable> controllers = new ArrayList<>();
@@ -201,6 +203,15 @@ public class ClusterFactory implements AutoCloseable {
     return tms;
   }
 
+  public Voter voter() {
+    VoterConfigurationContext voterConfigurationContext = configurationContext.voter();
+    InstanceId instanceId = init(VOTER, voterConfigurationContext.getHostNames());
+
+    Voter voter = new Voter(ignite, instanceId, voterConfigurationContext);
+    controllers.add(voter);
+    return voter;
+  }
+  
   public ClientArray clientArray() {
     ClientArrayConfigurationContext clientArrayConfigurationContext = configurationContext.clientArray();
     init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
@@ -229,7 +240,7 @@ public class ClusterFactory implements AutoCloseable {
       return new ClusterMonitor(ignite, monitorInstanceId, hostnames, commands);
     }
   }
-
+  
   @Override
   public void close() throws IOException {
     List<Exception> exceptions = new ArrayList<>();

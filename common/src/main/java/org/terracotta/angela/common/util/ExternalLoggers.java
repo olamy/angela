@@ -30,5 +30,6 @@ public class ExternalLoggers {
   public static final Logger sshLogger = LoggerFactory.getLogger(PREFIX + ".ssh");
   public static final Logger tsaLogger = LoggerFactory.getLogger(PREFIX + ".tsa");
   public static final Logger tmsLogger = LoggerFactory.getLogger(PREFIX + ".tms");
+  public static final Logger voterLogger = LoggerFactory.getLogger(PREFIX + ".voter");
 
 }

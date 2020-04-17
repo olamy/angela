@@ -17,22 +17,22 @@
 
 package org.terracotta.angela.client.config;
 
-import java.util.Set;
+import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
+import org.terracotta.angela.common.TerracottaVoter;
+import org.terracotta.angela.common.distribution.Distribution;
+import org.terracotta.angela.common.tcconfig.License;
 
-public interface ConfigurationContext {
+import java.util.List;
 
-  RemotingConfigurationContext remoting();
+public interface VoterConfigurationContext {
 
-  TsaConfigurationContext tsa();
+  List<TerracottaVoter> getTerracottaVoters();
 
-  TmsConfigurationContext tms();
+  Distribution getDistribution();
 
-  ClientArrayConfigurationContext clientArray();
+  License getLicense();
 
-  Set<String> allHostnames();
+  TerracottaCommandLineEnvironment getTerracottaCommandLineEnvironment();
 
-  MonitoringConfigurationContext monitoring();
-  
-  VoterConfigurationContext voter();
-
+  List<String> getHostNames();
 }

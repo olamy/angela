@@ -15,24 +15,11 @@
  * Terracotta, Inc., a Software AG company
  */
 
-package org.terracotta.angela.client.config;
+package org.terracotta.angela.common;
 
-import java.util.Set;
-
-public interface ConfigurationContext {
-
-  RemotingConfigurationContext remoting();
-
-  TsaConfigurationContext tsa();
-
-  TmsConfigurationContext tms();
-
-  ClientArrayConfigurationContext clientArray();
-
-  Set<String> allHostnames();
-
-  MonitoringConfigurationContext monitoring();
-  
-  VoterConfigurationContext voter();
-
+public enum TerracottaVoterState {
+  NOT_INSTALLED,
+  STARTED,
+  STOPPED
 }
+

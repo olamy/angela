@@ -22,6 +22,8 @@ import org.terracotta.angela.common.ConfigToolExecutionResult;
 import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess;
 import org.terracotta.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
+import org.terracotta.angela.common.TerracottaVoter;
+import org.terracotta.angela.common.TerracottaVoterInstance;
 import org.terracotta.angela.common.TerracottaServerState;
 import org.terracotta.angela.common.provider.ConfigurationManager;
 import org.terracotta.angela.common.provider.TcConfigManager;
@@ -287,6 +289,16 @@ public class Distribution43Controller extends DistributionController {
     throw new UnsupportedOperationException("NOT YET IMPLEMENTED");
   }
 
+  @Override
+  public TerracottaVoterInstance.TerracottaVoterInstanceProcess startVoter(TerracottaVoter terracottaVoter, File kitDir, File workingDir, TerracottaCommandLineEnvironment tcEnv) {
+    throw new UnsupportedOperationException("Running voter is supported not in this distribution version");
+  }
+
+  @Override
+  public void stopVoter(TerracottaVoterInstance.TerracottaVoterInstanceProcess terracottaVoterInstanceProcess) {
+    throw new UnsupportedOperationException("Running voter is supported not in this distribution version");
+  }
+  
   @Override
   public URI tsaUri(Collection<TerracottaServer> servers, Map<ServerSymbolicName, Integer> proxyTsaPorts) {
     return URI.create(servers
