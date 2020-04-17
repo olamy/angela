@@ -21,6 +21,7 @@ import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.net.DisruptionProvider;
 import org.terracotta.angela.common.net.Disruptor;
+import org.terracotta.angela.common.net.PortProvider;
 
 import java.util.Collection;
 import java.util.List;
@@ -49,5 +50,6 @@ public interface ConfigurationManager {
   Collection<String> getServersHostnames();
 
   void createDisruptionLinks(TerracottaServer terracottaServer, DisruptionProvider disruptionProvider,
-                             Map<ServerSymbolicName, Disruptor> disruptionLinks, Map<ServerSymbolicName, Integer> proxiedPorts);
+                             Map<ServerSymbolicName, Disruptor> disruptionLinks, Map<ServerSymbolicName, Integer> proxiedPorts,
+                             PortProvider portProvider);
 }

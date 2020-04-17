@@ -17,7 +17,7 @@
 
 package org.terracotta.angela.common.tcconfig.holders;
 
-import org.terracotta.angela.common.net.PortChooser;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
@@ -53,8 +53,6 @@ import static org.terracotta.angela.common.tcconfig.ServerSymbolicName.symbolicN
  * @author Aurelien Broszniowski
  */
 public class TcConfig10Holder extends TcConfigHolder {
-
-  private static final PortChooser PORT_CHOOSER = new PortChooser();
 
   public TcConfig10Holder(final TcConfig10Holder tcConfig10Holder) {
     super(tcConfig10Holder);
@@ -144,7 +142,7 @@ public class TcConfig10Holder extends TcConfigHolder {
     });
   }
 
-  public List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy) {
+  public List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy, PortProvider portProvider) {
     List<TerracottaServer> members = new ArrayList<>();
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
@@ -162,7 +160,7 @@ public class TcConfig10Holder extends TcConfigHolder {
         if (name.equals(serverName) || !updateProxy) {
           member = TerracottaServer.server(name, host).tsaGroupPort(groupPort);
         } else {
-          int proxyPort = PORT_CHOOSER.chooseRandomPort();
+          int proxyPort = portProvider.getNewRandomFreePort();
           member = TerracottaServer.server(name, host).tsaGroupPort(groupPort).proxyPort(proxyPort);
           tsaGroupPortNode.setTextContent(String.valueOf(proxyPort));
         }
@@ -177,7 +175,7 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
-  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy) {
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortProvider portProvider) {
     Map<ServerSymbolicName, Integer> tsaPorts = new HashMap<>();
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
@@ -190,7 +188,7 @@ public class TcConfig10Holder extends TcConfigHolder {
         Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
         int tsaPort = Integer.parseInt(tsaPortNode.getTextContent().trim());
         if (updateForProxy) {
-          tsaPort = PORT_CHOOSER.chooseRandomPort();
+          tsaPort = portProvider.getNewRandomFreePort();
           tsaPortNode.setTextContent(String.valueOf(tsaPort));
         }
         tsaPorts.put(new ServerSymbolicName(name), tsaPort);

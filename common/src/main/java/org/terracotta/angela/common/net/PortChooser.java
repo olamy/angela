@@ -28,24 +28,27 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-public final class PortChooser {
+final class PortChooser {
   public static final int MAX = 65535;
 
   private static final Object VM_WIDE_LOCK = (PortChooser.class.getName() + "LOCK").intern();
   private static final Set<Integer> chosen = new HashSet<Integer>();
   private static final Random random = new Random();
 
-  public int chooseRandomPort() {
+  // be careful when using this method
+  // it does not do any coordination across JVM
+  // so 2 concurrent JVM could allocate overlapping ranges
+  static int chooseRandomPort() {
     synchronized (VM_WIDE_LOCK) {
       int portNum = choose();
-      chosen.add(Integer.valueOf(portNum));
+      chosen.add(portNum);
       return portNum;
     }
   }
 
-  public int chooseRandomPorts(int numOfPorts) {
+  static int chooseRandomPorts(int numOfPorts) {
     //Assert.assertTrue(numOfPorts > 0);
-    int port = 0;
+    int port;
     synchronized (VM_WIDE_LOCK) {
       do {
         port = choose();
@@ -63,19 +66,19 @@ public final class PortChooser {
       } while (true);
 
       for (int i = 0; i < numOfPorts; i++) {
-        chosen.add(Integer.valueOf(port + i));
+        chosen.add(port + i);
       }
     }
     return port;
   }
 
-  public boolean isPortUsed(int portNum) {
-    final Integer port = Integer.valueOf(portNum);
+  private static boolean isPortUsed(int portNum) {
+    final Integer port = portNum;
     if (chosen.contains(port)) return true;
     return !canBind(portNum) && !canConnect(portNum);
   }
 
-  private boolean canConnect(int portNumber) {
+  private static boolean canConnect(int portNumber) {
     Socket sock = null;
     boolean isFree = false;
     try {
@@ -96,7 +99,7 @@ public final class PortChooser {
     return isFree;
   }
 
-  private boolean canBind(int portNum) {
+  private static boolean canBind(int portNum) {
     if (portNum >= 32768) { return false; }
     ServerSocket ss = null;
     boolean isFree = false;
@@ -104,7 +107,7 @@ public final class PortChooser {
       ss = new ServerSocket(portNum);
       isFree = true;
     } catch (BindException be) {
-      isFree = false; // port in use,
+      // port in use,
     } catch (IOException e) {
       throw new RuntimeException(e);
     } finally {
@@ -120,10 +123,10 @@ public final class PortChooser {
     return isFree;
   }
 
-  private synchronized int choose() {
+  private static synchronized int choose() {
     while (true) {
       final int attempt = getNonEphemeralPort();
-      if (chosen.contains(Integer.valueOf(attempt))) {
+      if (chosen.contains(attempt)) {
         continue; // already picked at some point, try again
       }
       if (canBind(attempt) && canConnect(attempt)) return attempt;

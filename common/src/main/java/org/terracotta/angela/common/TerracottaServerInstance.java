@@ -22,6 +22,7 @@ import org.terracotta.angela.common.distribution.DistributionController;
 import org.terracotta.angela.common.net.DisruptionProvider;
 import org.terracotta.angela.common.net.DisruptionProviderFactory;
 import org.terracotta.angela.common.net.Disruptor;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
@@ -56,18 +57,21 @@ public class TerracottaServerInstance implements Closeable {
   private final DistributionController distributionController;
   private final File workingDir;
   private final Distribution distribution;
+  private final PortProvider portProvider;
   private final File licenseFileLocation;
   private volatile TerracottaServerInstanceProcess terracottaServerInstanceProcess;
   private final boolean netDisruptionEnabled;
   private final Topology topology;
 
   public TerracottaServerInstance(TerracottaServer terracottaServer, File kitDir, File workingDir,
-                                  License license, Distribution distribution, Topology topology) {
+                                  License license, Distribution distribution, Topology topology,
+                                  PortProvider portProvider) {
     this.terracottaServer = terracottaServer;
     this.kitDir = kitDir;
     this.distributionController = distribution.createDistributionController();
     this.workingDir = workingDir;
     this.distribution = distribution;
+    this.portProvider = portProvider;
     this.licenseFileLocation = license == null ? null : new File(kitDir, license.getFilename());
     this.netDisruptionEnabled = topology.isNetDisruptionEnabled();
     this.topology = topology;
@@ -77,7 +81,7 @@ public class TerracottaServerInstance implements Closeable {
   private void constructLinks() {
     if (netDisruptionEnabled) {
       topology.getConfigurationManager()
-          .createDisruptionLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts);
+          .createDisruptionLinks(terracottaServer, DISRUPTION_PROVIDER, disruptionLinks, proxiedPorts, portProvider);
     }
   }
 

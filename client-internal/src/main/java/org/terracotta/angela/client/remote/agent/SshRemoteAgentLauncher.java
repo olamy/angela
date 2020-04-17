@@ -18,6 +18,7 @@
 package org.terracotta.angela.client.remote.agent;
 
 import org.terracotta.angela.agent.Agent;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.util.HostPort;
 import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.util.AngelaVersions;
@@ -56,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static org.terracotta.angela.common.AngelaProperties.DIRECT_JOIN;
 import static org.terracotta.angela.common.AngelaProperties.NODE_NAME;
+import static org.terracotta.angela.common.AngelaProperties.PORT;
 import static org.terracotta.angela.common.AngelaProperties.PORT_RANGE;
 import static org.terracotta.angela.common.AngelaProperties.ROOT_DIR;
 import static org.terracotta.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
@@ -110,7 +112,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
   }
 
   @Override
-  public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin) {
+  public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin, PortProvider portProvider) {
     initAgentJar();
     if (clients.containsKey(targetServerName)) {
       return;
@@ -156,7 +158,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       LOGGER.info("starting agent");
       String joinHosts = nodesToJoin.stream().map(node -> {
         String resolvedIPAddr = IpUtils.getHostAddress(node);
-        String str = new HostPort(node, 40000).getHostPort();
+        String str = new HostPort(node, portProvider.getIgnitePort()).getHostPort();
         if (!node.equals(resolvedIPAddr)) {
           str += "/" + resolvedIPAddr;
         }
@@ -167,7 +169,8 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
           "-D" + NODE_NAME.getPropertyName() + "=" + targetServerName + " " +
           "-D" + DIRECT_JOIN.getPropertyName() + "=" + joinHosts + " " +
           "-D" + ROOT_DIR.getPropertyName() + "=" + baseDir.toString() + " " +
-          "-D" + PORT_RANGE.getPropertyName() + "=" + PORT_RANGE.getValue() + " " +
+          "-D" + PORT_RANGE.getPropertyName() + "=" + portProvider.getIgnitePortRange() + " " +
+          "-D" + PORT.getPropertyName() + "=" + portProvider.getIgnitePort() + " " +
           "-jar " + jarsDir.resolve(agentJarFile.getName()).toString());
 
       SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);

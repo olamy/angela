@@ -17,6 +17,7 @@
 
 package org.terracotta.angela.common.provider;
 
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TcConfig;
@@ -204,10 +205,11 @@ public class TcConfigManager implements ConfigurationManager {
   public void createDisruptionLinks(TerracottaServer terracottaServer,
                                     DisruptionProvider disruptionProvider,
                                     Map<ServerSymbolicName, Disruptor> disruptionLinks,
-                                    Map<ServerSymbolicName, Integer> proxiedPorts) {
+                                    Map<ServerSymbolicName, Integer> proxiedPorts,
+                                    PortProvider portProvider) {
     TcConfig tcConfig = findTcConfig(terracottaServer.getId());
     TcConfig modifiedConfig = TcConfig.copy(tcConfig);
-    List<TerracottaServer> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider.isProxyBased());
+    List<TerracottaServer> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider.isProxyBased(), portProvider);
     TerracottaServer thisMember = members.get(0);
     for (int i = 1; i < members.size(); ++i) {
       TerracottaServer otherMember = members.get(i);

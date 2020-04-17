@@ -27,6 +27,7 @@ import org.terracotta.angela.client.remote.agent.RemoteAgentLauncher;
 import org.terracotta.angela.common.cluster.Cluster;
 import org.terracotta.angela.common.metrics.HardwareMetric;
 import org.terracotta.angela.common.metrics.MonitoringCommand;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.topology.InstanceId;
 import org.terracotta.angela.common.util.DirectoryUtils;
 import org.terracotta.angela.common.util.HostPort;
@@ -72,6 +73,7 @@ public class ClusterFactory implements AutoCloseable {
 
   private final List<AutoCloseable> controllers = new ArrayList<>();
   private final String idPrefix;
+  private final PortProvider portProvider;
   private final AtomicInteger instanceIndex;
   private final Map<String, Collection<InstanceId>> nodeToInstanceId = new HashMap<>();
   private final ConfigurationContext configurationContext;
@@ -82,8 +84,13 @@ public class ClusterFactory implements AutoCloseable {
   private InstanceId monitorInstanceId;
 
   public ClusterFactory(String idPrefix, ConfigurationContext configurationContext) {
+    this(idPrefix, configurationContext, PortProvider.SYS_PROPS);
+  }
+
+  public ClusterFactory(String idPrefix, ConfigurationContext configurationContext, PortProvider portProvider) {
     // Using UTC to have consistent layout even in case of timezone skew between client and server.
     this.idPrefix = idPrefix + "-" + LocalDateTime.now(ZoneId.of("UTC")).format(PATH_FORMAT);
+    this.portProvider = portProvider;
     this.instanceIndex = new AtomicInteger();
     this.configurationContext = configurationContext;
     this.remoteAgentLauncher = configurationContext.remoting().buildRemoteAgentLauncher();
@@ -121,7 +128,7 @@ public class ClusterFactory implements AutoCloseable {
         nodesToJoin.addAll(nodeToInstanceId.keySet());
         nodesToJoin.addAll(targetServerNames);
         LOGGER.info("Target server name: {} is not local. Using remoting agent for connection to: {}", targetServerName, nodesToJoin);
-        remoteAgentLauncher.remoteStartAgentOn(targetServerName, nodesToJoin);
+        remoteAgentLauncher.remoteStartAgentOn(targetServerName, nodesToJoin, portProvider);
       }
 
       nodeToInstanceId.compute(targetServerName, (s, instanceIds) -> {
@@ -137,13 +144,13 @@ public class ClusterFactory implements AutoCloseable {
     if (ignite == null) {
       if (allLocal) {
         LOGGER.info("spawning local agent");
-        localAgent = new Agent.Node(targetServerNames.iterator().next(), Collections.emptyList());
+        localAgent = new Agent.Node(targetServerNames.iterator().next(), Collections.emptyList(), portProvider);
       }
 
       TcpDiscoverySpi spi = new TcpDiscoverySpi();
       TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
       ipFinder.setAddresses(targetServerNames.stream()
-          .map(targetServerName -> new HostPort(targetServerName, 40000).getHostPort())
+          .map(targetServerName -> new HostPort(targetServerName, portProvider.getIgnitePort()).getHostPort())
           .collect(Collectors.toList()));
       spi.setJoinTimeout(10000);
       spi.setIpFinder(ipFinder);
@@ -180,7 +187,7 @@ public class ClusterFactory implements AutoCloseable {
     TsaConfigurationContext tsaConfigurationContext = configurationContext.tsa();
     InstanceId instanceId = init(TSA, tsaConfigurationContext.getTopology().getServersHostnames());
 
-    Tsa tsa = new Tsa(ignite, instanceId, tsaConfigurationContext);
+    Tsa tsa = new Tsa(ignite, instanceId, tsaConfigurationContext, portProvider);
     controllers.add(tsa);
     return tsa;
   }

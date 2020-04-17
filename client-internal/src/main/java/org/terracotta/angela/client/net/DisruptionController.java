@@ -17,10 +17,13 @@
 
 package org.terracotta.angela.client.net;
 
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.terracotta.angela.common.net.DisruptionProvider;
 import org.terracotta.angela.common.net.DisruptionProviderFactory;
 import org.terracotta.angela.common.net.Disruptor;
-import org.terracotta.angela.common.net.PortChooser;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.provider.ConfigurationManager;
 import org.terracotta.angela.common.provider.DynamicConfigManager;
 import org.terracotta.angela.common.provider.TcConfigManager;
@@ -29,9 +32,6 @@ import org.terracotta.angela.common.tcconfig.TcConfig;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.topology.InstanceId;
 import org.terracotta.angela.common.topology.Topology;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,14 +49,16 @@ public class DisruptionController implements AutoCloseable {
   private final Ignite ignite;
   private final InstanceId instanceId;
   private final Topology topology;
+  private final PortProvider portProvider;
   private final Collection<Disruptor> existingDisruptors = new ArrayList<>();
   private final Map<ServerSymbolicName, Integer> proxyTsaPorts = new HashMap<>();
   private volatile boolean closed;
 
-  public DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology) {
+  public DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology, PortProvider portProvider) {
     this.ignite = ignite;
     this.instanceId = instanceId;
     this.topology = topology;
+    this.portProvider = portProvider;
   }
 
   /**
@@ -208,15 +210,15 @@ public class DisruptionController implements AutoCloseable {
         List<TcConfig> configs = tcConfigProvider.getTcConfigs();
         for (TcConfig config : configs) {
           TcConfig copy = TcConfig.copy(config);
-          proxyTsaPorts.putAll(copy.retrieveTsaPorts(true));
+          proxyTsaPorts.putAll(copy.retrieveTsaPorts(true, portProvider));
           proxyMap.putAll(proxyTsaPorts);
         }
       } else {
-        PortChooser PORT_CHOOSER = new PortChooser();
         DynamicConfigManager dynamicConfigManager = (DynamicConfigManager) configurationProvider;
-        for (TerracottaServer terracottaServer : dynamicConfigManager.getServers()) {
-          int tsaRandomPort = PORT_CHOOSER.chooseRandomPort();
-          proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), tsaRandomPort);
+        List<TerracottaServer> servers = dynamicConfigManager.getServers();
+        int tsaRandomBasePort = portProvider.getNewRandomFreePorts(servers.size());
+        for (TerracottaServer terracottaServer : servers) {
+          proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), tsaRandomBasePort++);
         }
         proxyMap.putAll(proxyTsaPorts);
       }
