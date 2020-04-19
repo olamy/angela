@@ -46,7 +46,18 @@ public class TriggeringOutputStream extends LogOutputStream {
               action.accept(matcher.toMatchResult());
             }
           }
-    });
+        });
+  }
+
+  public final TriggeringOutputStream andForward(Consumer<String> action) {
+    return new TriggeringOutputStream(
+        line -> {
+          try {
+            consumer.accept(line);
+          } finally {
+            action.accept(line);
+          }
+        });
   }
 
   private TriggeringOutputStream(Consumer<String> consumer) {

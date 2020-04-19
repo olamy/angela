@@ -95,10 +95,10 @@ public class Distribution107Controller extends DistributionController {
             mr -> {
               javaPid.set(parseInt(mr.group(1)));
               stateRef.compareAndSet(TerracottaServerState.STOPPED, TerracottaServerState.STARTING);
-            })
-        .andTriggerOn(
-            tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
-            mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group()));
+            });
+    serverLogOutputStream = tsaFullLogging ?
+        serverLogOutputStream.andForward(line -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), line)) :
+        serverLogOutputStream.andTriggerOn(compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group()));
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(
         new ProcessExecutor()
@@ -137,10 +137,10 @@ public class Distribution107Controller extends DistributionController {
             mr -> stateRef.set(TerracottaManagementServerState.STARTED))
         .andTriggerOn(
             compile("^.*\\QStarting TmsApplication\\E.*with PID (\\d+).*$"),
-            mr -> javaPid.set(parseInt(mr.group(1))))
-        .andTriggerOn(
-            tmsFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
-            mr -> ExternalLoggers.tmsLogger.info(mr.group()));
+            mr -> javaPid.set(parseInt(mr.group(1))));
+    outputStream = tmsFullLogging ?
+        outputStream.andForward(ExternalLoggers.tmsLogger::info) :
+        outputStream.andTriggerOn(compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group()));
 
     WatchedProcess<TerracottaManagementServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTmsCommand(kitDir))
