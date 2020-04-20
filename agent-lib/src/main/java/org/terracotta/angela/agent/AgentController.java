@@ -21,6 +21,7 @@ import org.terracotta.angela.agent.client.RemoteClientManager;
 import org.terracotta.angela.agent.kit.MonitoringInstance;
 import org.terracotta.angela.agent.kit.RemoteKitManager;
 import org.terracotta.angela.agent.kit.TerracottaInstall;
+import org.terracotta.angela.agent.kit.VoterInstall;
 import org.terracotta.angela.agent.kit.TmsInstall;
 import org.terracotta.angela.common.ClusterToolExecutionResult;
 import org.terracotta.angela.common.ConfigToolExecutionResult;
@@ -29,6 +30,9 @@ import org.terracotta.angela.common.TerracottaManagementServerInstance;
 import org.terracotta.angela.common.TerracottaManagementServerState;
 import org.terracotta.angela.common.TerracottaServerInstance;
 import org.terracotta.angela.common.TerracottaServerState;
+import org.terracotta.angela.common.TerracottaVoterInstance;
+import org.terracotta.angela.common.TerracottaVoterState;
+import org.terracotta.angela.common.TerracottaVoter;
 import org.terracotta.angela.common.ToolExecutionResult;
 import org.terracotta.angela.common.distribution.Distribution;
 import org.terracotta.angela.common.metrics.HardwareMetric;
@@ -84,6 +88,7 @@ public class AgentController {
 
   private final Map<InstanceId, TerracottaInstall> kitsInstalls = new HashMap<>();
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
+  private final Map<InstanceId, VoterInstall> voterInstalls = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
   private final PortProvider portProvider;
@@ -172,6 +177,27 @@ public class AgentController {
     }
   }
 
+  public boolean installVoter(InstanceId instanceId, TerracottaVoter terracottaVoter, Distribution distribution, License license,
+                              String kitInstallationName, TerracottaCommandLineEnvironment tcEnv) {
+    VoterInstall voterInstall = voterInstalls.get(instanceId);
+
+    if (voterInstall == null) {
+      RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
+      if (!kitManager.isKitAvailable()) {
+        return false;
+      }
+
+      logger.info("Installing kit for {} from {}", terracottaVoter, distribution);
+      File kitDir = kitManager.installKit(license, Collections.singletonList(terracottaVoter.getHostName()));
+      File workingDir = kitManager.getWorkingDir().toFile();
+      voterInstall = voterInstalls.computeIfAbsent(instanceId, (id) -> new VoterInstall(distribution, kitDir, workingDir, tcEnv));
+    }
+
+    voterInstall.addVoter(terracottaVoter);
+
+    return true;
+  }
+  
   private void enableTmsSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
     Properties properties = new Properties();
 
@@ -230,7 +256,9 @@ public class AgentController {
     if (terracottaInstall != null) {
       int installationsCount = terracottaInstall.removeServer(terracottaServer);
       TmsInstall tmsInstall = tmsInstalls.get(instanceId);
-      if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null)) {
+      VoterInstall voterInstall = voterInstalls.get(instanceId);
+      int numOfVoterInstances = (voterInstall != null ? voterInstall.terracottaVoterInstanceCount() : 0);
+      if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null) && numOfVoterInstances == 0) {
         File installLocation = terracottaInstall.getRootInstallLocation();
         try {
           logger.info("Uninstalling kit(s) from {}", installLocation);
@@ -244,7 +272,7 @@ public class AgentController {
         }
       } else {
         logger.info("Kit install still in use by {} Terracotta servers",
-            installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1));
+            installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1) + numOfVoterInstances);
       }
     } else {
       logger.info("No installed kit for " + topology);
@@ -258,7 +286,9 @@ public class AgentController {
       tmsInstall.removeServer();
       TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
       int numberOfTerracottaInstances = (terracottaInstall != null ? terracottaInstall.terracottaServerInstanceCount() : 0);
-      if (numberOfTerracottaInstances == 0) {
+      VoterInstall voterInstall = voterInstalls.get(instanceId);
+      int numberOfVoterInstances = (voterInstall != null ? voterInstall.terracottaVoterInstanceCount() : 0);
+      if (numberOfTerracottaInstances == 0 && numberOfVoterInstances == 0) {
         try {
           logger.info("Uninstalling kit for " + tmsHostname);
           RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
@@ -271,13 +301,45 @@ public class AgentController {
               .getAbsolutePath(), ioe);
         }
       } else {
-        logger.info("Kit install still in use by {} Terracotta servers", numberOfTerracottaInstances);
+        if (numberOfTerracottaInstances != 0) {
+          logger.info("Kit install still in use by {} Terracotta servers", numberOfTerracottaInstances);
+        } else {
+          logger.info("Kit install still in use by {} Voters", numberOfVoterInstances);
+        }
       }
     } else {
       logger.info("No installed kit for " + tmsHostname);
     }
   }
 
+  public void uninstallVoter(InstanceId instanceId, Distribution distribution, TerracottaVoter terracottaVoter, String kitInstallationName) {
+    VoterInstall voterInstall = voterInstalls.get(instanceId);
+    if (voterInstall != null) {
+      int installationsCount = voterInstall.removeVoter(terracottaVoter);
+      TmsInstall tmsInstall = tmsInstalls.get(instanceId);
+      TerracottaInstall terracottaInstall = kitsInstalls.get(instanceId);
+      int numOfTerracottaInstances = (terracottaInstall != null ? terracottaInstall.terracottaServerInstanceCount() : 0);
+      if (installationsCount == 0 && (tmsInstall == null || tmsInstall.getTerracottaManagementServerInstance() == null) && numOfTerracottaInstances == 0) {
+        File installLocation = voterInstall.getKitLocation();
+        try {
+          logger.info("Uninstalling kit(s) from {}", installLocation);
+          RemoteKitManager kitManager = new RemoteKitManager(instanceId, distribution, kitInstallationName);
+          // TODO : get log files
+
+          kitManager.deleteInstall(installLocation);
+          voterInstalls.remove(instanceId);
+        } catch (IOException ioe) {
+          throw new RuntimeException("Unable to uninstall kit at " + installLocation.getAbsolutePath() + " on " + terracottaVoter, ioe);
+        }
+      } else {
+        logger.info("Kit install still in use by {} ",
+            installationsCount + (tmsInstall == null ? 0 : tmsInstall.getTerracottaManagementServerInstance() == null ? 0 : 1) + numOfTerracottaInstances);
+      }
+    } else {
+      logger.info("No installed kit for " + terracottaVoter.getHostName());
+    }
+  }
+  
   public void createTsa(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.create(tcEnv, startUpArgs);
@@ -340,6 +402,28 @@ public class AgentController {
     serverInstance.undisrupt(targets);
   }
 
+  public TerracottaVoterState getVoterState(InstanceId instanceId, TerracottaVoter terracottaVoter) {
+    VoterInstall voterInstall = voterInstalls.get(instanceId);
+    if (voterInstall == null) {
+      return TerracottaVoterState.NOT_INSTALLED;
+    }
+    TerracottaVoterInstance terracottaVoterInstance = voterInstall.getTerracottaVoterInstance(terracottaVoter);
+    if (terracottaVoterInstance == null) {
+      return TerracottaVoterState.NOT_INSTALLED;
+    }
+    return terracottaVoterInstance.getTerracottaVoterState();
+  }
+
+  public void startVoter(InstanceId instanceId, TerracottaVoter terracottaVoter) {
+    TerracottaVoterInstance terracottaVoterInstance = voterInstalls.get(instanceId).getTerracottaVoterInstance(terracottaVoter);
+    terracottaVoterInstance.start();
+  }
+
+  public void stopVoter(InstanceId instanceId, TerracottaVoter terracottaVoter) {
+    TerracottaVoterInstance terracottaVoterInstance = voterInstalls.get(instanceId).getTerracottaVoterInstance(terracottaVoter);
+    terracottaVoterInstance.stop();
+  }
+  
   public void configure(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts,
                         String clusterName, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);

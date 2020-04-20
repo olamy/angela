@@ -29,6 +29,8 @@ import org.terracotta.angela.common.TerracottaManagementServerInstance.Terracott
 import org.terracotta.angela.common.TerracottaManagementServerState;
 import org.terracotta.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
 import org.terracotta.angela.common.TerracottaServerState;
+import org.terracotta.angela.common.TerracottaVoter;
+import org.terracotta.angela.common.TerracottaVoterInstance;
 import org.terracotta.angela.common.provider.ConfigurationManager;
 import org.terracotta.angela.common.provider.TcConfigManager;
 import org.terracotta.angela.common.tcconfig.SecureTcConfig;
@@ -361,6 +363,16 @@ public class Distribution102Controller extends DistributionController {
         logger.error("Could not destroy TMS process {}", pid, e);
       }
     }
+  }
+
+  @Override
+  public TerracottaVoterInstance.TerracottaVoterInstanceProcess startVoter(TerracottaVoter terracottaVoter, File kitDir, File workingDir, TerracottaCommandLineEnvironment tcEnv) {
+    throw new UnsupportedOperationException("Running voter is supported not in this distribution version");
+  }
+
+  @Override
+  public void stopVoter(TerracottaVoterInstance.TerracottaVoterInstanceProcess terracottaVoterInstanceProcess) {
+    throw new UnsupportedOperationException("Running voter is supported not in this distribution version");
   }
 
   /**

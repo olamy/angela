@@ -23,6 +23,7 @@ import org.terracotta.angela.client.config.MonitoringConfigurationContext;
 import org.terracotta.angela.client.config.RemotingConfigurationContext;
 import org.terracotta.angela.client.config.TmsConfigurationContext;
 import org.terracotta.angela.client.config.TsaConfigurationContext;
+import org.terracotta.angela.client.config.VoterConfigurationContext;
 import org.terracotta.angela.client.remote.agent.SshRemoteAgentLauncher;
 import org.terracotta.angela.common.distribution.Distribution;
 
@@ -36,6 +37,7 @@ public class CustomConfigurationContext implements ConfigurationContext {
   private CustomTmsConfigurationContext customTmsConfigurationContext;
   private CustomMonitoringConfigurationContext customMonitoringConfigurationContext;
   private CustomClientArrayConfigurationContext customClientArrayConfigurationContext;
+  private CustomVoterConfigurationContext customVoterConfigurationContext;
 
   public static CustomConfigurationContext customConfigurationContext() {
     return new CustomConfigurationContext();
@@ -129,6 +131,20 @@ public class CustomConfigurationContext implements ConfigurationContext {
     return customMonitoringConfigurationContext;
   }
 
+  @Override
+  public VoterConfigurationContext voter() {
+    return customVoterConfigurationContext;
+  }
+
+  public CustomConfigurationContext voter(Consumer<CustomVoterConfigurationContext> voter) {
+    if (customVoterConfigurationContext != null) {
+      throw new IllegalStateException("Voter config already defined");
+    }
+    customVoterConfigurationContext = new CustomVoterConfigurationContext();
+    voter.accept(customVoterConfigurationContext);
+    return this;
+  }
+  
   public CustomConfigurationContext monitoring(Consumer<CustomMonitoringConfigurationContext> consumer) {
     if (customMonitoringConfigurationContext != null) {
       throw new IllegalStateException("Monitoring config already defined");

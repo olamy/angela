@@ -25,6 +25,9 @@ import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.TerracottaManagementServerInstance.TerracottaManagementServerInstanceProcess;
 import org.terracotta.angela.common.TerracottaManagementServerState;
 import org.terracotta.angela.common.TerracottaServerInstance.TerracottaServerInstanceProcess;
+import org.terracotta.angela.common.TerracottaVoterState;
+import org.terracotta.angela.common.TerracottaVoter;
+import org.terracotta.angela.common.TerracottaVoterInstance;
 import org.terracotta.angela.common.TerracottaServerState;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
@@ -53,14 +56,17 @@ import java.util.stream.Collectors;
 
 import static java.io.File.separator;
 import static java.lang.Integer.parseInt;
+import static java.lang.String.join;
 import static java.util.regex.Pattern.compile;
 import static org.terracotta.angela.common.AngelaProperties.TMS_FULL_LOGGING;
 import static org.terracotta.angela.common.AngelaProperties.TSA_FULL_LOGGING;
+import static org.terracotta.angela.common.AngelaProperties.VOTER_FULL_LOGGING;
 
 public class Distribution107Controller extends DistributionController {
   private final static Logger LOGGER = LoggerFactory.getLogger(Distribution107Controller.class);
   private final boolean tsaFullLogging = Boolean.parseBoolean(TSA_FULL_LOGGING.getValue());
   private final boolean tmsFullLogging = Boolean.parseBoolean(TMS_FULL_LOGGING.getValue());
+  private final boolean voterFullLogging = Boolean.parseBoolean(VOTER_FULL_LOGGING.getValue());
 
   public Distribution107Controller(Distribution distribution) {
     super(distribution);
@@ -169,6 +175,58 @@ public class Distribution107Controller extends DistributionController {
   public void stopTms(File installLocation, TerracottaManagementServerInstanceProcess terracottaServerInstanceProcess, TerracottaCommandLineEnvironment tcEnv) {
     LOGGER.debug("Destroying TMS process");
     for (Number pid : terracottaServerInstanceProcess.getPids()) {
+      try {
+        ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
+      } catch (Exception e) {
+        LOGGER.error("Could not destroy TMS process {}", pid, e);
+      }
+    }
+  }
+
+  @Override
+  public TerracottaVoterInstance.TerracottaVoterInstanceProcess startVoter(TerracottaVoter terracottaVoter, File kitDir, File workingDir, TerracottaCommandLineEnvironment tcEnv) {
+    Map<String, String> env = buildEnv(tcEnv);
+
+    AtomicReference<TerracottaVoterState> stateRef = new AtomicReference<>(TerracottaVoterState.STOPPED);
+    AtomicInteger javaPid = new AtomicInteger(-1);
+
+    TriggeringOutputStream outputStream = TriggeringOutputStream
+        .triggerOn(
+            compile("^.*PID is (\\d+).*$"),
+            mr -> javaPid.set(parseInt(mr.group(1))))
+        .andTriggerOn(
+            compile("^.*\\QVote owner state: ACTIVE-COORDINATOR\\E.*$"),
+            mr -> stateRef.compareAndSet(TerracottaVoterState.STOPPED, TerracottaVoterState.STARTED))
+        .andTriggerOn(voterFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
+            mr -> ExternalLoggers.voterLogger.info("[{}] {}", terracottaVoter.getId(), mr.group()));
+
+    WatchedProcess<TerracottaVoterState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
+        .command(startVoterCommand(kitDir, terracottaVoter))
+        .directory(workingDir)
+        .environment(env)
+        .redirectError(System.err)
+        .redirectOutput(outputStream), stateRef, TerracottaVoterState.STOPPED);
+
+    while ((javaPid.get() == -1 || stateRef.get() == TerracottaVoterState.STOPPED) && watchedProcess.isAlive()) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    if (!watchedProcess.isAlive()) {
+      throw new RuntimeException("Voter process died before reaching STARTED state");
+    }
+
+    int wrapperPid = watchedProcess.getPid();
+    int javaProcessPid = javaPid.get();
+    return new TerracottaVoterInstance.TerracottaVoterInstanceProcess(stateRef, wrapperPid, javaProcessPid);
+  }
+
+  @Override
+  public void stopVoter(TerracottaVoterInstance.TerracottaVoterInstanceProcess terracottaVoterInstanceProcess) {
+    LOGGER.debug("Destroying Voter process");
+    for (Number pid : terracottaVoterInstanceProcess.getPids()) {
       try {
         ProcessUtil.destroyGracefullyOrForcefullyAndWait(pid.intValue());
       } catch (Exception e) {
@@ -400,6 +458,25 @@ public class Distribution107Controller extends DistributionController {
     throw new IllegalStateException("Can not define TMS Start Command for distribution: " + distribution);
   }
 
+  private List<String> startVoterCommand(File installLocation, TerracottaVoter terracottaVoter) {
+    List<String> command = new ArrayList<>();
+    command.add(getStartVoterExecutable(installLocation));
+    command.add("-s");
+    command.add(join(",", terracottaVoter.getHostPorts()));
+    LOGGER.info(" Start VOTER command = {}", command);
+    return command;
+  }
+
+  private String getStartVoterExecutable(File installLocation) {
+    String execPath = "voter" + separator + "bin" + separator + "start-tc-voter" + OS.INSTANCE.getShellExtension();
+    if (distribution.getPackageType() == PackageType.KIT) {
+      return installLocation.getAbsolutePath() + separator + execPath;
+    } else if (distribution.getPackageType() == PackageType.SAG_INSTALLER) {
+      return installLocation.getAbsolutePath() + separator + terracottaInstallationRoot() + separator + execPath;
+    }
+    throw new IllegalStateException("Can not define Voter Start Command for distribution: " + distribution);
+  }
+  
   @Override
   public String terracottaInstallationRoot() {
     return "TerracottaDB";

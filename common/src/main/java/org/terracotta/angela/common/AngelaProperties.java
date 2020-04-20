@@ -41,6 +41,7 @@ public enum AngelaProperties {
   SSH_STRICT_HOST_CHECKING("angela.ssh.strictHostKeyChecking", "true"),
   TMS_FULL_LOGGING("angela.tms.fullLogging", "false"),
   TSA_FULL_LOGGING("angela.tsa.fullLogging", "false"),
+  VOTER_FULL_LOGGING("angela.voter.fullLogging", "false"),
   JAVA_VENDOR("angela.java.vendor", "zulu"),
   JAVA_VERSION("angela.java.version", "1.8"),
   JAVA_OPTS("angela.java.opts", "-Djdk.security.allowNonCaAnchor=false"),
