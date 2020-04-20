@@ -17,6 +17,10 @@
 
 package org.terracotta.angela.common.distribution;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.terracotta.angela.common.AngelaProperties;
 import org.terracotta.angela.common.ClusterToolException;
 import org.terracotta.angela.common.ClusterToolExecutionResult;
 import org.terracotta.angela.common.ConfigToolExecutionResult;
@@ -32,6 +36,7 @@ import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TcConfig;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
+import org.terracotta.angela.common.topology.PackageType;
 import org.terracotta.angela.common.topology.Topology;
 import org.terracotta.angela.common.topology.Version;
 import org.terracotta.angela.common.util.ExternalLoggers;
@@ -39,11 +44,6 @@ import org.terracotta.angela.common.util.HostPort;
 import org.terracotta.angela.common.util.OS;
 import org.terracotta.angela.common.util.ProcessUtil;
 import org.terracotta.angela.common.util.TriggeringOutputStream;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.terracotta.angela.common.AngelaProperties;
-import org.terracotta.angela.common.topology.PackageType;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
 import org.zeroturnaround.exec.StartedProcess;
@@ -63,12 +63,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static org.terracotta.angela.common.util.HostAndIpValidator.isValidHost;
-import static org.terracotta.angela.common.util.HostAndIpValidator.isValidIPv4;
-import static org.terracotta.angela.common.util.HostAndIpValidator.isValidIPv6;
 import static java.io.File.separator;
 import static java.lang.Integer.parseInt;
 import static java.util.regex.Pattern.compile;
+import static org.terracotta.angela.common.util.HostAndIpValidator.isValidHost;
+import static org.terracotta.angela.common.util.HostAndIpValidator.isValidIPv4;
+import static org.terracotta.angela.common.util.HostAndIpValidator.isValidIPv6;
 
 /**
  * @author Aurelien Broszniowski
@@ -109,11 +109,10 @@ public class Distribution102Controller extends DistributionController {
             compile("^.*PID is (\\d+).*$"), mr -> {
               javaPid.set(parseInt(mr.group(1)));
               stateRef.compareAndSet(TerracottaServerState.STOPPED, TerracottaServerState.STARTING);
-            })
-        .andTriggerOn(
-            tsaFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"),
-            mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group())
-        );
+            });
+    serverLogOutputStream = tsaFullLogging ?
+        serverLogOutputStream.andForward(line -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), line)) :
+        serverLogOutputStream.andTriggerOn(compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tsaLogger.info("[{}] {}", terracottaServer.getServerSymbolicName().getSymbolicName(), mr.group()));
 
     WatchedProcess<TerracottaServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(createTsaCommand(terracottaServer.getServerSymbolicName(), terracottaServer.getId(), topology, proxiedPorts, kitDir, workingDir, startUpArgs))
@@ -325,9 +324,10 @@ public class Distribution102Controller extends DistributionController {
         compile("^.*\\Qstarted on port\\E.*$"), mr -> stateRef.set(TerracottaManagementServerState.STARTED)
     ).andTriggerOn(
         compile("^.*\\QStarting TmsApplication\\E.*with PID (\\d+).*$"), mr -> javaPid.set(parseInt(mr.group(1)))
-    ).andTriggerOn(
-        tmsFullLogging ? compile("^.*$") : compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group())
     );
+    outputStream = tmsFullLogging ?
+        outputStream.andForward(ExternalLoggers.tmsLogger::info) :
+        outputStream.andTriggerOn(compile("^.*(WARN|ERROR).*$"), mr -> ExternalLoggers.tmsLogger.info(mr.group()));
 
     WatchedProcess<TerracottaManagementServerState> watchedProcess = new WatchedProcess<>(new ProcessExecutor()
         .command(startTmsCommand(kitDir))

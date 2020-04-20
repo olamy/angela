@@ -17,8 +17,10 @@
 
 package org.terracotta.angela.client.remote.agent;
 
+import org.terracotta.angela.common.net.PortProvider;
+
 import java.util.Collection;
 
 public interface RemoteAgentLauncher extends AutoCloseable {
-  void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin);
+  void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin, PortProvider portProvider);
 }

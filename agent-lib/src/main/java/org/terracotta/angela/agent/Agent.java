@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.terracotta.angela.common.AngelaProperties;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.util.AngelaVersion;
 import org.terracotta.angela.common.util.HostPort;
 import org.terracotta.angela.common.util.IgniteCommonHelper;
@@ -48,7 +49,6 @@ import java.util.Map;
 import static org.terracotta.angela.common.AngelaProperties.DIRECT_JOIN;
 import static org.terracotta.angela.common.AngelaProperties.IGNITE_LOGGING;
 import static org.terracotta.angela.common.AngelaProperties.NODE_NAME;
-import static org.terracotta.angela.common.AngelaProperties.PORT_RANGE;
 import static org.terracotta.angela.common.AngelaProperties.getEitherOf;
 import static org.terracotta.angela.common.util.DirectoryUtils.createAndValidateDir;
 import static org.terracotta.angela.common.util.HostAndIpValidator.isValidIPv6;
@@ -87,7 +87,6 @@ public class Agent {
   static Node startNode() {
     String nodeName = NODE_NAME.getValue();
     String directJoin = DIRECT_JOIN.getValue();
-    String portRange = PORT_RANGE.getValue();
 
     List<String> nodesToJoin = new ArrayList<>();
     if (directJoin != null) {
@@ -97,7 +96,7 @@ public class Agent {
         }
       }
     }
-    Node node = new Node(nodeName, nodesToJoin, Integer.parseInt(portRange));
+    Node node = new Node(nodeName, nodesToJoin, PortProvider.SYS_PROPS);
 
     // Do not use logger here as the marker is being grep'ed at and we do not want to depend upon the logger config
     System.out.println(AGENT_IS_READY_MARKER_LOG);
@@ -113,13 +112,9 @@ public class Agent {
 
     private volatile Ignite ignite;
 
-    public Node(String nodeName, List<String> nodesToJoin) {
-      this(nodeName, nodesToJoin, Integer.parseInt(PORT_RANGE.getDefaultValue()));
-    }
-
-    public Node(String nodeName, List<String> nodesToJoin, int portRange) {
+    public Node(String nodeName, List<String> nodesToJoin, PortProvider portProvider) {
       try {
-        init(nodeName, nodesToJoin, portRange);
+        init(nodeName, nodesToJoin, portProvider);
       } catch (Exception e) {
         try {
           close();
@@ -130,7 +125,7 @@ public class Agent {
       }
     }
 
-    private void init(String nodeName, List<String> nodesToJoin, int portRange) {
+    private void init(String nodeName, List<String> nodesToJoin, PortProvider portProvider) {
       logger.info("Root directory is : " + ROOT_DIR);
       createAndValidateDir(ROOT_DIR);
       createAndValidateDir(WORK_DIR);
@@ -176,10 +171,10 @@ public class Agent {
 
       TcpDiscoverySpi spi = new TcpDiscoverySpi();
       spi.setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(nodesToJoinHostnames));
-      spi.setLocalPort(40000);
+      spi.setLocalPort(portProvider.getIgnitePort());
       spi.setJoinTimeout(10000);
-      spi.setLocalPortRange(portRange);
-      cfg.setCommunicationSpi(new TcpCommunicationSpi().setLocalPortRange(portRange));
+      spi.setLocalPortRange(portProvider.getIgnitePortRange());
+      cfg.setCommunicationSpi(new TcpCommunicationSpi().setLocalPortRange(portProvider.getIgnitePortRange()));
       cfg.setDiscoverySpi(spi);
 
       // Mapping internal ip addresses to public addresses to that ignite node be able to discover each other.
@@ -202,7 +197,7 @@ public class Agent {
         throw new RuntimeException("Error starting agent " + nodeName, e);
       }
 
-      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(new HostPort(nodeName, 40000).getHostPort()) : nodesToJoin);
+      controller = new AgentController(ignite, nodesToJoin.isEmpty() ? Collections.singleton(new HostPort(nodeName, portProvider.getIgnitePort()).getHostPort()) : nodesToJoin, portProvider);
       logger.info("Registered node '" + nodeName + "'");
     }
 

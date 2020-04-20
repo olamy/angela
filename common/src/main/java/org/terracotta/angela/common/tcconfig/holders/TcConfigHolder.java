@@ -17,6 +17,7 @@
 
 package org.terracotta.angela.common.tcconfig.holders;
 
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.tcconfig.TsaStripeConfig;
@@ -346,13 +347,13 @@ public abstract class TcConfigHolder {
 
   public abstract void updateAuditDirectoryLocation(final File kitDir, final int stripeId);
 
-  public abstract List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy);
+  public abstract List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy, PortProvider portProvider);
 
   public abstract void updateServerGroupPort(Map<ServerSymbolicName, Integer> proxiedPorts);
 
   public abstract void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts);
 
-  public abstract Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy);
+  public abstract Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortProvider portProvider);
 
   public void substituteToken(String token, String value) {
     this.tcConfigContent = this.tcConfigContent.replaceAll(token, value);

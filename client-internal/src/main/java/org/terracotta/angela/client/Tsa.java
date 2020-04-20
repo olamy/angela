@@ -27,6 +27,7 @@ import org.terracotta.angela.common.ConfigToolExecutionResult;
 import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
 import org.terracotta.angela.common.TerracottaServerState;
 import org.terracotta.angela.common.distribution.Distribution;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.provider.ConfigurationManager;
 import org.terracotta.angela.common.provider.DynamicConfigManager;
 import org.terracotta.angela.common.provider.TcConfigManager;
@@ -86,11 +87,11 @@ public class Tsa implements AutoCloseable {
   private final LocalKitManager localKitManager;
   private boolean closed = false;
 
-  Tsa(Ignite ignite, InstanceId instanceId, TsaConfigurationContext tsaConfigurationContext) {
+  Tsa(Ignite ignite, InstanceId instanceId, TsaConfigurationContext tsaConfigurationContext, PortProvider portProvider) {
     this.tsaConfigurationContext = tsaConfigurationContext;
     this.instanceId = instanceId;
     this.ignite = ignite;
-    this.disruptionController = new DisruptionController(ignite, instanceId, tsaConfigurationContext.getTopology());
+    this.disruptionController = new DisruptionController(ignite, instanceId, tsaConfigurationContext.getTopology(), portProvider);
     this.localKitManager = new LocalKitManager(tsaConfigurationContext.getTopology().getDistribution());
     installAll();
   }

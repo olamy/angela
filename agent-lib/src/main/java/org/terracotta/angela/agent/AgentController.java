@@ -33,6 +33,7 @@ import org.terracotta.angela.common.ToolExecutionResult;
 import org.terracotta.angela.common.distribution.Distribution;
 import org.terracotta.angela.common.metrics.HardwareMetric;
 import org.terracotta.angela.common.metrics.MonitoringCommand;
+import org.terracotta.angela.common.net.PortProvider;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
@@ -85,11 +86,13 @@ public class AgentController {
   private final Map<InstanceId, TmsInstall> tmsInstalls = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
+  private final PortProvider portProvider;
   private volatile MonitoringInstance monitoringInstance;
 
-  AgentController(Ignite ignite, Collection<String> joinedNodes) {
+  AgentController(Ignite ignite, Collection<String> joinedNodes, PortProvider portProvider) {
     this.ignite = ignite;
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
+    this.portProvider = portProvider;
   }
 
   public boolean installTsa(InstanceId instanceId,
@@ -111,7 +114,7 @@ public class AgentController {
       logger.info("Installing kit for {} from {}", terracottaServer, distribution);
       kitLocation = kitManager.installKit(license, topology.getServersHostnames());
       workingDir = kitManager.getWorkingDir().toFile();
-      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(workingDir.getParentFile()));
+      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(workingDir.getParentFile(), portProvider));
     } else {
       kitLocation = terracottaInstall.kitLocation(distribution);
       workingDir = terracottaInstall.installLocation(distribution);
@@ -420,7 +423,7 @@ public class AgentController {
 
   public int spawnClient(InstanceId instanceId, TerracottaCommandLineEnvironment tcEnv) {
     RemoteClientManager remoteClientManager = new RemoteClientManager(instanceId);
-    return remoteClientManager.spawnClient(instanceId, tcEnv, joinedNodes);
+    return remoteClientManager.spawnClient(instanceId, tcEnv, joinedNodes, portProvider);
   }
 
   public void downloadFiles(InstanceId instanceId, File installDir) {

@@ -32,6 +32,7 @@ public enum AngelaProperties {
   DIRECT_JOIN("angela.directJoin", null),
   IGNITE_LOGGING("angela.igniteLogging", "false"),
   NODE_NAME("angela.nodeName", IpUtils.getHostName()),
+  PORT("angela.port", "40000"),
   PORT_RANGE("angela.portRange", "1000"),
   SKIP_KIT_COPY_LOCALHOST("angela.skipKitCopyLocalhost", "true"),
   SKIP_UNINSTALL("angela.skipUninstall", "false"),
