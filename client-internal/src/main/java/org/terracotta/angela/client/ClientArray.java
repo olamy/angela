@@ -90,7 +90,7 @@ public class ClientArray implements AutoCloseable {
           .getTerracottaCommandLineEnvironment(), localKitManager);
       clients.put(clientId, client);
     } catch (Exception e) {
-      throw new RuntimeException("Cannot upload client jars to " + clientId, e);
+      throw new RuntimeException(e);
     }
   }
 
