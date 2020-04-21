@@ -93,7 +93,7 @@ public class Client implements Closeable {
 
       return pid;
     } catch (Exception e) {
-      throw new RuntimeException("Cannot create client on " + clientId, e);
+      throw new RuntimeException(e);
     }
   }
 
