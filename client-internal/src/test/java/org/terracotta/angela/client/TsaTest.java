@@ -17,26 +17,26 @@
 
 package org.terracotta.angela.client;
 
+import org.junit.Test;
 import org.terracotta.angela.client.config.TsaConfigurationContext;
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.DefaultPortAllocator;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.tcconfig.TcConfig;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.topology.LicenseType;
 import org.terracotta.angela.common.topology.PackageType;
 import org.terracotta.angela.common.topology.Topology;
-import org.junit.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.terracotta.angela.common.distribution.Distribution.distribution;
-import static org.terracotta.angela.common.topology.Version.version;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.terracotta.angela.common.distribution.Distribution.distribution;
+import static org.terracotta.angela.common.topology.Version.version;
 
 /**
  * @author Aurelien Broszniowski
@@ -51,7 +51,7 @@ public class TsaTest {
     TsaConfigurationContext tsaConfigurationContext = mock(TsaConfigurationContext.class);
     when(tsaConfigurationContext.getTopology()).then(invocationOnMock -> new Topology(distribution(version("3.8.1"), PackageType.KIT, LicenseType.TERRACOTTA_OS), tcConfig));
     when(tsaConfigurationContext.getLicense()).thenReturn(license);
-    Tsa tsa = new Tsa(null, null, tsaConfigurationContext, PortProvider.SYS_PROPS);
+    Tsa tsa = new Tsa(null, 1, new DefaultPortAllocator(), null, tsaConfigurationContext);
     List<TerracottaServer> terracottaServerList = new ArrayList<>();
     terracottaServerList.add(TerracottaServer.server("1", "hostname1")
         .tsaPort(9510)
@@ -77,7 +77,7 @@ public class TsaTest {
     TsaConfigurationContext tsaConfigurationContext = mock(TsaConfigurationContext.class);
     when(tsaConfigurationContext.getTopology()).then(invocationOnMock -> new Topology(distribution(version("4.3.6.0.0"), PackageType.KIT, LicenseType.GO), tcConfig));
     when(tsaConfigurationContext.getLicense()).thenReturn(license);
-    Tsa tsa = new Tsa(null, null, tsaConfigurationContext, PortProvider.SYS_PROPS);
+    Tsa tsa = new Tsa(null, 1, new DefaultPortAllocator(), null, tsaConfigurationContext);
     List<TerracottaServer> terracottaServerList = new ArrayList<>();
     terracottaServerList.add(TerracottaServer.server("1", "hostname1")
         .tsaPort(9510)

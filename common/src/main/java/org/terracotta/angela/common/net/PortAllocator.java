@@ -16,41 +16,23 @@
  */
 package org.terracotta.angela.common.net;
 
-import org.terracotta.angela.common.AngelaProperties;
+import java.io.Closeable;
 
 /**
  * @author Mathieu Carbou
  */
-public interface PortProvider {
-  PortProvider SYS_PROPS = new PortProvider() {
-    @Override
-    public int getIgnitePort() {
-      return Integer.parseInt(AngelaProperties.PORT.getValue());
-    }
+public interface PortAllocator extends Closeable {
 
-    @Override
-    public int getIgnitePortRange() {
-      return Integer.parseInt(AngelaProperties.PORT_RANGE.getValue());
-    }
-
-    @Override
-    public int getNewRandomFreePort() {
-      return PortChooser.chooseRandomPort();
-    }
-
-    @Override
-    public int getNewRandomFreePorts(int count) {
-      return PortChooser.chooseRandomPorts(count);
-    }
-  };
-
-  int getIgnitePort();
-
-  int getIgnitePortRange();
-
-  default int getNewRandomFreePort() {
+  default PortAllocation getNewRandomFreePort() {
     return getNewRandomFreePorts(1);
   }
 
-  int getNewRandomFreePorts(int count);
+  /**
+   * @return Some new random ports
+   */
+  PortAllocation getNewRandomFreePorts(int count);
+
+  @Override
+  default void close() {
+  }
 }

@@ -19,7 +19,7 @@ package org.terracotta.angela.agent.kit;
 
 import org.terracotta.angela.common.TerracottaServerInstance;
 import org.terracotta.angela.common.distribution.Distribution;
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.topology.Topology;
@@ -36,12 +36,12 @@ import java.util.UUID;
 public class TerracottaInstall {
 
   private final File rootInstallLocation;
-  private final PortProvider portProvider;
+  private final PortAllocator portAllocator;
   private final Map<UUID, TerracottaServerInstance> terracottaServerInstances = new HashMap<>();
 
-  public TerracottaInstall(File rootInstallLocation, PortProvider portProvider) {
+  public TerracottaInstall(File rootInstallLocation, PortAllocator portAllocator) {
     this.rootInstallLocation = rootInstallLocation;
-    this.portProvider = portProvider;
+    this.portAllocator = portAllocator;
   }
 
   public TerracottaServerInstance getTerracottaServerInstance(TerracottaServer terracottaServer) {
@@ -70,7 +70,7 @@ public class TerracottaInstall {
 
   public void addServer(TerracottaServer terracottaServer, File kitLocation, File installLocation, License license, Distribution distribution, Topology topology) {
     synchronized (terracottaServerInstances) {
-      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer, kitLocation, installLocation, license, distribution, topology, portProvider);
+      TerracottaServerInstance serverInstance = new TerracottaServerInstance(terracottaServer, kitLocation, installLocation, license, distribution, topology, portAllocator);
       terracottaServerInstances.put(terracottaServer.getId(), serverInstance);
     }
   }

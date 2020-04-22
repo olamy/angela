@@ -17,18 +17,14 @@
 
 package org.terracotta.angela.client.remote.agent;
 
-import org.terracotta.angela.common.net.PortProvider;
-
-import java.util.Collection;
-
 public class NoRemoteAgentLauncher implements RemoteAgentLauncher {
   @Override
-  public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin, PortProvider portProvider) {
+  public void close() throws Exception {
 
   }
 
   @Override
-  public void close() throws Exception {
+  public void remoteStartAgentOn(String hostname, String nodeName, int ignitePort, String addressesToDiscover) {
 
   }
 }

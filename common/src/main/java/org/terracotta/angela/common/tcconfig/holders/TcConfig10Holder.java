@@ -17,7 +17,7 @@
 
 package org.terracotta.angela.common.tcconfig.holders;
 
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
@@ -142,7 +142,7 @@ public class TcConfig10Holder extends TcConfigHolder {
     });
   }
 
-  public List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy, PortProvider portProvider) {
+  public List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy, PortAllocator portAllocator) {
     List<TerracottaServer> members = new ArrayList<>();
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
@@ -160,7 +160,7 @@ public class TcConfig10Holder extends TcConfigHolder {
         if (name.equals(serverName) || !updateProxy) {
           member = TerracottaServer.server(name, host).tsaGroupPort(groupPort);
         } else {
-          int proxyPort = portProvider.getNewRandomFreePort();
+          int proxyPort = portAllocator.getNewRandomFreePort().getBasePort();
           member = TerracottaServer.server(name, host).tsaGroupPort(groupPort).proxyPort(proxyPort);
           tsaGroupPortNode.setTextContent(String.valueOf(proxyPort));
         }
@@ -175,7 +175,7 @@ public class TcConfig10Holder extends TcConfigHolder {
   }
 
   @Override
-  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortProvider portProvider) {
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortAllocator portAllocator) {
     Map<ServerSymbolicName, Integer> tsaPorts = new HashMap<>();
     modifyXml((tcConfigXml, xPath) -> {
       NodeList serversList = getServersList(tcConfigXml, xPath);
@@ -188,7 +188,7 @@ public class TcConfig10Holder extends TcConfigHolder {
         Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
         int tsaPort = Integer.parseInt(tsaPortNode.getTextContent().trim());
         if (updateForProxy) {
-          tsaPort = portProvider.getNewRandomFreePort();
+          tsaPort = portAllocator.getNewRandomFreePort().getBasePort();
           tsaPortNode.setTextContent(String.valueOf(tsaPort));
         }
         tsaPorts.put(new ServerSymbolicName(name), tsaPort);

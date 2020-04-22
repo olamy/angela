@@ -17,7 +17,7 @@
 
 package org.terracotta.angela.common.tcconfig.holders;
 
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.tcconfig.TsaStripeConfig;
@@ -72,12 +72,12 @@ public class TcConfig9Holder extends TcConfigHolder {
   }
 
   @Override
-  public List<TerracottaServer> retrieveGroupMembers(String serverName, boolean updateProxy, PortProvider portProvider) {
+  public List<TerracottaServer> retrieveGroupMembers(String serverName, boolean updateProxy, PortAllocator portAllocator) {
     throw new UnsupportedOperationException("Unimplemented");
   }
 
   @Override
-  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortProvider portProvider) {
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortAllocator portAllocator) {
     throw new UnsupportedOperationException("Unimplemented");
   }
 

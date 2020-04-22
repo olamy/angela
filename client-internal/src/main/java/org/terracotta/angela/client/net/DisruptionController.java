@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.terracotta.angela.common.net.DisruptionProvider;
 import org.terracotta.angela.common.net.DisruptionProviderFactory;
 import org.terracotta.angela.common.net.Disruptor;
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.provider.ConfigurationManager;
 import org.terracotta.angela.common.provider.DynamicConfigManager;
 import org.terracotta.angela.common.provider.TcConfigManager;
@@ -48,17 +48,17 @@ public class DisruptionController implements AutoCloseable {
   private static final DisruptionProvider DISRUPTION_PROVIDER = DisruptionProviderFactory.getDefault();
   private final Ignite ignite;
   private final InstanceId instanceId;
+  private final int ignitePort;
   private final Topology topology;
-  private final PortProvider portProvider;
   private final Collection<Disruptor> existingDisruptors = new ArrayList<>();
   private final Map<ServerSymbolicName, Integer> proxyTsaPorts = new HashMap<>();
   private volatile boolean closed;
 
-  public DisruptionController(Ignite ignite, InstanceId instanceId, Topology topology, PortProvider portProvider) {
+  public DisruptionController(Ignite ignite, InstanceId instanceId, int ignitePort, Topology topology) {
     this.ignite = ignite;
     this.instanceId = instanceId;
+    this.ignitePort = ignitePort;
     this.topology = topology;
-    this.portProvider = portProvider;
   }
 
   /**
@@ -154,7 +154,7 @@ public class DisruptionController implements AutoCloseable {
     }
 
 
-    ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, instanceId, topology, linkedServers, existingDisruptors::remove);
+    ServerToServerDisruptor disruption = new ServerToServerDisruptor(ignite, ignitePort, instanceId, topology, linkedServers, existingDisruptors::remove);
     existingDisruptors.add(disruption);
     LOGGER.debug("created disruptor {}", disruption);
     return disruption;
@@ -201,7 +201,7 @@ public class DisruptionController implements AutoCloseable {
     closed = true;
   }
 
-  public Map<ServerSymbolicName, Integer> updateTsaPortsWithProxy(Topology topology) {
+  public Map<ServerSymbolicName, Integer> updateTsaPortsWithProxy(Topology topology, PortAllocator portAllocator) {
     Map<ServerSymbolicName, Integer> proxyMap = new HashMap<>();
     if (DISRUPTION_PROVIDER.isProxyBased()) {
       ConfigurationManager configurationProvider = topology.getConfigurationManager();
@@ -210,13 +210,13 @@ public class DisruptionController implements AutoCloseable {
         List<TcConfig> configs = tcConfigProvider.getTcConfigs();
         for (TcConfig config : configs) {
           TcConfig copy = TcConfig.copy(config);
-          proxyTsaPorts.putAll(copy.retrieveTsaPorts(true, portProvider));
+          proxyTsaPorts.putAll(copy.retrieveTsaPorts(true, portAllocator));
           proxyMap.putAll(proxyTsaPorts);
         }
       } else {
         DynamicConfigManager dynamicConfigManager = (DynamicConfigManager) configurationProvider;
         List<TerracottaServer> servers = dynamicConfigManager.getServers();
-        int tsaRandomBasePort = portProvider.getNewRandomFreePorts(servers.size());
+        int tsaRandomBasePort = portAllocator.getNewRandomFreePorts(servers.size()).getBasePort();
         for (TerracottaServer terracottaServer : servers) {
           proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), tsaRandomBasePort++);
         }

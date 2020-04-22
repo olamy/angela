@@ -17,12 +17,17 @@
 
 package org.terracotta.angela.agent;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.ignite.Ignite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.terracotta.angela.agent.client.RemoteClientManager;
 import org.terracotta.angela.agent.kit.MonitoringInstance;
 import org.terracotta.angela.agent.kit.RemoteKitManager;
 import org.terracotta.angela.agent.kit.TerracottaInstall;
-import org.terracotta.angela.agent.kit.VoterInstall;
 import org.terracotta.angela.agent.kit.TmsInstall;
+import org.terracotta.angela.agent.kit.VoterInstall;
 import org.terracotta.angela.common.ClusterToolExecutionResult;
 import org.terracotta.angela.common.ConfigToolExecutionResult;
 import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
@@ -30,14 +35,14 @@ import org.terracotta.angela.common.TerracottaManagementServerInstance;
 import org.terracotta.angela.common.TerracottaManagementServerState;
 import org.terracotta.angela.common.TerracottaServerInstance;
 import org.terracotta.angela.common.TerracottaServerState;
+import org.terracotta.angela.common.TerracottaVoter;
 import org.terracotta.angela.common.TerracottaVoterInstance;
 import org.terracotta.angela.common.TerracottaVoterState;
-import org.terracotta.angela.common.TerracottaVoter;
 import org.terracotta.angela.common.ToolExecutionResult;
 import org.terracotta.angela.common.distribution.Distribution;
 import org.terracotta.angela.common.metrics.HardwareMetric;
 import org.terracotta.angela.common.metrics.MonitoringCommand;
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.License;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
@@ -48,11 +53,6 @@ import org.terracotta.angela.common.topology.Topology;
 import org.terracotta.angela.common.util.FileMetadata;
 import org.terracotta.angela.common.util.IgniteCommonHelper;
 import org.terracotta.angela.common.util.ProcessUtil;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.ignite.Ignite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -91,13 +91,15 @@ public class AgentController {
   private final Map<InstanceId, VoterInstall> voterInstalls = new HashMap<>();
   private final Ignite ignite;
   private final Collection<String> joinedNodes;
-  private final PortProvider portProvider;
+  private final int ignitePort;
+  private final PortAllocator portAllocator;
   private volatile MonitoringInstance monitoringInstance;
 
-  AgentController(Ignite ignite, Collection<String> joinedNodes, PortProvider portProvider) {
+  AgentController(Ignite ignite, Collection<String> joinedNodes, int ignitePort, PortAllocator portAllocator) {
     this.ignite = ignite;
     this.joinedNodes = Collections.unmodifiableList(new ArrayList<>(joinedNodes));
-    this.portProvider = portProvider;
+    this.ignitePort = ignitePort;
+    this.portAllocator = portAllocator;
   }
 
   public boolean installTsa(InstanceId instanceId,
@@ -119,7 +121,7 @@ public class AgentController {
       logger.info("Installing kit for {} from {}", terracottaServer, distribution);
       kitLocation = kitManager.installKit(license, topology.getServersHostnames());
       workingDir = kitManager.getWorkingDir().toFile();
-      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(workingDir.getParentFile(), portProvider));
+      terracottaInstall = kitsInstalls.computeIfAbsent(instanceId, (iid) -> new TerracottaInstall(workingDir.getParentFile(), portAllocator));
     } else {
       kitLocation = terracottaInstall.kitLocation(distribution);
       workingDir = terracottaInstall.installLocation(distribution);
@@ -197,7 +199,7 @@ public class AgentController {
 
     return true;
   }
-  
+
   private void enableTmsSecurity(File tmcProperties, TmsServerSecurityConfig tmsServerSecurityConfig) {
     Properties properties = new Properties();
 
@@ -339,7 +341,7 @@ public class AgentController {
       logger.info("No installed kit for " + terracottaVoter.getHostName());
     }
   }
-  
+
   public void createTsa(InstanceId instanceId, TerracottaServer terracottaServer, TerracottaCommandLineEnvironment tcEnv, List<String> startUpArgs) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
     serverInstance.create(tcEnv, startUpArgs);
@@ -423,7 +425,7 @@ public class AgentController {
     TerracottaVoterInstance terracottaVoterInstance = voterInstalls.get(instanceId).getTerracottaVoterInstance(terracottaVoter);
     terracottaVoterInstance.stop();
   }
-  
+
   public void configure(InstanceId instanceId, TerracottaServer terracottaServer, Topology topology, Map<ServerSymbolicName, Integer> proxyTsaPorts,
                         String clusterName, SecurityRootDirectory securityRootDirectory, TerracottaCommandLineEnvironment tcEnv, boolean verbose) {
     TerracottaServerInstance serverInstance = kitsInstalls.get(instanceId).getTerracottaServerInstance(terracottaServer);
@@ -507,7 +509,7 @@ public class AgentController {
 
   public int spawnClient(InstanceId instanceId, TerracottaCommandLineEnvironment tcEnv) {
     RemoteClientManager remoteClientManager = new RemoteClientManager(instanceId);
-    return remoteClientManager.spawnClient(instanceId, tcEnv, joinedNodes, portProvider);
+    return remoteClientManager.spawnClient(instanceId, tcEnv, joinedNodes, ignitePort, portAllocator);
   }
 
   public void downloadFiles(InstanceId instanceId, File installDir) {
