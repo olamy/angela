@@ -43,7 +43,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
 
     <!-- Third-party dependencies -->
-    <ignite.version>2.7.6</ignite.version>
+    <ignite.version>2.8.0</ignite.version>
     <json-path.version>3.3.0</json-path.version>
     <mockito-core.version>2.25.0</mockito-core.version>
     <hamcrest.version>1.3</hamcrest.version>
@@ -253,6 +253,8 @@
               <angela.rootDir>${project.build.directory}/angela</angela.rootDir>
               <angela.java.vendor></angela.java.vendor> <!-- use any vendor for the tests -->
               <jdk.security.allowNonCaAnchor>true</jdk.security.allowNonCaAnchor>
+<!--              <angela.igniteLogging>true</angela.igniteLogging>-->
+<!--              <angela.java.opts>-agentlib:jdwp=transport=dt_socket,server=n,address=c02yj2f2jgh6.home:5005,suspend=n</angela.java.opts>-->
             </systemProperties>
           </configuration>
         </plugin>

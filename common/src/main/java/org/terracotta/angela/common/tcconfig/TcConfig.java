@@ -17,7 +17,7 @@
 
 package org.terracotta.angela.common.tcconfig;
 
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.holders.TcConfig10Holder;
 import org.terracotta.angela.common.tcconfig.holders.TcConfig8Holder;
 import org.terracotta.angela.common.tcconfig.holders.TcConfig9Holder;
@@ -162,8 +162,8 @@ public class TcConfig {
     tcConfigHolder.addServer(stripeIndex, hostname);
   }
 
-  public List<TerracottaServer> retrieveGroupMembers(String serverName, boolean updateProxy, PortProvider portProvider) {
-    return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy, portProvider);
+  public List<TerracottaServer> retrieveGroupMembers(String serverName, boolean updateProxy, PortAllocator portAllocator) {
+    return tcConfigHolder.retrieveGroupMembers(serverName, updateProxy, portAllocator);
   }
 
   public void updateServerGroupPort(Map<ServerSymbolicName, Integer> proxiedPorts) {
@@ -174,8 +174,8 @@ public class TcConfig {
     tcConfigHolder.updateServerTsaPort(proxiedPorts);
   }
 
-  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(boolean updateForProxy, PortProvider portProvider) {
-    return tcConfigHolder.retrieveTsaPorts(updateForProxy, portProvider);
+  public Map<ServerSymbolicName, Integer> retrieveTsaPorts(boolean updateForProxy, PortAllocator portAllocator) {
+    return tcConfigHolder.retrieveTsaPorts(updateForProxy, portAllocator);
   }
 
   public void substituteToken(String token, String value) {

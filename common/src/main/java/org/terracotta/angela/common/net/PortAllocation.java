@@ -14,17 +14,39 @@
  * The Initial Developer of the Covered Software is
  * Terracotta, Inc., a Software AG company
  */
+package org.terracotta.angela.common.net;
 
-package org.terracotta.angela.client.remote.agent;
+import java.io.Closeable;
 
-public class NoRemoteAgentLauncher implements RemoteAgentLauncher {
-  @Override
-  public void close() throws Exception {
+/**
+ * @author Mathieu Carbou
+ */
+public interface PortAllocation extends Closeable {
 
+  static PortAllocation fixed(int basePort, int count) {
+    return new PortAllocation() {
+      @Override
+      public int getBasePort() {
+        return basePort;
+      }
+
+      @Override
+      public int getPortCount() {
+        return count;
+      }
+    };
   }
 
-  @Override
-  public void remoteStartAgentOn(String hostname, String nodeName, int ignitePort, String addressesToDiscover) {
+  /**
+   * @return The first free port reserved by the implementation.
+   */
+  int getBasePort();
 
-  }
+  /**
+   * @return The number of port reserved by the implementation
+   */
+  int getPortCount();
+
+  @Override
+  default void close() {}
 }

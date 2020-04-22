@@ -17,13 +17,13 @@
 
 package org.terracotta.angela.common.provider;
 
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.DisruptionProvider;
+import org.terracotta.angela.common.net.Disruptor;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.SecurityRootDirectory;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TcConfig;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
-import org.terracotta.angela.common.net.DisruptionProvider;
-import org.terracotta.angela.common.net.Disruptor;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -206,10 +206,10 @@ public class TcConfigManager implements ConfigurationManager {
                                     DisruptionProvider disruptionProvider,
                                     Map<ServerSymbolicName, Disruptor> disruptionLinks,
                                     Map<ServerSymbolicName, Integer> proxiedPorts,
-                                    PortProvider portProvider) {
+                                    PortAllocator portAllocator) {
     TcConfig tcConfig = findTcConfig(terracottaServer.getId());
     TcConfig modifiedConfig = TcConfig.copy(tcConfig);
-    List<TerracottaServer> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider.isProxyBased(), portProvider);
+    List<TerracottaServer> members = modifiedConfig.retrieveGroupMembers(terracottaServer.getServerSymbolicName().getSymbolicName(), disruptionProvider.isProxyBased(), portAllocator);
     TerracottaServer thisMember = members.get(0);
     for (int i = 1; i < members.size(); ++i) {
       TerracottaServer otherMember = members.get(i);

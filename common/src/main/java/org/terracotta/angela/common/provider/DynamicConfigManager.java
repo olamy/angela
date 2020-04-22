@@ -17,12 +17,12 @@
 
 package org.terracotta.angela.common.provider;
 
-import org.terracotta.angela.common.tcconfig.TerracottaServer;
+import org.terracotta.angela.common.dynamic_cluster.Stripe;
 import org.terracotta.angela.common.net.DisruptionProvider;
 import org.terracotta.angela.common.net.Disruptor;
-import org.terracotta.angela.common.net.PortProvider;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
-import org.terracotta.angela.common.dynamic_cluster.Stripe;
+import org.terracotta.angela.common.tcconfig.TerracottaServer;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -155,12 +155,12 @@ public class DynamicConfigManager implements ConfigurationManager {
                                     DisruptionProvider disruptionProvider,
                                     Map<ServerSymbolicName, Disruptor> disruptionLinks,
                                     Map<ServerSymbolicName, Integer> proxiedPorts,
-                                    PortProvider portProvider) {
+                                    PortAllocator portAllocator) {
     int stripeIndex = getStripeIndexOf(terracottaServer.getId());
     List<TerracottaServer> allServersInStripe = stripes.get(stripeIndex).getServers();
     for (TerracottaServer server : allServersInStripe) {
       if (!server.getServerSymbolicName().equals(terracottaServer.getServerSymbolicName())) {
-        int tsaRandomGroupPort = portProvider.getNewRandomFreePort();
+        int tsaRandomGroupPort = portAllocator.getNewRandomFreePort().getBasePort();
         final InetSocketAddress src = new InetSocketAddress(terracottaServer.getHostname(), tsaRandomGroupPort);
         final InetSocketAddress dest = new InetSocketAddress(server.getHostname(), server.getTsaGroupPort());
         disruptionLinks.put(server.getServerSymbolicName(), disruptionProvider.createLink(src, dest));

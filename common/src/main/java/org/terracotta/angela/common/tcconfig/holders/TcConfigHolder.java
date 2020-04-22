@@ -17,12 +17,12 @@
 
 package org.terracotta.angela.common.tcconfig.holders;
 
-import org.terracotta.angela.common.net.PortProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.ServerSymbolicName;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 import org.terracotta.angela.common.tcconfig.TsaStripeConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -347,13 +347,13 @@ public abstract class TcConfigHolder {
 
   public abstract void updateAuditDirectoryLocation(final File kitDir, final int stripeId);
 
-  public abstract List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy, PortProvider portProvider);
+  public abstract List<TerracottaServer> retrieveGroupMembers(final String serverName, final boolean updateProxy, PortAllocator portAllocator);
 
   public abstract void updateServerGroupPort(Map<ServerSymbolicName, Integer> proxiedPorts);
 
   public abstract void updateServerTsaPort(Map<ServerSymbolicName, Integer> proxiedPorts);
 
-  public abstract Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortProvider portProvider);
+  public abstract Map<ServerSymbolicName, Integer> retrieveTsaPorts(final boolean updateForProxy, PortAllocator portAllocator);
 
   public void substituteToken(String token, String value) {
     this.tcConfigContent = this.tcConfigContent.replaceAll(token, value);

@@ -17,14 +17,6 @@
 
 package org.terracotta.angela.client.remote.agent;
 
-import org.terracotta.angela.agent.Agent;
-import org.terracotta.angela.common.net.PortProvider;
-import org.terracotta.angela.common.util.HostPort;
-import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
-import org.terracotta.angela.common.util.AngelaVersions;
-import org.terracotta.angela.common.util.IpUtils;
-import org.terracotta.angela.common.util.JDK;
-import org.terracotta.angela.common.util.JavaLocationResolver;
 import net.schmizz.sshj.SSHClient;
 import net.schmizz.sshj.common.StreamCopier;
 import net.schmizz.sshj.connection.ConnectionException;
@@ -36,6 +28,11 @@ import net.schmizz.sshj.xfer.scp.SCPRemoteException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.terracotta.angela.agent.Agent;
+import org.terracotta.angela.common.TerracottaCommandLineEnvironment;
+import org.terracotta.angela.common.util.AngelaVersions;
+import org.terracotta.angela.common.util.JDK;
+import org.terracotta.angela.common.util.JavaLocationResolver;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -48,17 +45,13 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.terracotta.angela.common.AngelaProperties.DIRECT_JOIN;
 import static org.terracotta.angela.common.AngelaProperties.NODE_NAME;
-import static org.terracotta.angela.common.AngelaProperties.PORT;
-import static org.terracotta.angela.common.AngelaProperties.PORT_RANGE;
 import static org.terracotta.angela.common.AngelaProperties.ROOT_DIR;
 import static org.terracotta.angela.common.AngelaProperties.SSH_STRICT_HOST_CHECKING;
 import static org.terracotta.angela.common.AngelaProperties.SSH_USERNAME;
@@ -112,23 +105,19 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
   }
 
   @Override
-  public void remoteStartAgentOn(String targetServerName, Collection<String> nodesToJoin, PortProvider portProvider) {
+  public void remoteStartAgentOn(String hostname, String nodeName, int ignitePort, String addressesToDiscover) {
     initAgentJar();
-    if (clients.containsKey(targetServerName)) {
-      return;
-    }
-
-    LOGGER.info("spawning {} agent via SSH", targetServerName);
+    LOGGER.info("spawning {} agent via SSH", hostname);
 
     try {
       SSHClient ssh = new SSHClient();
-      final String angelaHome = ".angela/" + targetServerName;
+      final String angelaHome = ".angela/" + hostname;
 
       if (!Boolean.parseBoolean(SSH_STRICT_HOST_CHECKING.getValue())) {
         ssh.addHostKeyVerifier(new PromiscuousVerifier());
       }
       ssh.loadKnownHosts();
-      ssh.connect(targetServerName);
+      ssh.connect(hostname);
 
       // load provided private key file, if available.
       if (remoteUserNameKeyPath == null) {
@@ -156,24 +145,15 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Session session = ssh.startSession();
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
-      String joinHosts = nodesToJoin.stream().map(node -> {
-        String resolvedIPAddr = IpUtils.getHostAddress(node);
-        String str = new HostPort(node, portProvider.getIgnitePort()).getHostPort();
-        if (!node.equals(resolvedIPAddr)) {
-          str += "/" + resolvedIPAddr;
-        }
-        return str;
-      }).collect(Collectors.joining(","));
 
       Session.Command cmd = session.exec(remoteJavaHome + "/bin/java " +
-          "-D" + NODE_NAME.getPropertyName() + "=" + targetServerName + " " +
-          "-D" + DIRECT_JOIN.getPropertyName() + "=" + joinHosts + " " +
+          "-D" + NODE_NAME.getPropertyName() + "=" + nodeName + " " +
+          "-Dangela.port=" + ignitePort + " " +
+          "-D" + DIRECT_JOIN.getPropertyName() + "=" + addressesToDiscover + " " +
           "-D" + ROOT_DIR.getPropertyName() + "=" + baseDir.toString() + " " +
-          "-D" + PORT_RANGE.getPropertyName() + "=" + portProvider.getIgnitePortRange() + " " +
-          "-D" + PORT.getPropertyName() + "=" + portProvider.getIgnitePort() + " " +
           "-jar " + jarsDir.resolve(agentJarFile.getName()).toString());
 
-      SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(targetServerName, cmd);
+      SshLogOutputStream sshLogOutputStream = new SshLogOutputStream(hostname, cmd);
       new StreamCopier(cmd.getInputStream(), sshLogOutputStream, net.schmizz.sshj.common.LoggerFactory.DEFAULT).bufSize(MAX_LINE_LENGTH)
           .spawnDaemon("stdout");
       new StreamCopier(cmd.getErrorStream(), sshLogOutputStream, net.schmizz.sshj.common.LoggerFactory.DEFAULT).bufSize(MAX_LINE_LENGTH)
@@ -181,11 +161,11 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
 
       sshLogOutputStream.waitForStartedState();
 
-      LOGGER.info("agent started on {}", targetServerName);
-      clients.put(targetServerName, new RemoteAgentHolder(ssh, session, cmd));
+      LOGGER.info("agent started on {}", hostname);
+      clients.put(hostname, new RemoteAgentHolder(ssh, session, cmd));
 
     } catch (Exception e) {
-      throw new RuntimeException("Failed to connect to " + remoteUserName + "@" + targetServerName + " (using SSH)", e);
+      throw new RuntimeException("Failed to connect to " + remoteUserName + "@" + hostname + " (using SSH)", e);
     }
   }
 

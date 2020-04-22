@@ -14,17 +14,27 @@
  * The Initial Developer of the Covered Software is
  * Terracotta, Inc., a Software AG company
  */
+package org.terracotta.angela.common.net.port_locking;
 
-package org.terracotta.angela.client.remote.agent;
+import java.util.Random;
 
-public class NoRemoteAgentLauncher implements RemoteAgentLauncher {
-  @Override
-  public void close() throws Exception {
+public class RandomPortAllocator implements PortAllocator {
+  private static final int LOWEST_PORT_INCLUSIVE = 1024;
+  private static final int HIGHEST_PORT_INCLUSIVE = 32767;
 
+  private final Random random;
+
+  public RandomPortAllocator(Random random) {
+    this.random = random;
   }
 
   @Override
-  public void remoteStartAgentOn(String hostname, String nodeName, int ignitePort, String addressesToDiscover) {
+  public int allocatePorts(int portCount) {
+    int highestPortAdjustment = portCount - 1;
+    return getRandomIntInRange(LOWEST_PORT_INCLUSIVE, HIGHEST_PORT_INCLUSIVE - highestPortAdjustment);
+  }
 
+  private int getRandomIntInRange(int min, int max) {
+    return random.nextInt((max - min) + 1) + min;
   }
 }

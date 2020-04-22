@@ -17,18 +17,21 @@
 
 package org.terracotta.angela.common.util;
 
-import org.terracotta.angela.common.topology.InstanceId;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.terracotta.angela.common.topology.InstanceId;
 
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class IgniteCommonHelper {
+  private final static Logger logger = LoggerFactory.getLogger(IgniteCommonHelper.class);
 
   public static BlockingQueue<Object> fileTransferQueue(Ignite ignite, InstanceId instanceId) {
     return ignite.queue(instanceId + "@file-transfer-queue", 100, new CollectionConfiguration());
@@ -43,4 +46,8 @@ public class IgniteCommonHelper {
     }
   }
 
+  public static void displayCluster(Ignite ignite) {
+    logger.info("Nodes of the ignite cluster (size = {}) : ", ignite.cluster().nodes().size());
+    ignite.cluster().nodes().forEach(node -> logger.info("- Nodename:" + node.attribute("nodename")));
+  }
 }
