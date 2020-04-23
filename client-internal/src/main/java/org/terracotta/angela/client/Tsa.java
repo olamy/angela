@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 import static java.util.EnumSet.of;
 import static org.terracotta.angela.common.AngelaProperties.KIT_INSTALLATION_DIR;
 import static org.terracotta.angela.common.AngelaProperties.KIT_INSTALLATION_PATH;
+import static org.terracotta.angela.common.AngelaProperties.SKIP_KIT_INSTALL;
 import static org.terracotta.angela.common.AngelaProperties.SKIP_UNINSTALL;
 import static org.terracotta.angela.common.AngelaProperties.getEitherOf;
 import static org.terracotta.angela.common.TerracottaServerState.STARTED_AS_ACTIVE;
@@ -155,7 +156,7 @@ public class Tsa implements AutoCloseable {
     boolean isRemoteInstallationSuccessful;
     IgniteCallable<Boolean> installTsaCallable = () -> Agent.controller.installTsa(instanceId, terracottaServer,
         license, localKitManager.getKitInstallationName(), distribution, topology);
-    if (kitInstallationPath == null) {
+    if (kitInstallationPath == null || Boolean.parseBoolean(SKIP_KIT_INSTALL.getValue())) {
       logger.info("Attempting to remotely install if distribution already exists on {}", terracottaServer.getHostname());
       isRemoteInstallationSuccessful = IgniteClientHelper.executeRemotely(ignite, terracottaServer.getHostname(), ignitePort, installTsaCallable);
     } else {
