@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 public enum AngelaProperties {
   ROOT_DIR("angela.rootDir", Paths.get("/data/angela").toAbsolutePath().toString()),
   KIT_INSTALLATION_DIR("angela.kitInstallationDir", null),
+  SKIP_KIT_INSTALL("angela.skipKitInstall", "false"),
   DIRECT_JOIN("angela.directJoin", ""),
   IGNITE_LOGGING("angela.igniteLogging", "false"),
   NODE_NAME("angela.nodeName", IpUtils.getHostName()),
