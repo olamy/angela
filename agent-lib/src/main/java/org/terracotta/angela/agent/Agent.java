@@ -98,9 +98,9 @@ public class Agent {
     cfg.setPeerClassLoadingEnabled(true);
     cfg.setMetricsLogFrequency(0);
     cfg.setIgniteInstanceName("ignite-" + ignitePort);
+    cfg.setIgniteHome(IGNITE_DIR.resolve(System.getProperty("user.name")).toString());
 
-    logger.info("Connecting to peers (size = {}): ", peers.size());
-    peers.forEach(peer -> logger.info("- {}", peer));
+    logger.info("Connecting to peers (size = {}): {}", peers.size(), peers);
 
     cfg.setDiscoverySpi(new TcpDiscoverySpi()
         .setLocalPort(ignitePort)
