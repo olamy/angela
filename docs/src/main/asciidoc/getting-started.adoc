@@ -61,6 +61,23 @@ include::../java/GettingStarted.java[tags=showTsaApi]
 <9> Stop one Terracotta server
 <10> Get the current state of the Terracotta server
 
+== Dynamic Tsa API
+Angela 3 adds support for dynamic config feature of Terracotta, which doesn't rely on a static tc-config XML file anymore.
+The feature adds the capability to change cluster settings and topology (e.g. node attach and detach at runtime).
+Angela provides a new API to be able to use this feature, an example of which is as under:
+
+[source,java]
+----
+include::../java/GettingStarted.java[tags=showDynamicTsaApi]
+----
+<1> Define an intial dynamic cluster topology
+<2> Start all Terracotta servers
+<3> Attach all servers defined in the intial topology to create an unconfigured cluster
+<4> Attach a single server stripe dynamically to the cluster
+<5> Detach the second node from the first stripe
+<6> Stop the detached server
+<7> Activate the cluster
+
 == Client array example
 
 [source,java]

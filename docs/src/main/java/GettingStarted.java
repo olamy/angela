@@ -37,14 +37,20 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.terracotta.angela.client.config.custom.CustomConfigurationContext.customConfigurationContext;
 import static org.terracotta.angela.common.clientconfig.ClientArrayConfig.newClientArrayConfig;
 import static org.terracotta.angela.common.distribution.Distribution.distribution;
+import static org.terracotta.angela.common.dynamic_cluster.Stripe.stripe;
+import static org.terracotta.angela.common.provider.DynamicConfigManager.dynamicCluster;
 import static org.terracotta.angela.common.tcconfig.TcConfig.tcConfig;
+import static org.terracotta.angela.common.tcconfig.TerracottaServer.server;
+import static org.terracotta.angela.common.topology.LicenseType.TERRACOTTA_OS;
+import static org.terracotta.angela.common.topology.PackageType.KIT;
 import static org.terracotta.angela.common.topology.Version.version;
 
 /**
  * @author Aurelien Broszniowski
  */
 public class GettingStarted {
-  private static String EHCACHE_OS_VERSION = "3.8.1";
+  private static final String EHCACHE_OS_VERSION = "3.8.1";
+  private static final String EHCACHE_VERSION = "3.9-SNAPSHOT";
 
   @Test
   public void configureCluster() throws Exception {
@@ -95,6 +101,59 @@ public class GettingStarted {
           .until(serverState, is(TerracottaServerState.STARTED_AS_ACTIVE));
       // end::showTsaApi[]
     }
+  }
+
+  @Test
+  public void showDynamicTsaApi() throws Exception {
+    // tag::showDynamicTsaApi[]
+    ConfigurationContext configContext = customConfigurationContext()
+        .tsa(tsa -> tsa
+            .topology(
+                new Topology(
+                    distribution(version(EHCACHE_VERSION), KIT, TERRACOTTA_OS),
+                    dynamicCluster( // <1>
+                        stripe(
+                            server("server-1", "localhost")
+                                .tsaPort(9410)
+                                .tsaGroupPort(9411)
+                                .configRepo("terracotta1/repository")
+                                .logs("terracotta1/logs")
+                                .metaData("terracotta1/metadata")
+                                .failoverPriority("availability"),
+                            server("server-2", "localhost")
+                                .tsaPort(9510)
+                                .tsaGroupPort(9511)
+                                .configRepo("terracotta2/repository")
+                                .logs("terracotta2/logs")
+                                .metaData("terracotta2/metadata")
+                                .failoverPriority("availability")
+                        )
+                    )
+                )
+            )
+        );
+
+
+    try (ClusterFactory factory = new ClusterFactory("DynamicClusterTest::testSingleStripeFormation", configContext)) {
+      Tsa tsa = factory.tsa();
+      tsa.startAll(); // <2>
+      tsa.attachAll(); // <3>
+
+      tsa.attachStripe(server("server-3", "localhost") // <4>
+          .tsaPort(9610)
+          .tsaGroupPort(9611)
+          .configRepo("terracotta3/repository")
+          .logs("terracotta3/logs")
+          .metaData("terracotta3/metadata")
+          .failoverPriority("availability"));
+
+      TerracottaServer toDetach = tsa.getServer(0, 1);
+      tsa.detachNode(0, 1); // <5>
+      tsa.stop(toDetach); // <6>
+
+      tsa.activateAll(); // <7>
+    }
+    // end::showDynamicTsaApi[]
   }
 
   @Test
