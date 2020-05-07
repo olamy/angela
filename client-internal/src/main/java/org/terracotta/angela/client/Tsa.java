@@ -670,21 +670,19 @@ public class Tsa implements AutoCloseable {
     return result;
   }
 
-  public ConfigToolExecutionResult attachNodes(int stripeIndex, TerracottaServer... newServers) {
+  public ConfigToolExecutionResult attachNode(int stripeIndex, TerracottaServer newServer) {
     List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
     if (stripeIndex < -1 || stripeIndex >= stripes.size()) {
       throw new IllegalArgumentException("stripeIndex should be a non-negative integer less than stripe count");
     }
 
-    if (newServers == null || newServers.length == 0) {
-      throw new IllegalArgumentException("Servers list should be non-null and non-empty");
+    if (newServer == null) {
+      throw new IllegalArgumentException("Server should be non-null");
     }
 
-    for (TerracottaServer newServer : newServers) {
-      install(newServer, tsaConfigurationContext.getTopology());
-      start(newServer);
-      tsaConfigurationContext.getTopology().addServer(stripeIndex, newServer);
-    }
+    install(newServer, tsaConfigurationContext.getTopology());
+    start(newServer);
+    tsaConfigurationContext.getTopology().addServer(stripeIndex, newServer);
 
     List<String> command = new ArrayList<>();
     command.add("attach");
@@ -695,10 +693,8 @@ public class Tsa implements AutoCloseable {
     command.add("-d");
     command.add(existingServer.getHostPort());
 
-    for (TerracottaServer newServer : newServers) {
-      command.add("-s");
-      command.add(newServer.getHostPort());
-    }
+    command.add("-s");
+    command.add(newServer.getHostPort());
 
     ConfigToolExecutionResult result = configTool(existingServer).executeCommand(command.toArray(new String[0]));
     if (result.getExitStatus() != 0) {
@@ -751,45 +747,46 @@ public class Tsa implements AutoCloseable {
   public Tsa attachAll() {
     List<List<TerracottaServer>> stripes = tsaConfigurationContext.getTopology().getStripes();
 
-    // Attach all servers in a stripe to form individual stripes
     for (List<TerracottaServer> stripe : stripes) {
       if (stripe.size() > 1) {
-        List<String> command = new ArrayList<>();
-        command.add("attach");
-        command.add("-t");
-        command.add("node");
-        command.add("-d");
-        command.add(stripe.get(0).getHostPort());
+        // Attach all servers in a stripe to form individual stripes
         for (int i = 1; i < stripe.size(); i++) {
+          List<String> command = new ArrayList<>();
+          command.add("attach");
+          command.add("-t");
+          command.add("node");
+          command.add("-d");
+          command.add(stripe.get(0).getHostPort());
           command.add("-s");
           command.add(stripe.get(i).getHostPort());
-        }
-        ConfigToolExecutionResult result = configTool(stripe.get(0)).executeCommand(command.toArray(new String[0]));
-        if (result.getExitStatus() != 0) {
-          throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+
+          ConfigToolExecutionResult result = configTool(stripe.get(0)).executeCommand(command.toArray(new String[0]));
+          if (result.getExitStatus() != 0) {
+            throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+          }
         }
       }
     }
 
     if (stripes.size() > 1) {
-      // Attach all stripes together to form the cluster
-      List<String> command = new ArrayList<>();
-      command.add("attach");
-      command.add("-t");
-      command.add("stripe");
-      command.add("-d");
-      command.add(stripes.get(0).get(0).getHostPort());
-
       for (int i = 1; i < stripes.size(); i++) {
+        // Attach all stripes together to form the cluster
+        List<String> command = new ArrayList<>();
+        command.add("attach");
+        command.add("-t");
+        command.add("stripe");
+        command.add("-d");
+        command.add(stripes.get(0).get(0).getHostPort());
+
         List<TerracottaServer> stripe = stripes.get(i);
         command.add("-s");
         command.add(stripe.get(0).getHostPort());
-      }
 
-      ConfigToolExecutionResult result = configTool(stripes.get(0)
-          .get(0)).executeCommand(command.toArray(new String[0]));
-      if (result.getExitStatus() != 0) {
-        throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+        ConfigToolExecutionResult result = configTool(stripes.get(0)
+            .get(0)).executeCommand(command.toArray(new String[0]));
+        if (result.getExitStatus() != 0) {
+          throw new RuntimeException("ConfigTool::executeCommand with command parameters failed with: " + result);
+        }
       }
     }
 
