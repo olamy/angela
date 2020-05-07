@@ -65,7 +65,7 @@ public class DisruptionController implements AutoCloseable {
    * Create disruptor to control traffic between all servers specified.
    * (ex: Server1 &lt;-&gt; Server2, Server2 &lt;-&gt; Server3 &amp; Server3 &lt;-&gt; Server1)
    *
-   * @param servers  to be disrupted
+   * @param servers to be disrupted
    * @return {@link ServerToServerDisruptor}
    */
   public ServerToServerDisruptor newServerToServerDisruptor(TerracottaServer... servers) {
@@ -216,10 +216,9 @@ public class DisruptionController implements AutoCloseable {
       } else {
         DynamicConfigManager dynamicConfigManager = (DynamicConfigManager) configurationProvider;
         List<TerracottaServer> servers = dynamicConfigManager.getServers();
-        try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(servers.size())) {
-          for (TerracottaServer terracottaServer : servers) {
-            proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), portAllocation.next());
-          }
+        PortAllocator.PortReservation reservation = portAllocator.reserve(servers.size());
+        for (TerracottaServer terracottaServer : servers) {
+          proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), reservation.next());
         }
         proxyMap.putAll(proxyTsaPorts);
       }

@@ -18,8 +18,10 @@ package org.terracotta.angela.common.net;
 
 import org.terracotta.utilities.test.net.PortManager;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author Mathieu Carbou
@@ -27,11 +29,13 @@ import java.util.NoSuchElementException;
 public class DefaultPortAllocator implements PortAllocator {
 
   private final PortManager portManager = PortManager.getInstance();
+  private final Collection<PortManager.PortRef> reservations = new CopyOnWriteArrayList<>();
 
   @Override
-  public PortAllocation reserve(int portCounts) {
+  public PortReservation reserve(int portCounts) {
     List<PortManager.PortRef> portRefs = portManager.reservePorts(portCounts);
-    return new PortAllocation() {
+    reservations.addAll(portRefs);
+    return new PortReservation() {
       int i = 0;
 
       @Override
@@ -50,9 +54,22 @@ public class DefaultPortAllocator implements PortAllocator {
       @Override
       public void close() {
         for (PortManager.PortRef portRef : portRefs) {
-          portRef.close();
+          if (reservations.remove(portRef)) {
+            portRef.close();
+          }
         }
       }
     };
+  }
+
+  @Override
+  public void close() {
+    while (!reservations.isEmpty() && !Thread.currentThread().isInterrupted()) {
+      for (PortManager.PortRef portRef : reservations) {
+        if (reservations.remove(portRef)) {
+          portRef.close();
+        }
+      }
+    }
   }
 }

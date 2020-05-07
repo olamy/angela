@@ -105,7 +105,7 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
   }
 
   @Override
-  public void remoteStartAgentOn(String hostname, String nodeName, int ignitePort, String addressesToDiscover) {
+  public void remoteStartAgentOn(String hostname, String nodeName, int igniteDiscoveryPort, int igniteComPort, String addressesToDiscover) {
     initAgentJar();
     LOGGER.info("spawning {} agent via SSH", hostname);
 
@@ -145,10 +145,10 @@ public class SshRemoteAgentLauncher implements RemoteAgentLauncher {
       Session session = ssh.startSession();
       session.allocateDefaultPTY();
       LOGGER.info("starting agent");
-
       Session.Command cmd = session.exec(remoteJavaHome + "/bin/java " +
           "-D" + NODE_NAME.getPropertyName() + "=" + nodeName + " " +
-          "-Dangela.port=" + ignitePort + " " +
+          "-Dignite.discovery.port=" + igniteDiscoveryPort + " " +
+          "-Dignite.com.port=" + igniteComPort + " " +
           "-D" + DIRECT_JOIN.getPropertyName() + "=" + addressesToDiscover + " " +
           "-D" + ROOT_DIR.getPropertyName() + "=" + baseDir.toString() + " " +
           "-jar " + jarsDir.resolve(agentJarFile.getName()).toString());

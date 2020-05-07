@@ -70,7 +70,8 @@ public class ClusterFactory implements AutoCloseable {
   private InstanceId monitorInstanceId;
 
   private Map<String, String> agentsInstance = new HashMap<>();
-  private final int ignitePort;
+  private final int igniteDiscoveryPort;
+  private final int igniteComPort;
   private final PortAllocator portAllocator;
 
   public ClusterFactory(String idPrefix, ConfigurationContext configurationContext) {
@@ -84,12 +85,12 @@ public class ClusterFactory implements AutoCloseable {
     this.configurationContext = configurationContext;
     this.remoteAgentLauncher = configurationContext.remoting().buildRemoteAgentLauncher();
     this.portAllocator = portAllocator;
-    try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(2)) {
-      this.ignitePort = portAllocation.next();
-    }
+    PortAllocator.PortReservation reservation = portAllocator.reserve(2);
+    this.igniteDiscoveryPort = reservation.next();
+    this.igniteComPort = reservation.next();
     this.localAgent = new Agent();
-    this.localAgent.startCluster(Collections.singleton("localhost:" + ignitePort), "localhost:" + ignitePort, ignitePort);
-    agentsInstance.put("localhost", "localhost:" + ignitePort);
+    this.localAgent.startCluster(Collections.singleton("localhost:" + igniteDiscoveryPort), "localhost:" + igniteDiscoveryPort, igniteDiscoveryPort, igniteComPort);
+    agentsInstance.put("localhost", "localhost:" + igniteDiscoveryPort);
   }
 
   private InstanceId init(String type, Collection<String> hostnames) {
@@ -103,7 +104,7 @@ public class ClusterFactory implements AutoCloseable {
       }
 
       if (!isLocal(hostname) && !agentsInstance.containsKey(hostname)) {
-        final String nodeName = hostname + ":" + ignitePort;
+        final String nodeName = hostname + ":" + igniteDiscoveryPort;
 
         StringBuilder addressesToDiscover = new StringBuilder();
         for (String agentAddress : agentsInstance.values()) {
@@ -112,7 +113,7 @@ public class ClusterFactory implements AutoCloseable {
         if (addressesToDiscover.length() > 0) {
           addressesToDiscover.deleteCharAt(addressesToDiscover.length() - 1);
         }
-        remoteAgentLauncher.remoteStartAgentOn(hostname, nodeName, ignitePort, addressesToDiscover.toString());
+        remoteAgentLauncher.remoteStartAgentOn(hostname, nodeName, igniteDiscoveryPort, igniteComPort, addressesToDiscover.toString());
         // start remote agent
         agentsInstance.put(hostname, nodeName);
       }
@@ -135,7 +136,7 @@ public class ClusterFactory implements AutoCloseable {
     TsaConfigurationContext tsaConfigurationContext = configurationContext.tsa();
     InstanceId instanceId = init(TSA, tsaConfigurationContext.getTopology().getServersHostnames());
 
-    Tsa tsa = new Tsa(localAgent.getIgnite(), ignitePort, portAllocator, instanceId, tsaConfigurationContext);
+    Tsa tsa = new Tsa(localAgent.getIgnite(), igniteDiscoveryPort, portAllocator, instanceId, tsaConfigurationContext);
     controllers.add(tsa);
     return tsa;
   }
@@ -144,7 +145,7 @@ public class ClusterFactory implements AutoCloseable {
     TmsConfigurationContext tmsConfigurationContext = configurationContext.tms();
     InstanceId instanceId = init(TMS, Collections.singletonList(tmsConfigurationContext.getHostname()));
 
-    Tms tms = new Tms(localAgent.getIgnite(), ignitePort, instanceId, tmsConfigurationContext);
+    Tms tms = new Tms(localAgent.getIgnite(), igniteDiscoveryPort, instanceId, tmsConfigurationContext);
     controllers.add(tms);
     return tms;
   }
@@ -153,7 +154,7 @@ public class ClusterFactory implements AutoCloseable {
     VoterConfigurationContext voterConfigurationContext = configurationContext.voter();
     InstanceId instanceId = init(VOTER, voterConfigurationContext.getHostNames());
 
-    Voter voter = new Voter(localAgent.getIgnite(), ignitePort, instanceId, voterConfigurationContext);
+    Voter voter = new Voter(localAgent.getIgnite(), igniteDiscoveryPort, instanceId, voterConfigurationContext);
     controllers.add(voter);
     return voter;
   }
@@ -162,7 +163,7 @@ public class ClusterFactory implements AutoCloseable {
     ClientArrayConfigurationContext clientArrayConfigurationContext = configurationContext.clientArray();
     init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
 
-    ClientArray clientArray = new ClientArray(localAgent.getIgnite(), ignitePort,
+    ClientArray clientArray = new ClientArray(localAgent.getIgnite(), igniteDiscoveryPort,
         () -> init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames()), clientArrayConfigurationContext);
     controllers.add(clientArray);
     return clientArray;
@@ -179,55 +180,59 @@ public class ClusterFactory implements AutoCloseable {
 
     if (monitorInstanceId == null) {
       monitorInstanceId = init(MONITOR, hostnames);
-      ClusterMonitor clusterMonitor = new ClusterMonitor(this.localAgent.getIgnite(), ignitePort, monitorInstanceId, hostnames, commands);
+      ClusterMonitor clusterMonitor = new ClusterMonitor(this.localAgent.getIgnite(), igniteDiscoveryPort, monitorInstanceId, hostnames, commands);
       controllers.add(clusterMonitor);
       return clusterMonitor;
     } else {
-      return new ClusterMonitor(localAgent.getIgnite(), ignitePort, monitorInstanceId, hostnames, commands);
+      return new ClusterMonitor(localAgent.getIgnite(), igniteDiscoveryPort, monitorInstanceId, hostnames, commands);
     }
   }
 
   @Override
   public void close() throws IOException {
-    List<Exception> exceptions = new ArrayList<>();
-
-    for (AutoCloseable controller : controllers) {
-      try {
-        controller.close();
-      } catch (Exception e) {
-        e.printStackTrace();
-        exceptions.add(e);
-      }
-    }
-    controllers.clear();
-
-    nodeToInstanceId.clear();
-
-    monitorInstanceId = null;
-
     try {
-      remoteAgentLauncher.close();
-    } catch (Exception e) {
-      e.printStackTrace();
-      exceptions.add(e);
-    }
-    remoteAgentLauncher = null;
+      List<Exception> exceptions = new ArrayList<>();
 
-    if (localAgent != null) {
+      for (AutoCloseable controller : controllers) {
+        try {
+          controller.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+          exceptions.add(e);
+        }
+      }
+      controllers.clear();
+
+      nodeToInstanceId.clear();
+
+      monitorInstanceId = null;
+
       try {
-        logger.info("shutting down local agent");
-        localAgent.close();
+        remoteAgentLauncher.close();
       } catch (Exception e) {
         e.printStackTrace();
         exceptions.add(e);
       }
-      localAgent = null;
-    }
+      remoteAgentLauncher = null;
 
-    if (!exceptions.isEmpty()) {
-      IOException ioException = new IOException("Error while closing down Cluster Factory prefixed with " + idPrefix);
-      exceptions.forEach(ioException::addSuppressed);
-      throw ioException;
+      if (localAgent != null) {
+        try {
+          logger.info("shutting down local agent");
+          localAgent.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+          exceptions.add(e);
+        }
+        localAgent = null;
+      }
+
+      if (!exceptions.isEmpty()) {
+        IOException ioException = new IOException("Error while closing down Cluster Factory prefixed with " + idPrefix);
+        exceptions.forEach(ioException::addSuppressed);
+        throw ioException;
+      }
+    } finally {
+      portAllocator.close();
     }
   }
 }
