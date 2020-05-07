@@ -160,14 +160,11 @@ public class DynamicConfigManager implements ConfigurationManager {
     List<TerracottaServer> allServersInStripe = stripes.get(stripeIndex).getServers();
     for (TerracottaServer server : allServersInStripe) {
       if (!server.getServerSymbolicName().equals(terracottaServer.getServerSymbolicName())) {
-        try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(1) ) {
-          int tsaRandomGroupPort = portAllocation.next();
-          final InetSocketAddress src = new InetSocketAddress(terracottaServer.getHostname(), tsaRandomGroupPort);
-          final InetSocketAddress dest = new InetSocketAddress(server.getHostname(), server.getTsaGroupPort());
-          disruptionLinks.put(server.getServerSymbolicName(), disruptionProvider.createLink(src, dest));
-          proxiedPorts.put(server.getServerSymbolicName(), src.getPort());
-
-        }
+        int tsaRandomGroupPort = portAllocator.reserve(1).next();
+        final InetSocketAddress src = new InetSocketAddress(terracottaServer.getHostname(), tsaRandomGroupPort);
+        final InetSocketAddress dest = new InetSocketAddress(server.getHostname(), server.getTsaGroupPort());
+        disruptionLinks.put(server.getServerSymbolicName(), disruptionProvider.createLink(src, dest));
+        proxiedPorts.put(server.getServerSymbolicName(), src.getPort());
       }
     }
   }

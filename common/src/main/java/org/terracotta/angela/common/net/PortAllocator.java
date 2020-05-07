@@ -16,17 +16,23 @@
  */
 package org.terracotta.angela.common.net;
 
+import java.io.Closeable;
 import java.util.Iterator;
 
 /**
  * @author Mathieu Carbou
  */
-public interface PortAllocator {
+public interface PortAllocator extends Closeable {
 
-  PortAllocation reserve(int portCounts);
+  PortReservation reserve(int portCounts);
 
-  interface PortAllocation extends AutoCloseable, Iterator<Integer> {
+  @Override
+  default void close() {
+  }
+
+  interface PortReservation extends AutoCloseable, Iterator<Integer> {
     @Override
     void close();
   }
+
 }

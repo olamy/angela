@@ -160,11 +160,9 @@ public class TcConfig10Holder extends TcConfigHolder {
         if (name.equals(serverName) || !updateProxy) {
           member = TerracottaServer.server(name, host).tsaGroupPort(groupPort);
         } else {
-          try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(1) ) {
-            int proxyPort = portAllocation.next();
-            member = TerracottaServer.server(name, host).tsaGroupPort(groupPort).proxyPort(proxyPort);
-            tsaGroupPortNode.setTextContent(String.valueOf(proxyPort));
-          }
+          int proxyPort = portAllocator.reserve(1).next();
+          member = TerracottaServer.server(name, host).tsaGroupPort(groupPort).proxyPort(proxyPort);
+          tsaGroupPortNode.setTextContent(String.valueOf(proxyPort));
         }
         if (name.equals(serverName)) {
           members.add(0, member);
@@ -190,10 +188,8 @@ public class TcConfig10Holder extends TcConfigHolder {
         Node tsaPortNode = (Node) xPath.evaluate("*[name()='tsa-port']", server, XPathConstants.NODE);
         int tsaPort = Integer.parseInt(tsaPortNode.getTextContent().trim());
         if (updateForProxy) {
-          try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(1) ) {
-            tsaPort = portAllocation.next();
-            tsaPortNode.setTextContent(String.valueOf(tsaPort));
-          }
+          tsaPort = portAllocator.reserve(1).next();
+          tsaPortNode.setTextContent(String.valueOf(tsaPort));
         }
         tsaPorts.put(new ServerSymbolicName(name), tsaPort);
       }

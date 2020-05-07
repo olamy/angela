@@ -75,12 +75,13 @@ public class Agent {
 
   public static void main(String[] args) {
     final Agent agent = new Agent();
-    int ignitePort = Integer.parseInt(System.getProperty("angela.port", "40000"));
-    agent.startCluster(Arrays.asList(DIRECT_JOIN.getValue().split(",")), NODE_NAME.getValue(), ignitePort);
+    int igniteDiscoveryPort = Integer.parseInt(System.getProperty("ignite.discovery.port"));
+    int igniteComPort = Integer.parseInt(System.getProperty("ignite.com.port"));
+    agent.startCluster(Arrays.asList(DIRECT_JOIN.getValue().split(",")), NODE_NAME.getValue(), igniteDiscoveryPort, igniteComPort);
     Runtime.getRuntime().addShutdownHook(new Thread(agent::close));
   }
 
-  public void startCluster(Collection<String> peers, String nodeName, int ignitePort) {
+  public void startCluster(Collection<String> peers, String nodeName, int igniteDiscoveryPort, int igniteComPort) {
     logger.info("Root directory is: {}", ROOT_DIR);
     logger.info("Nodename: {} added to cluster", nodeName);
     createAndValidateDir(ROOT_DIR);
@@ -97,19 +98,19 @@ public class Agent {
     cfg.setGridLogger(enableLogging ? new Slf4jLogger() : new NullLogger());
     cfg.setPeerClassLoadingEnabled(true);
     cfg.setMetricsLogFrequency(0);
-    cfg.setIgniteInstanceName("ignite-" + ignitePort);
+    cfg.setIgniteInstanceName("ignite-" + igniteDiscoveryPort);
     cfg.setIgniteHome(IGNITE_DIR.resolve(System.getProperty("user.name")).toString());
 
     logger.info("Connecting to peers (size = {}): {}", peers.size(), peers);
 
     cfg.setDiscoverySpi(new TcpDiscoverySpi()
-        .setLocalPort(ignitePort)
+        .setLocalPort(igniteDiscoveryPort)
         .setLocalPortRange(0) // we must not use the range otherwise Ignite might bind to a port not reserved
         .setJoinTimeout(10000)
         .setIpFinder(new TcpDiscoveryVmIpFinder(true).setAddresses(peers)));
 
     cfg.setCommunicationSpi(new TcpCommunicationSpi()
-        .setLocalPort(ignitePort + 1)
+        .setLocalPort(igniteComPort)
         .setLocalPortRange(0)); // we must not use the range otherwise Ignite might bind to a port not reserved
 
     try {
@@ -120,7 +121,7 @@ public class Agent {
     } catch (IgniteException e) {
       throw new RuntimeException("Error starting node " + nodeName, e);
     }
-    controller = new AgentController(ignite, peers, ignitePort, new DefaultPortAllocator());
+    controller = new AgentController(ignite, peers, igniteDiscoveryPort, new DefaultPortAllocator());
 
     // Do not use logger here as the marker is being grep'ed at and we do not want to depend upon the logger config
     System.out.println(AGENT_IS_READY_MARKER_LOG);

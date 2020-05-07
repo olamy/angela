@@ -72,15 +72,15 @@ public class AngelaRule extends ExtendedTestRule {
   protected void before(Description description) throws Throwable {
     final int nodePortCount = computeNodePortCount();
 
-    try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(nodePortCount)) {
-      // assign generated ports to nodes
-      for (TerracottaServer node : configuration.tsa().getTopology().getServers()) {
-        if (node.getTsaPort() <= 0) {
-          node.tsaPort(portAllocation.next());
-        }
-        if (node.getTsaGroupPort() <= 0) {
-          node.tsaGroupPort(portAllocation.next());
-        }
+    PortAllocator.PortReservation nodePortReservation = portAllocator.reserve(nodePortCount);
+
+    // assign generated ports to nodes
+    for (TerracottaServer node : configuration.tsa().getTopology().getServers()) {
+      if (node.getTsaPort() <= 0) {
+        node.tsaPort(nodePortReservation.next());
+      }
+      if (node.getTsaGroupPort() <= 0) {
+        node.tsaGroupPort(nodePortReservation.next());
       }
     }
 
@@ -110,6 +110,11 @@ public class AngelaRule extends ExtendedTestRule {
         clusterFactory.close();
         clusterFactory = null;
       }
+    } catch (Throwable e) {
+      errs.add(e);
+    }
+    try {
+      portAllocator.close();
     } catch (Throwable e) {
       errs.add(e);
     }
