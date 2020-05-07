@@ -108,7 +108,9 @@ public class RemoteClientManager {
       cmdLine.add("-classpath");
       cmdLine.add(buildClasspath());
 
-      cmdLine.add("-Dangela.port=" + portAllocator.getNewRandomFreePorts(2).getBasePort());
+      try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(2) ) {
+        cmdLine.add("-Dangela.port=" + portAllocation.next());
+      }
       cmdLine.add("-D" + DIRECT_JOIN.getPropertyName() + "=" + String.join(",", joinedNodes));
       cmdLine.add("-D" + NODE_NAME.getPropertyName() + "=" + instanceId + ":" + ignitePort);
       cmdLine.add("-D" + ROOT_DIR.getPropertyName() + "=" + Agent.ROOT_DIR);

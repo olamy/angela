@@ -73,6 +73,10 @@
       <groupId>com.github.netcrusherorg</groupId>
       <artifactId>netcrusher-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.terracotta</groupId>
+      <artifactId>terracotta-utilities-port-chooser</artifactId>
+    </dependency>
   </dependencies>
 
   <!-- This is required to pass the 'project.version' from the pom -->

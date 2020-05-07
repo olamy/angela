@@ -26,16 +26,13 @@ import org.terracotta.angela.client.Tsa;
 import org.terracotta.angela.client.Voter;
 import org.terracotta.angela.client.config.ConfigurationContext;
 import org.terracotta.angela.common.cluster.Cluster;
-import org.terracotta.angela.common.net.port_locking.LockingPortChooser;
-import org.terracotta.angela.common.net.port_locking.LockingPortChoosers;
-import org.terracotta.angela.common.net.port_locking.MuxPortLock;
+import org.terracotta.angela.common.net.DefaultPortAllocator;
+import org.terracotta.angela.common.net.PortAllocator;
 import org.terracotta.angela.common.tcconfig.TerracottaServer;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.OptionalInt;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -48,8 +45,7 @@ import static org.terracotta.angela.common.TerracottaServerState.STARTED_AS_PASS
  */
 public class AngelaRule extends ExtendedTestRule {
 
-  private final Collection<MuxPortLock> portLocks = new CopyOnWriteArrayList<>();
-  private final LockingPortChooser lockingPortChooser = LockingPortChoosers.getFileLockingPortChooser();
+  private final PortAllocator portAllocator = new DefaultPortAllocator();
   private final ConfigurationContext configuration;
   private final boolean autoStart;
   private final boolean autoActivate;
@@ -76,15 +72,15 @@ public class AngelaRule extends ExtendedTestRule {
   protected void before(Description description) throws Throwable {
     final int nodePortCount = computeNodePortCount();
 
-    int base = reservePorts(nodePortCount).getPort();
-
-    // assign generated ports to nodes
-    for (TerracottaServer node : configuration.tsa().getTopology().getServers()) {
-      if (node.getTsaPort() <= 0) {
-        node.tsaPort(base++);
-      }
-      if (node.getTsaGroupPort() <= 0) {
-        node.tsaGroupPort(base++);
+    try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(nodePortCount)) {
+      // assign generated ports to nodes
+      for (TerracottaServer node : configuration.tsa().getTopology().getServers()) {
+        if (node.getTsaPort() <= 0) {
+          node.tsaPort(portAllocation.next());
+        }
+        if (node.getTsaGroupPort() <= 0) {
+          node.tsaGroupPort(portAllocation.next());
+        }
       }
     }
 
@@ -116,13 +112,6 @@ public class AngelaRule extends ExtendedTestRule {
       }
     } catch (Throwable e) {
       errs.add(e);
-    }
-    for (MuxPortLock lock : portLocks) {
-      try {
-        lock.close();
-      } catch (Throwable e) {
-        errs.add(e);
-      }
     }
     MultipleFailureException.assertEmpty(errs);
   }
@@ -225,17 +214,29 @@ public class AngelaRule extends ExtendedTestRule {
   // delegates
   // =========================================
 
-  public Tsa tsa() {return tsa.get(); }
+  public Tsa tsa() {
+    return tsa.get();
+  }
 
-  public Cluster cluster() {return cluster.get();}
+  public Cluster cluster() {
+    return cluster.get();
+  }
 
-  public Tms tms() {return tms.get();}
+  public Tms tms() {
+    return tms.get();
+  }
 
-  public ClientArray clientArray() {return clientArray.get();}
+  public ClientArray clientArray() {
+    return clientArray.get();
+  }
 
-  public ClusterMonitor monitor() {return clusterMonitor.get();}
+  public ClusterMonitor monitor() {
+    return clusterMonitor.get();
+  }
 
-  public Voter voter() {return voter.get();}
+  public Voter voter() {
+    return voter.get();
+  }
 
   // =========================================
   // utils
@@ -249,12 +250,6 @@ public class AngelaRule extends ExtendedTestRule {
         nodes.stream().mapToInt(TerracottaServer::getTsaPort),
         nodes.stream().mapToInt(TerracottaServer::getTsaGroupPort)
     ).filter(port -> port <= 0).count();
-  }
-
-  public synchronized MuxPortLock reservePorts(int count) {
-    MuxPortLock muxPortLock = lockingPortChooser.choosePorts(count);
-    portLocks.add(muxPortLock);
-    return muxPortLock;
   }
 
   private static <T> Supplier<T> memoize(Supplier<T> supplier) {

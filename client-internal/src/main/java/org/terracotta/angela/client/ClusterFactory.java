@@ -84,7 +84,9 @@ public class ClusterFactory implements AutoCloseable {
     this.configurationContext = configurationContext;
     this.remoteAgentLauncher = configurationContext.remoting().buildRemoteAgentLauncher();
     this.portAllocator = portAllocator;
-    this.ignitePort = portAllocator.getNewRandomFreePorts(2).getBasePort();
+    try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(2)) {
+      this.ignitePort = portAllocation.next();
+    }
     this.localAgent = new Agent();
     this.localAgent.startCluster(Collections.singleton("localhost:" + ignitePort), "localhost:" + ignitePort, ignitePort);
     agentsInstance.put("localhost", "localhost:" + ignitePort);
@@ -187,49 +189,45 @@ public class ClusterFactory implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    try {
-      List<Exception> exceptions = new ArrayList<>();
+    List<Exception> exceptions = new ArrayList<>();
 
-      for (AutoCloseable controller : controllers) {
-        try {
-          controller.close();
-        } catch (Exception e) {
-          e.printStackTrace();
-          exceptions.add(e);
-        }
-      }
-      controllers.clear();
-
-      nodeToInstanceId.clear();
-
-      monitorInstanceId = null;
-
+    for (AutoCloseable controller : controllers) {
       try {
-        remoteAgentLauncher.close();
+        controller.close();
       } catch (Exception e) {
         e.printStackTrace();
         exceptions.add(e);
       }
-      remoteAgentLauncher = null;
+    }
+    controllers.clear();
 
-      if (localAgent != null) {
-        try {
-          logger.info("shutting down local agent");
-          localAgent.close();
-        } catch (Exception e) {
-          e.printStackTrace();
-          exceptions.add(e);
-        }
-        localAgent = null;
-      }
+    nodeToInstanceId.clear();
 
-      if (!exceptions.isEmpty()) {
-        IOException ioException = new IOException("Error while closing down Cluster Factory prefixed with " + idPrefix);
-        exceptions.forEach(ioException::addSuppressed);
-        throw ioException;
+    monitorInstanceId = null;
+
+    try {
+      remoteAgentLauncher.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+      exceptions.add(e);
+    }
+    remoteAgentLauncher = null;
+
+    if (localAgent != null) {
+      try {
+        logger.info("shutting down local agent");
+        localAgent.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+        exceptions.add(e);
       }
-    } finally {
-      portAllocator.close();
+      localAgent = null;
+    }
+
+    if (!exceptions.isEmpty()) {
+      IOException ioException = new IOException("Error while closing down Cluster Factory prefixed with " + idPrefix);
+      exceptions.forEach(ioException::addSuppressed);
+      throw ioException;
     }
   }
 }

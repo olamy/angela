@@ -41,6 +41,7 @@
     <java.version>1.8</java.version>
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
+    <terracotta-utilities.version>0.0.3</terracotta-utilities.version>
 
     <!-- Third-party dependencies -->
     <ignite.version>2.8.0</ignite.version>
@@ -96,6 +97,11 @@
         <groupId>org.terracotta</groupId>
         <artifactId>angela-ee</artifactId>
         <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.terracotta</groupId>
+        <artifactId>terracotta-utilities-port-chooser</artifactId>
+        <version>${terracotta-utilities.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ignite</groupId>
@@ -251,7 +257,7 @@
             <argLine>-Xmx1024m</argLine>
             <systemProperties>
               <angela.rootDir>${project.build.directory}/angela</angela.rootDir>
-              <angela.java.vendor></angela.java.vendor> <!-- use any vendor for the tests -->
+              <angela.java.vendor/> <!-- use any vendor for the tests -->
               <jdk.security.allowNonCaAnchor>true</jdk.security.allowNonCaAnchor>
 <!--              <angela.igniteLogging>true</angela.igniteLogging>-->
 <!--              <angela.java.opts>-agentlib:jdwp=transport=dt_socket,server=n,address=c02yj2f2jgh6.home:5005,suspend=n</angela.java.opts>-->

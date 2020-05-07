@@ -16,53 +16,43 @@
  */
 package org.terracotta.angela.common.net;
 
-import org.terracotta.angela.common.net.port_locking.LockingPortChooser;
-import org.terracotta.angela.common.net.port_locking.LockingPortChoosers;
-import org.terracotta.angela.common.net.port_locking.MuxPortLock;
+import org.terracotta.utilities.test.net.PortManager;
 
-import java.util.Collection;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * @author Mathieu Carbou
  */
 public class DefaultPortAllocator implements PortAllocator {
 
-  private final LockingPortChooser lockingPortChooser = LockingPortChoosers.getFileLockingPortChooser();
-  private final Collection<MuxPortLock> portLocks = new CopyOnWriteArrayList<>();
+  private final PortManager portManager = PortManager.getInstance();
 
   @Override
-  public PortAllocation getNewRandomFreePorts(int count) {
-    MuxPortLock muxPortLock = lockingPortChooser.choosePorts(count);
-    portLocks.add(muxPortLock);
+  public PortAllocation reserve(int portCounts) {
+    List<PortManager.PortRef> portRefs = portManager.reservePorts(portCounts);
     return new PortAllocation() {
+      int i = 0;
+
       @Override
-      public int getBasePort() {
-        return muxPortLock.getPort();
+      public Integer next() {
+        if (i >= portRefs.size()) {
+          throw new NoSuchElementException();
+        }
+        return portRefs.get(i++).port();
       }
 
       @Override
-      public int getPortCount() {
-        return count;
+      public boolean hasNext() {
+        return i < portRefs.size();
       }
 
       @Override
       public void close() {
-        if (portLocks.remove(muxPortLock)) {
-          muxPortLock.close();
+        for (PortManager.PortRef portRef : portRefs) {
+          portRef.close();
         }
       }
     };
-  }
-
-  @Override
-  public void close() {
-    while (!portLocks.isEmpty() && !Thread.currentThread().isInterrupted()) {
-      for (MuxPortLock muxPortLock : portLocks) {
-        if (portLocks.remove(muxPortLock)) {
-          muxPortLock.close();
-        }
-      }
-    }
   }
 }
