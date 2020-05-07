@@ -216,9 +216,10 @@ public class DisruptionController implements AutoCloseable {
       } else {
         DynamicConfigManager dynamicConfigManager = (DynamicConfigManager) configurationProvider;
         List<TerracottaServer> servers = dynamicConfigManager.getServers();
-        int tsaRandomBasePort = portAllocator.getNewRandomFreePorts(servers.size()).getBasePort();
-        for (TerracottaServer terracottaServer : servers) {
-          proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), tsaRandomBasePort++);
+        try (PortAllocator.PortAllocation portAllocation = portAllocator.reserve(servers.size())) {
+          for (TerracottaServer terracottaServer : servers) {
+            proxyTsaPorts.put(terracottaServer.getServerSymbolicName(), portAllocation.next());
+          }
         }
         proxyMap.putAll(proxyTsaPorts);
       }
