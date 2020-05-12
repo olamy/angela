@@ -84,7 +84,8 @@ public class AngelaRule extends ExtendedTestRule {
       }
     }
 
-    this.clusterFactory = new ClusterFactory(description.getTestClass().getSimpleName(), configuration);
+    int hash = description.getMethodName() == null ? 0 : description.getMethodName().hashCode();
+    this.clusterFactory = new ClusterFactory(description.getTestClass().getSimpleName() + "-" + hash, configuration);
 
     tsa = memoize(clusterFactory::tsa);
     cluster = memoize(clusterFactory::cluster);
