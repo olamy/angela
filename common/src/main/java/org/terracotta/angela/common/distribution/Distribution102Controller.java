@@ -151,8 +151,8 @@ public class Distribution102Controller extends DistributionController {
       ProcessResult processResult = new ProcessExecutor(command)
           .directory(workingDir)
           .environment(buildEnv(tcEnv))
-          .redirectErrorStream(true)
           .readOutput(true)
+          .redirectErrorStream(true)
           .execute();
       return new ClusterToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
     } catch (Exception e) {
@@ -196,7 +196,7 @@ public class Distribution102Controller extends DistributionController {
         .directory(workingDir)
         .environment(env)
         .redirectOutput(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asInfo())
-        .redirectError(Slf4jStream.of(ExternalLoggers.clusterToolLogger).asError());
+        .redirectErrorStream(true);
 
     ProcessResult processResult;
     try {

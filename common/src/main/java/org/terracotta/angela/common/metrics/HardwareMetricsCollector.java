@@ -64,7 +64,7 @@ public class HardwareMetricsCollector {
             .environment(System.getenv())
             .command(command.getCommand())
             .directory(installLocation)
-            .redirectError(outputStream)
+            .redirectErrorStream(true)
             .redirectOutput(outputStream);
 
         try {
