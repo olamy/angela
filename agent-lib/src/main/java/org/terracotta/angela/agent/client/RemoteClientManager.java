@@ -117,7 +117,9 @@ public class RemoteClientManager {
       cmdLine.add(Agent.class.getName());
 
       logger.info("Spawning client with: {}", cmdLine);
-      ProcessExecutor processExecutor = new ProcessExecutor().command(cmdLine)
+      ProcessExecutor processExecutor = new ProcessExecutor()
+          .command(cmdLine)
+          .redirectErrorStream(true)
           .redirectOutput(new LogOutputStream() {
             @Override
             protected void processLine(String line) {
@@ -126,7 +128,8 @@ public class RemoteClientManager {
                 started.set(true);
               }
             }
-          }).directory(getClientInstallationPath());
+          })
+          .directory(getClientInstallationPath());
       StartedProcess startedProcess = processExecutor.start();
 
       while (startedProcess.getProcess().isAlive() && !started.get()) {
