@@ -268,9 +268,8 @@ public class Distribution107Controller extends DistributionController {
           .directory(workingDir)
           .environment(buildEnv(tcEnv))
           .readOutput(true)
-          .redirectErrorStream(true)
           .redirectOutputAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asInfo())
-          .redirectErrorAlsoTo(Slf4jStream.of(ExternalLoggers.configToolLogger).asError())
+          .redirectErrorStream(true)
           .execute();
       return new ConfigToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
     } catch (Exception e) {

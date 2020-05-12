@@ -82,8 +82,8 @@ public class RemoteClientManager {
 
     try {
       ProcessResult processResult = new ProcessExecutor(cmdLine)
-          .redirectErrorStream(true)
           .readOutput(true)
+          .redirectErrorStream(true)
           .execute();
       return new ToolExecutionResult(processResult.getExitValue(), processResult.getOutput().getLines());
     } catch (Exception e) {
@@ -119,7 +119,6 @@ public class RemoteClientManager {
       logger.info("Spawning client with: {}", cmdLine);
       ProcessExecutor processExecutor = new ProcessExecutor()
           .command(cmdLine)
-          .redirectErrorStream(true)
           .redirectOutput(new LogOutputStream() {
             @Override
             protected void processLine(String line) {
@@ -129,6 +128,7 @@ public class RemoteClientManager {
               }
             }
           })
+          .redirectErrorStream(true)
           .directory(getClientInstallationPath());
       StartedProcess startedProcess = processExecutor.start();
 
