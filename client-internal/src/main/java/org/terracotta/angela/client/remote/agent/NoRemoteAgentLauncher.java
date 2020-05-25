@@ -17,6 +17,8 @@
 
 package org.terracotta.angela.client.remote.agent;
 
+import org.terracotta.angela.common.clientconfig.ClientArrayConfig;
+
 public class NoRemoteAgentLauncher implements RemoteAgentLauncher {
   @Override
   public void close() throws Exception {
@@ -24,7 +26,7 @@ public class NoRemoteAgentLauncher implements RemoteAgentLauncher {
   }
 
   @Override
-  public void remoteStartAgentOn(String hostname, String nodeName, int igniteDiscoveryPort, int igniteComPort, String addressesToDiscover) {
+  public void remoteStartAgentOn( ClientArrayConfig.Host host, String nodeName, int igniteDiscoveryPort, int igniteComPort, String addressesToDiscover) {
 
   }
 }

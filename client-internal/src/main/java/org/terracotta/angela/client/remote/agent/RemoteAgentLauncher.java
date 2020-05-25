@@ -17,7 +17,9 @@
 
 package org.terracotta.angela.client.remote.agent;
 
+import org.terracotta.angela.common.clientconfig.ClientArrayConfig;
+
 public interface RemoteAgentLauncher extends AutoCloseable {
 
-  void remoteStartAgentOn(String hostname, String nodeName, int igniteDiscoveryPort, int igniteComPort, String addressesToDiscover);
+  void remoteStartAgentOn( ClientArrayConfig.Host host, String nodeName, int igniteDiscoveryPort, int igniteComPort, String addressesToDiscover);
 }

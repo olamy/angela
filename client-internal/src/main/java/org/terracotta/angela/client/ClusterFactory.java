@@ -27,6 +27,7 @@ import org.terracotta.angela.client.config.TmsConfigurationContext;
 import org.terracotta.angela.client.config.TsaConfigurationContext;
 import org.terracotta.angela.client.config.VoterConfigurationContext;
 import org.terracotta.angela.client.remote.agent.RemoteAgentLauncher;
+import org.terracotta.angela.common.clientconfig.ClientArrayConfig;
 import org.terracotta.angela.common.cluster.Cluster;
 import org.terracotta.angela.common.metrics.HardwareMetric;
 import org.terracotta.angela.common.metrics.MonitoringCommand;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.terracotta.angela.common.util.IpUtils.isLocal;
 
@@ -93,18 +95,18 @@ public class ClusterFactory implements AutoCloseable {
     agentsInstance.put("localhost", "localhost:" + igniteDiscoveryPort);
   }
 
-  private InstanceId init(String type, Collection<String> hostnames) {
-    if (hostnames.isEmpty()) {
+  private InstanceId init(String type, Collection<ClientArrayConfig.Host> hosts) {
+    if (hosts.isEmpty()) {
       throw new IllegalArgumentException("Cannot initialize with 0 server");
     }
     InstanceId instanceId = new InstanceId(idPrefix + "-" + instanceIndex.getAndIncrement(), type);
-    for (String hostname : hostnames) {
-      if (hostname == null) {
+    for ( ClientArrayConfig.Host host : hosts) {
+      if (host.getHostname() == null) {
         throw new IllegalArgumentException("Cannot initialize with a null server name");
       }
 
-      if (!isLocal(hostname) && !agentsInstance.containsKey(hostname)) {
-        final String nodeName = hostname + ":" + igniteDiscoveryPort;
+      if (!isLocal(host.getHostname()) && !agentsInstance.containsKey(host.getHostname())) {
+        final String nodeName = host.getHostname() + ":" + igniteDiscoveryPort;
 
         StringBuilder addressesToDiscover = new StringBuilder();
         for (String agentAddress : agentsInstance.values()) {
@@ -113,9 +115,9 @@ public class ClusterFactory implements AutoCloseable {
         if (addressesToDiscover.length() > 0) {
           addressesToDiscover.deleteCharAt(addressesToDiscover.length() - 1);
         }
-        remoteAgentLauncher.remoteStartAgentOn(hostname, nodeName, igniteDiscoveryPort, igniteComPort, addressesToDiscover.toString());
+        remoteAgentLauncher.remoteStartAgentOn( new ClientArrayConfig.Host(host.getHostname(), host.getPort()), nodeName, igniteDiscoveryPort, igniteComPort, addressesToDiscover.toString());
         // start remote agent
-        agentsInstance.put(hostname, nodeName);
+        agentsInstance.put(host.getHostname(), nodeName);
       }
     }
 
@@ -134,7 +136,9 @@ public class ClusterFactory implements AutoCloseable {
 
   public Tsa tsa() {
     TsaConfigurationContext tsaConfigurationContext = configurationContext.tsa();
-    InstanceId instanceId = init(TSA, tsaConfigurationContext.getTopology().getServersHostnames());
+    InstanceId instanceId = init(TSA, tsaConfigurationContext.getTopology().getServersHostnames()
+        .stream().map( s -> new ClientArrayConfig.Host(s, -1) )
+        .collect(Collectors.toList()));
 
     Tsa tsa = new Tsa(localAgent.getIgnite(), igniteDiscoveryPort, portAllocator, instanceId, tsaConfigurationContext);
     controllers.add(tsa);
@@ -143,7 +147,7 @@ public class ClusterFactory implements AutoCloseable {
 
   public Tms tms() {
     TmsConfigurationContext tmsConfigurationContext = configurationContext.tms();
-    InstanceId instanceId = init(TMS, Collections.singletonList(tmsConfigurationContext.getHostname()));
+    InstanceId instanceId = init(TMS, Collections.singletonList(new ClientArrayConfig.Host(tmsConfigurationContext.getHostname(), -1)));
 
     Tms tms = new Tms(localAgent.getIgnite(), igniteDiscoveryPort, instanceId, tmsConfigurationContext);
     controllers.add(tms);
@@ -152,7 +156,9 @@ public class ClusterFactory implements AutoCloseable {
 
   public Voter voter() {
     VoterConfigurationContext voterConfigurationContext = configurationContext.voter();
-    InstanceId instanceId = init(VOTER, voterConfigurationContext.getHostNames());
+    InstanceId instanceId = init(VOTER, voterConfigurationContext.getHostNames()
+        .stream().map( s -> new ClientArrayConfig.Host(s, -1) )
+        .collect(Collectors.toList()));
 
     Voter voter = new Voter(localAgent.getIgnite(), igniteDiscoveryPort, instanceId, voterConfigurationContext);
     controllers.add(voter);
@@ -161,10 +167,11 @@ public class ClusterFactory implements AutoCloseable {
 
   public ClientArray clientArray() {
     ClientArrayConfigurationContext clientArrayConfigurationContext = configurationContext.clientArray();
-    init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames());
+    init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHosts());
 
     ClientArray clientArray = new ClientArray(localAgent.getIgnite(), igniteDiscoveryPort,
-        () -> init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHostnames()), clientArrayConfigurationContext);
+        () -> init(CLIENT_ARRAY, clientArrayConfigurationContext.getClientArrayTopology().getClientHosts()),
+                                              clientArrayConfigurationContext);
     controllers.add(clientArray);
     return clientArray;
   }
@@ -179,7 +186,8 @@ public class ClusterFactory implements AutoCloseable {
     Set<String> hostnames = configurationContext.allHostnames();
 
     if (monitorInstanceId == null) {
-      monitorInstanceId = init(MONITOR, hostnames);
+      monitorInstanceId = init(MONITOR, hostnames.stream().map( s -> new ClientArrayConfig.Host(s, -1) )
+          .collect(Collectors.toList()));
       ClusterMonitor clusterMonitor = new ClusterMonitor(this.localAgent.getIgnite(), igniteDiscoveryPort, monitorInstanceId, hostnames, commands);
       controllers.add(clusterMonitor);
       return clusterMonitor;

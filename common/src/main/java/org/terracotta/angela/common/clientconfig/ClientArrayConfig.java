@@ -17,9 +17,11 @@
 
 package org.terracotta.angela.common.clientconfig;
 
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Aurelien Broszniowski
@@ -27,7 +29,7 @@ import java.util.Map;
 
 public class ClientArrayConfig {
 
-  private final Map<ClientSymbolicName, String> hosts = new HashMap<>();
+  private final Map<ClientSymbolicName, Host> hosts = new HashMap<>();
 
   private ClientArrayConfig() {}
 
@@ -39,17 +41,32 @@ public class ClientArrayConfig {
     return host(hostname, hostname);
   }
 
+  public ClientArrayConfig host(String hostname, int port) {
+    return host(hostname, hostname, port);
+  }
+
   public ClientArrayConfig host(String clientSymbolicName, String hostname) {
+    return host(clientSymbolicName, hostname, 0);
+  }
+
+  public ClientArrayConfig host(String clientSymbolicName, String hostname, int port) {
     ClientSymbolicName key = new ClientSymbolicName(clientSymbolicName);
     if (this.hosts.containsKey(key)) {
       throw new IllegalArgumentException("Client with symbolic name '" + clientSymbolicName + "' already present in the client array config");
     }
-    this.hosts.put(key, hostname);
+    this.hosts.put(key, new Host(hostname, port));
 
     return this;
   }
 
-  public Map<ClientSymbolicName, String> getHosts() {
+  public Map<ClientSymbolicName, String> getHostnames() {
+    return hosts.entrySet().stream()
+        .map( entry -> new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().getHostname()))
+        .collect( Collectors.toMap( AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue) );
+
+  }
+
+  public Map<ClientSymbolicName, Host> getHosts() {
     return Collections.unmodifiableMap(hosts);
   }
 
@@ -59,5 +76,31 @@ public class ClientArrayConfig {
       host(clientSymbolicName, hostname);
     }
     return this;
+  }
+
+  public ClientArrayConfig hostSerie(int serieLength, String hostname, int port) {
+    for (int i = 0; i < serieLength; i++) {
+      String clientSymbolicName =  hostname + "-" + i;
+      host(clientSymbolicName, hostname, port);
+    }
+    return this;
+  }
+
+  public static class Host {
+    private String hostname;
+    private int port;
+
+    public Host( String hostname, int port ) {
+      this.hostname = hostname;
+      this.port = port;
+    }
+
+    public String getHostname() {
+      return hostname;
+    }
+
+    public int getPort() {
+      return port;
+    }
   }
 }

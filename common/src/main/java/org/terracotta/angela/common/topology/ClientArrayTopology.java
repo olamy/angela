@@ -47,7 +47,13 @@ public class ClientArrayTopology {
   }
 
   public Collection<String> getClientHostnames() {
-    return clientArrayConfig.getHosts().entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
+    return clientArrayConfig.getHosts().entrySet().stream()
+        .map(clientSymbolicNameHostEntry -> clientSymbolicNameHostEntry.getValue().getHostname())
+        .collect(Collectors.toList());
+  }
+
+  public Collection<ClientArrayConfig.Host> getClientHosts() {
+    return clientArrayConfig.getHosts().values();
   }
 
   public Distribution getDistribution() {

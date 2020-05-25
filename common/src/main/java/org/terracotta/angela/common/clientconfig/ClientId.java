@@ -26,11 +26,11 @@ import java.util.Objects;
 public class ClientId {
 
   private final ClientSymbolicName symbolicName;
-  private final String hostname;
+  private final ClientArrayConfig.Host host;
 
-  public ClientId(ClientSymbolicName symbolicName, String hostname) {
+  public ClientId(ClientSymbolicName symbolicName, ClientArrayConfig.Host host) {
     this.symbolicName = Objects.requireNonNull(symbolicName);
-    this.hostname = Objects.requireNonNull(hostname);
+    this.host = Objects.requireNonNull(host);
   }
 
   public ClientSymbolicName getSymbolicName() {
@@ -38,7 +38,12 @@ public class ClientId {
   }
 
   public String getHostname() {
-    return hostname;
+    return host.getHostname();
+  }
+
+  public ClientArrayConfig.Host getHost()
+  {
+    return host;
   }
 
   @Override
@@ -47,19 +52,21 @@ public class ClientId {
     if (o == null || getClass() != o.getClass()) return false;
     ClientId clientId = (ClientId) o;
     return Objects.equals(symbolicName, clientId.symbolicName) &&
-           Objects.equals(hostname, clientId.hostname);
+           Objects.equals(host.getHostname(), clientId.host.getHostname()) &&
+           Objects.equals(host.getPort(), clientId.host.getPort());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(symbolicName, hostname);
+    return Objects.hash(symbolicName, host.getHostname(), host.getPort());
   }
 
   @Override
   public String toString() {
     return "ClientData{" +
            "symbolicName=" + symbolicName +
-           ", hostname='" + hostname + '\'' +
+           ", hostname=" + host.getHostname() +
+           ", port='" + host.getPort() + '\'' +
            '}';
   }
 }
